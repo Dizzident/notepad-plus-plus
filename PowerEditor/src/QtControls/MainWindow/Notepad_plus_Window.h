@@ -1,0 +1,305 @@
+// This file is part of Notepad++ project
+// Copyright (C)2024 Notepad++ contributors
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// at your option any later version.
+
+#pragma once
+
+#include "../StaticDialog/StaticDialog.h"
+#include "../ToolBar/ToolBar.h"
+#include "../StatusBar/StatusBar.h"
+#include "../TabBar/TabBar.h"
+#include "../Splitter/Splitter.h"
+#include "../DockingManager/DockingManager.h"
+#include "../FunctionList/FunctionListPanel.h"
+#include "../ProjectPanel/ProjectPanel.h"
+#include "../DocumentMap/DocumentMap.h"
+#include "../ClipboardHistory/ClipboardHistoryPanel.h"
+#include "../FileBrowser/FileBrowser.h"
+
+#include <QMainWindow>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
+#include <QTabWidget>
+#include <QSplitter>
+#include <QDockWidget>
+#include <QToolBar>
+#include <QStatusBar>
+#include <QCloseEvent>
+#include <QTimer>
+#include <QSystemTrayIcon>
+
+#include <vector>
+#include <memory>
+
+// Forward declaration
+class Notepad_plus;
+class ScintillaEditView;
+
+namespace QtControls {
+
+namespace MainWindow {
+
+// ============================================================================
+// MainWindow - Qt-based main application window for Notepad++
+// ============================================================================
+class MainWindow : public QMainWindow, public StaticDialog {
+    Q_OBJECT
+
+public:
+    MainWindow();
+    ~MainWindow() override;
+
+    // Initialize with Notepad_plus core
+    bool init(Notepad_plus* pNotepad_plus);
+
+    // StaticDialog interface
+    void destroy() override;
+
+    // Window operations
+    void display(bool toShow = true) override;
+    void reSizeTo(QRect& rc) override;
+
+    // Menu operations
+    void initMenuBar();
+    void updateMenuState();
+
+    // Toolbar operations
+    void initToolBar();
+    void updateToolBarState();
+
+    // Status bar operations
+    void initStatusBar();
+    void updateStatusBar();
+
+    // Panel management
+    void showPanel(const QString& panelName, bool show);
+    bool isPanelVisible(const QString& panelName);
+
+    // Document management
+    void addTab(const QString& title, const QString& filePath);
+    void closeTab(int index);
+    void switchTab(int index);
+
+    // Getters for core components
+    Notepad_plus* getNotepadPlus() const { return _pNotepad_plus; }
+    ScintillaEditView* getMainEditView() const;
+    ScintillaEditView* getSubEditView() const;
+    TabBar* getTabBar() const { return _tabBar; }
+    ToolBar* getToolBar() const { return _mainToolBar; }
+    StatusBar* getStatusBar() const { return _statusBar; }
+    DockingManager::Manager* getDockingManager() const { return _dockingManager; }
+
+    // Panel getters
+    FunctionListPanel* getFunctionListPanel() const { return _functionListPanel; }
+    ProjectPanel* getProjectPanel() const { return _projectPanel; }
+    DocumentMap* getDocumentMap() const { return _documentMap; }
+    ClipboardHistoryPanel* getClipboardHistoryPanel() const { return _clipboardHistoryPanel; }
+    FileBrowser* getFileBrowser() const { return _fileBrowser; }
+
+    // Window state
+    void saveWindowState();
+    void restoreWindowState();
+
+    // Special view modes
+    void toggleFullScreen();
+    void togglePostItMode();
+    void toggleDistractionFreeMode();
+    bool isFullScreen() const { return _isFullScreen; }
+    bool isPostItMode() const { return _isPostItMode; }
+
+    // Always on top
+    void setAlwaysOnTop(bool alwaysOnTop);
+    bool isAlwaysOnTop() const;
+
+    // Tray icon
+    void minimizeToTray();
+    void restoreFromTray();
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    void moveEvent(QMoveEvent* event) override;
+    void changeEvent(QEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
+
+    // StaticDialog pure virtual
+    bool run_dlgProc(QEvent* event) override;
+
+private slots:
+    // File menu
+    void onFileNew();
+    void onFileOpen();
+    void onFileSave();
+    void onFileSaveAs();
+    void onFileSaveAll();
+    void onFileClose();
+    void onFileCloseAll();
+    void onFileExit();
+
+    // Edit menu
+    void onEditUndo();
+    void onEditRedo();
+    void onEditCut();
+    void onEditCopy();
+    void onEditPaste();
+    void onEditDelete();
+    void onEditSelectAll();
+
+    // Search menu
+    void onSearchFind();
+    void onSearchReplace();
+    void onSearchFindNext();
+    void onSearchFindPrev();
+    void onSearchGoToLine();
+
+    // View menu
+    void onViewFullScreen();
+    void onViewPostIt();
+    void onViewAlwaysOnTop();
+    void onViewWordWrap();
+    void onViewShowWhiteSpace();
+    void onViewShowEOL();
+    void onViewShowIndentGuide();
+
+    // Panel menu
+    void onViewFunctionList();
+    void onViewProjectPanel();
+    void onViewDocumentMap();
+    void onViewClipboardHistory();
+    void onViewFileBrowser();
+
+    // Encoding menu
+    void onEncodingANSI();
+    void onEncodingUTF8();
+    void onEncodingUTF8BOM();
+    void onEncodingUTF16BE();
+    void onEncodingUTF16LE();
+
+    // Language menu
+    void onLanguageSelected(QAction* action);
+
+    // Settings menu
+    void onSettingsPreferences();
+    void onSettingsStyleConfigurator();
+    void onSettingsShortcutMapper();
+
+    // Macro menu
+    void onMacroStartRecording();
+    void onMacroStopRecording();
+    void onMacroPlayback();
+    void onMacroRunMultiple();
+
+    // Run menu
+    void onRunRun();
+    void onRunLaunchInBrowser();
+
+    // Window menu
+    void onWindowNewInstance();
+    void onWindowSplit();
+    void onWindowCloneToOtherView();
+
+    // Help menu
+    void onHelpAbout();
+
+    // Tab bar
+    void onTabChanged(int index);
+    void onTabCloseRequested(int index);
+
+    // Panel visibility
+    void onPanelVisibilityChanged(bool visible);
+
+    // Tray icon
+    void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
+
+private:
+    void setupUI();
+    void connectSignals();
+    void createDockWindows();
+    void loadSettings();
+    void saveSettings();
+
+    // Menu creation helpers
+    void createFileMenu();
+    void createEditMenu();
+    void createSearchMenu();
+    void createViewMenu();
+    void createEncodingMenu();
+    void createLanguageMenu();
+    void createSettingsMenu();
+    void createMacroMenu();
+    void createRunMenu();
+    void createWindowMenu();
+    void createHelpMenu();
+
+    // Update UI state
+    void updateTitle();
+    void updateDocumentState();
+
+    // Core components
+    Notepad_plus* _pNotepad_plus = nullptr;
+
+    // Editor components
+    QSplitter* _editorSplitter = nullptr;
+    std::vector<ScintillaEditView*> _editViews;
+
+    // Tab bar
+    TabBar* _tabBar = nullptr;
+    QTabWidget* _tabWidget = nullptr;
+
+    // Menus
+    QMenuBar* _menuBar = nullptr;
+    QMenu* _fileMenu = nullptr;
+    QMenu* _editMenu = nullptr;
+    QMenu* _searchMenu = nullptr;
+    QMenu* _viewMenu = nullptr;
+    QMenu* _encodingMenu = nullptr;
+    QMenu* _languageMenu = nullptr;
+    QMenu* _settingsMenu = nullptr;
+    QMenu* _macroMenu = nullptr;
+    QMenu* _runMenu = nullptr;
+    QMenu* _windowMenu = nullptr;
+    QMenu* _helpMenu = nullptr;
+
+    // Toolbars
+    ToolBar* _mainToolBar = nullptr;
+    ReBar* _reBar = nullptr;
+
+    // Status bar
+    StatusBar* _statusBar = nullptr;
+
+    // Panels
+    FunctionListPanel* _functionListPanel = nullptr;
+    ProjectPanel* _projectPanel = nullptr;
+    DocumentMap* _documentMap = nullptr;
+    ClipboardHistoryPanel* _clipboardHistoryPanel = nullptr;
+    FileBrowser* _fileBrowser = nullptr;
+
+    // Dock manager
+    DockingManager::Manager* _dockingManager = nullptr;
+
+    // Tray icon
+    QSystemTrayIcon* _trayIcon = nullptr;
+
+    // Window state
+    bool _isFullScreen = false;
+    bool _isPostItMode = false;
+    bool _isDistractionFree = false;
+    QByteArray _normalWindowState;
+    QByteArray _normalGeometry;
+
+    // Settings
+    QString _settingsGroup;
+
+    // Timer for periodic updates
+    QTimer* _updateTimer = nullptr;
+};
+
+} // namespace MainWindow
+
+} // namespace QtControls

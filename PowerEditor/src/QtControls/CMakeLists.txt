@@ -36,6 +36,7 @@ set(QTCONTROLS_SOURCES
     FileBrowser/FileBrowser.cpp
     FunctionList/FunctionListPanel.cpp
     ProjectPanel/ProjectPanel.cpp
+    MainWindow/Notepad_plus_Window.cpp
 )
 
 set(QTCONTROLS_HEADERS
@@ -59,6 +60,7 @@ set(QTCONTROLS_HEADERS
     FileBrowser/FileBrowser.h
     FunctionList/FunctionListPanel.h
     ProjectPanel/ProjectPanel.h
+    MainWindow/Notepad_plus_Window.h
 )
 
 # Create static library
@@ -85,6 +87,7 @@ target_include_directories(QtControls PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/FileBrowser
     ${CMAKE_CURRENT_SOURCE_DIR}/FunctionList
     ${CMAKE_CURRENT_SOURCE_DIR}/ProjectPanel
+    ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow
 )
 
 target_link_libraries(QtControls PUBLIC

@@ -494,6 +494,18 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/ShortcutMapper/ShortcutMapper.cpp
 	)
 
+	# Add QtCore for Linux
+	list(APPEND src_files
+		./QtCore/Buffer.cpp
+		./QtCore/NppIO.cpp
+		./QtCore/NppCommands.cpp
+	)
+
+	# Add Linux main entry point
+	list(APPEND src_files
+		./main_linux.cpp
+	)
+
 	# Remove Windows-specific files from Linux build
 	list(REMOVE_ITEM src_files
 		./DarkMode/DarkMode.cpp
@@ -524,6 +536,7 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/TreeView
 		./QtControls/FindReplace
 		./QtControls/ShortcutMapper
+		./QtCore
 		${Qt6Core_INCLUDE_DIRS}
 		${Qt6Widgets_INCLUDE_DIRS}
 		${Qt6Gui_INCLUDE_DIRS}
