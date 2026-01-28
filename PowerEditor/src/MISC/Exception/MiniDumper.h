@@ -20,6 +20,8 @@
 
 #pragma once
 
+#ifdef _WIN32
+
 #include <windows.h>
 #include <dbghelp.h>
 
@@ -36,4 +38,6 @@ public:
 	MiniDumper();
 	bool writeDump(EXCEPTION_POINTERS * pExceptionInfo);
 };
+
+#endif // _WIN32
 

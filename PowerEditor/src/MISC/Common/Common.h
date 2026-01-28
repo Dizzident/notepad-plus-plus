@@ -28,6 +28,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <cerrno>
+#include <strings.h>  // For strcasecmp
 
 using HWND = void*;
 using UINT = unsigned int;
@@ -278,6 +279,32 @@ inline void DestroyAcceleratorTable(void*) {}
 #define VK_SPACE    0x20
 #define VK_CAPITAL  0x14  // Caps Lock
 
+// Function keys
+#define VK_F1     0x70
+#define VK_F2     0x71
+#define VK_F3     0x72
+#define VK_F4     0x73
+#define VK_F5     0x74
+#define VK_F6     0x75
+#define VK_F7     0x76
+#define VK_F8     0x77
+#define VK_F9     0x78
+#define VK_F10    0x79
+#define VK_F11    0x7A
+#define VK_F12    0x7B
+
+// Numpad keys
+#define VK_NUMPAD0  0x60
+#define VK_NUMPAD1  0x61
+#define VK_NUMPAD2  0x62
+#define VK_NUMPAD3  0x63
+#define VK_NUMPAD4  0x64
+#define VK_NUMPAD5  0x65
+#define VK_NUMPAD6  0x66
+#define VK_NUMPAD7  0x67
+#define VK_NUMPAD8  0x68
+#define VK_NUMPAD9  0x69
+
 // Locale constants
 #define LOCALE_NAME_SYSTEM_DEFAULT L""
 #define LOCALE_IDEFAULTANSICODEPAGE 0x00001004
@@ -333,9 +360,42 @@ inline BOOL SetEvent(void*) { return TRUE; }
 inline BOOL CloseHandle(void*) { return TRUE; }
 
 // MessageBox constants and stub
-#define MB_OK 0
-#define MB_ICONHAND 0
+// Button types
+#define MB_OK                   0x00000000
+#define MB_OKCANCEL             0x00000001
+#define MB_ABORTRETRYIGNORE     0x00000002
+#define MB_YESNOCANCEL          0x00000003
+#define MB_YESNO                0x00000004
+#define MB_RETRYCANCEL          0x00000005
+#define MB_CANCELTRYCONTINUE    0x00000006
+
+// Icon types
+#define MB_ICONERROR            0x00000010
+#define MB_ICONHAND             MB_ICONERROR
+#define MB_ICONQUESTION         0x00000020
+#define MB_ICONWARNING          0x00000030
+#define MB_ICONINFORMATION      0x00000040
+
+// Return values
+#define IDOK                    1
+#define IDCANCEL                2
+#define IDABORT                 3
+#define IDRETRY                 4
+#define IDIGNORE                5
+#define IDYES                   6
+#define IDNO                    7
+#define IDTRYAGAIN              10
+#define IDCONTINUE              11
+
 inline int MessageBox(void*, const wchar_t*, const wchar_t*, UINT) { return 0; }
+
+// Boolean values
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
 
 // Menu flags
 #define TPM_LEFTALIGN 0x0000
@@ -346,10 +406,27 @@ inline int MessageBox(void*, const wchar_t*, const wchar_t*, UINT) { return 0; }
 #define MF_CHECKED 0x0008
 #define MF_UNCHECKED 0x0000
 
+// Menu flags continued
+#define MF_BYPOSITION 0x0400
+#define MF_POPUP 0x0010
+#define MF_STRING 0x0000
+
 // Menu functions (stubs for Linux)
 inline void TrackPopupMenu(void*, int, int, int, int, void*, void*) {}
 inline void EnableMenuItem(void*, int, int) {}
 inline void CheckMenuItem(void*, int, int) {}
+inline void ModifyMenu(void*, int, int, void*, const wchar_t*) {}
+inline void* GetSubMenu(void*, int) { return nullptr; }
+inline int GetMenuString(void*, int, wchar_t*, int, int) { return 0; }
+inline int GetMenuItemID(void*, int) { return 0; }
+
+// Window functions (stubs for Linux)
+inline void SetWindowText(void*, const wchar_t*) {}
+inline void* GetDlgItem(void*, int) { return nullptr; }
+
+// String comparison functions
+inline int _stricmp(const char* s1, const char* s2) { return strcasecmp(s1, s2); }
+inline int _wcsicmp(const wchar_t* s1, const wchar_t* s2) { return wcscasecmp(s1, s2); }
 
 // tchar function
 #define _istspace iswspace

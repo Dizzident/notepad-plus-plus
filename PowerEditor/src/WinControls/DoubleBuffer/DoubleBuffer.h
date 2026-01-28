@@ -15,7 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include "../../MISC/Common/Common.h"
+#endif
 
 /// <summary>
 /// Subclasses a window to use double buffering for paint operations

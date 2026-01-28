@@ -14,9 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#include "sha512.h"
+
+#ifdef _WIN32
 #include <windows.h>
 #include <wincrypt.h>
-#include "sha512.h"
 
 //#if defined(_MSC_VER)
 //#pragma comment(lib, "crypt32.lib")
@@ -55,4 +57,35 @@ void calc_sha_512(unsigned char hash[64], const void *input, size_t len) {
     CryptDestroyHash(hHash);
     CryptReleaseContext(hProv, 0);
 }
+
+#else
+// Linux implementation using OpenSSL
+#include <openssl/evp.h>
+
+void calc_sha_512(unsigned char hash[64], const void *input, size_t len) {
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    if (!ctx) {
+        return;
+    }
+
+    if (EVP_DigestInit_ex(ctx, EVP_sha512(), nullptr) != 1) {
+        EVP_MD_CTX_free(ctx);
+        return;
+    }
+
+    if (EVP_DigestUpdate(ctx, input, len) != 1) {
+        EVP_MD_CTX_free(ctx);
+        return;
+    }
+
+    unsigned int hashLen = 0;
+    if (EVP_DigestFinal_ex(ctx, hash, &hashLen) != 1) {
+        EVP_MD_CTX_free(ctx);
+        return;
+    }
+
+    EVP_MD_CTX_free(ctx);
+}
+
+#endif
 

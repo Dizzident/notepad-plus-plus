@@ -8,11 +8,12 @@
 
 #include "../Settings.h"
 #include "../FileSystem.h"
-#include <QSettings>
-#include <QStandardPaths>
-#include <QDir>
-#include <QXmlStreamReader>
-#include <QXmlStreamWriter>
+#include <QtCore/QSettings>
+#include <QtCore/QStandardPaths>
+#include <QtCore/QDir>
+#include <QtCore/QXmlStreamReader>
+#include <QtCore/QXmlStreamWriter>
+#include <QtCore/QStringList>
 #include <fstream>
 #include <cstdlib>
 #include <pwd.h>

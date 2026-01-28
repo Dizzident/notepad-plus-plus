@@ -523,6 +523,16 @@ ELSEIF(UNIX AND NOT APPLE)
 		./main_linux.cpp
 	)
 
+	# Add Platform Linux files
+	list(APPEND src_files
+		./Platform/Linux/FileSystem.cpp
+		./Platform/Linux/Settings.cpp
+		./Platform/Linux/Process.cpp
+		./Platform/Linux/FileWatcher.cpp
+		./Platform/Linux/Clipboard.cpp
+		./Platform/Linux/Threading.cpp
+	)
+
 	# ============================================================================
 	# Optional KDE Frameworks Integration
 	# ============================================================================
@@ -578,28 +588,18 @@ ELSEIF(UNIX AND NOT APPLE)
 	endif()
 
 	# Linux-specific includes
-	# Insert QtControls directories at the BEGINNING so they take precedence over WinControls
+	# Note: Qt6 include directories are handled via target_include_directories
+	# after the target is created, using the Qt6:: targets which automatically
+	# provide their include directories
 	list(INSERT projIncludDir 0
+		.
 		./Platform
 		./QtCore
 		./MISC
 		./MISC/Common
-		./QtControls
-		./QtControls/StaticDialog
-		./QtControls/ToolBar
-		./QtControls/StatusBar
-		./QtControls/TabBar
-		./QtControls/Splitter
-		./QtControls/GoToLine
-		./QtControls/RunDlg
-		./QtControls/AboutDlg
-		./QtControls/TreeView
-		./QtControls/FindReplace
-		./QtControls/ShortcutMapper
-		./QtControls/KDEStyle
-		${Qt6Core_INCLUDE_DIRS}
-		${Qt6Widgets_INCLUDE_DIRS}
-		${Qt6Gui_INCLUDE_DIRS}
+		./WinControls
+		./ScintillaComponent
+		${CMAKE_SOURCE_DIR}/../../scintilla/include
 	)
 
 	# Find or build Scintilla for Linux
@@ -650,12 +650,19 @@ ELSEIF(UNIX AND NOT APPLE)
 	)
 	set(LEXILLA_STATIC_LIBRARY lexilla)
 
+	# Find OpenSSL for Linux (needed for SHA512)
+	find_package(OpenSSL REQUIRED)
+	if(OpenSSL_FOUND)
+		message(STATUS "OpenSSL found: ${OPENSSL_VERSION}")
+	endif()
+
 	# Linux libraries
 	SET(linux_LIBRARIES
 		Qt6::Core
 		Qt6::Widgets
 		Qt6::Gui
 		Qt6::Network
+		OpenSSL::Crypto
 		pthread
 		dl
 	)
@@ -668,6 +675,12 @@ ELSEIF(UNIX AND NOT APPLE)
 	SET(rcFiles "")
 
 	message(STATUS "Linux configuration complete")
+
+	# Get Qt6 include directories for the global include path
+	get_target_property(Qt6Core_INCLUDE_DIRS Qt6::Core INTERFACE_INCLUDE_DIRECTORIES)
+	get_target_property(Qt6Widgets_INCLUDE_DIRS Qt6::Widgets INTERFACE_INCLUDE_DIRECTORIES)
+	get_target_property(Qt6Gui_INCLUDE_DIRS Qt6::Gui INTERFACE_INCLUDE_DIRECTORIES)
+	list(APPEND projIncludDir ${Qt6Core_INCLUDE_DIRS} ${Qt6Widgets_INCLUDE_DIRS} ${Qt6Gui_INCLUDE_DIRS})
 ENDIF()
 
 ADD_DEFINITIONS(${defs})
@@ -678,6 +691,32 @@ INCLUDE_DIRECTORIES(${projIncludDir})
 # Executable Target
 # ============================================================================
 ADD_EXECUTABLE(notepad++ ${option} ${src_files} ${include_files} ${rcFiles})
+
+# ============================================================================
+# Include Directories (target-specific for Linux)
+# ============================================================================
+IF(UNIX AND NOT APPLE)
+	# Use target_include_directories with Qt6 targets for proper include path propagation
+	TARGET_INCLUDE_DIRECTORIES(notepad++ PRIVATE
+		./Platform
+		./QtCore
+		./MISC
+		./MISC/Common
+		./QtControls
+		./QtControls/StaticDialog
+		./QtControls/ToolBar
+		./QtControls/StatusBar
+		./QtControls/TabBar
+		./QtControls/Splitter
+		./QtControls/GoToLine
+		./QtControls/RunDlg
+		./QtControls/AboutDlg
+		./QtControls/TreeView
+		./QtControls/FindReplace
+		./QtControls/ShortcutMapper
+		./QtControls/KDEStyle
+	)
+ENDIF()
 
 # ============================================================================
 # Link Libraries

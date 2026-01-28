@@ -22,6 +22,8 @@
 
 #pragma once
 
+#ifdef _WIN32
+
 #include <exception>
 #include <windows.h>
 
@@ -63,3 +65,5 @@ private:
 
     friend void Win32Exception::translate(unsigned code, EXCEPTION_POINTERS* info);
 };
+
+#endif // _WIN32

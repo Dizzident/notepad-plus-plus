@@ -17,7 +17,9 @@
 
 #include "localization.h"
 
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #include <cstring>
 #include <cwchar>

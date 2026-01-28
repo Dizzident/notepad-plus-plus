@@ -8,6 +8,9 @@
 
 #include "../Dialogs.h"
 #include "../FileSystem.h"
+
+#ifdef _WIN32
+
 #include <windows.h>
 #include <shlobj.h>
 #include <commdlg.h>
@@ -506,3 +509,5 @@ std::vector<FileFilter> combine(const std::vector<FileFilter>& a,
 } // namespace DialogFilters
 
 } // namespace PlatformLayer
+
+#endif // _WIN32

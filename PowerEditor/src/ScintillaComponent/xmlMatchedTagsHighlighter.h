@@ -17,7 +17,11 @@
 
 #pragma once
 
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include "../MISC/Common/Common.h"
+#endif
 #include <string>
 #include <vector>
 

@@ -30,6 +30,11 @@ typedef unsigned int UINT;
 #ifndef CP_UTF8_DEFINED
 #define CP_UTF8_DEFINED
 const UINT CP_ACP = 0;
+const UINT CP_OEMCP = 1;
+const UINT CP_MACCP = 2;
+const UINT CP_THREAD_ACP = 3;
+const UINT CP_SYMBOL = 42;
+const UINT CP_UTF7 = 65000;
 const UINT CP_UTF8 = 65001;
 #endif
 #endif

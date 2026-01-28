@@ -1945,7 +1945,7 @@ private:
 	bool _asNotepadStyle = false;
 
 	winVer _winVersion = WV_UNKNOWN;
-	Platform _platForm = PF_UNKNOWN;
+	Platform _platForm = Platform::PF_UNKNOWN;
 
 	NativeLangSpeaker *_pNativeLangSpeaker = nullptr;
 

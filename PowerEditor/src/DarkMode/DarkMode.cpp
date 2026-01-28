@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include <windows.h>
 
 #include "DarkMode.h"
@@ -350,3 +352,5 @@ void SetDarkMode(bool useDark, bool fixDarkScrollbar)
 		g_darkModeEnabled = ShouldAppsUseDarkMode() && !IsHighContrast();
 	}
 }
+
+#endif // _WIN32

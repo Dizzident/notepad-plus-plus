@@ -40,6 +40,12 @@ struct RECT {
 #define SW_HIDE 0
 inline void ShowWindow(HWND, int) {}
 inline void MoveWindow(HWND, int, int, int, int, BOOL) {}
+inline int InvalidateRect(HWND, const void*, BOOL) { return 0; }
+inline int UpdateWindow(HWND) { return 0; }
+inline int GetClientRect(HWND, RECT*) { return 0; }
+inline int GetWindowRect(HWND, RECT*) { return 0; }
+inline BOOL IsWindowVisible(HWND) { return FALSE; }
+inline void SetFocus(HWND) {}
 inline void redraw() {}
 #endif
 
@@ -133,7 +139,7 @@ public:
 
 
 protected:
-	HINSTANCE _hInst = NULL;
-	HWND _hParent = NULL;
-	HWND _hSelf = NULL;
+	HINSTANCE _hInst = nullptr;
+	HWND _hParent = nullptr;
+	HWND _hSelf = nullptr;
 };

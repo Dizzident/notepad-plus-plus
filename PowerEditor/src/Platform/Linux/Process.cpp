@@ -8,14 +8,18 @@
 
 #include "../Process.h"
 #include "../FileSystem.h"
-#include <QProcess>
-#include <QProcessEnvironment>
-#include <QFileInfo>
-#include <QStandardPaths>
-#include <QDir>
-#include <QUrl>
-#include <QDesktopServices>
-#include <QDebug>
+#include <QtCore/QProcess>
+#include <QtCore/QProcessEnvironment>
+#include <QtCore/QFileInfo>
+#include <QtCore/QStandardPaths>
+#include <QtCore/QDir>
+#include <QtCore/QUrl>
+#include <QtCore/QStringList>
+#include <QtCore/QObject>
+#include <QtGui/QDesktopServices>
+#include <QtCore/QDebug>
+#include <QtCore/QMimeType>
+#include <QtCore/QMimeDatabase>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>

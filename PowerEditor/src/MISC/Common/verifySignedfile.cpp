@@ -18,6 +18,8 @@
 // VerifyDLL.cpp : Verification of an Authenticode signed DLL
 //
 
+#ifdef _WIN32
+
 #include <memory>
 #include <windows.h>
 #include <wintrust.h>
@@ -385,3 +387,5 @@ bool SecurityGuard::verifySignedBinary(const std::wstring& filepath)
 
 	return status;
 }
+
+#endif // _WIN32

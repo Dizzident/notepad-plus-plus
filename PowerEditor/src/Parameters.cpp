@@ -17,10 +17,11 @@
 
 #include "Parameters.h"
 
+#ifdef _WIN32
 #include <windows.h>
-
 #include <shlobj.h>
 #include <shlwapi.h>
+#endif
 
 #include <algorithm>
 #include <cassert>
@@ -977,23 +978,23 @@ winVer NppParameters::getWindowsVersion()
 	switch (si.wProcessorArchitecture)
 	{
 	case PROCESSOR_ARCHITECTURE_IA64:
-		_platForm = PF_IA64;
+		_platForm = Platform::PF_IA64;
 		break;
 
 	case PROCESSOR_ARCHITECTURE_AMD64:
-		_platForm = PF_X64;
+		_platForm = Platform::PF_X64;
 		break;
 
 	case PROCESSOR_ARCHITECTURE_INTEL:
-		_platForm = PF_X86;
+		_platForm = Platform::PF_X86;
 		break;
 
 	case PROCESSOR_ARCHITECTURE_ARM64:
-		_platForm = PF_ARM64;
+		_platForm = Platform::PF_ARM64;
 		break;
 
 	default:
-		_platForm = PF_UNKNOWN;
+		_platForm = Platform::PF_UNKNOWN;
 	}
 
    switch (osvi.dwPlatformId)
@@ -9232,12 +9233,12 @@ std::wstring NppParameters::getWinVerBitStr() const
 {
 	switch (_platForm)
 	{
-	case PF_X86:
+	case Platform::PF_X86:
 		return L"32-bit";
 
-	case PF_X64:
-	case PF_IA64:
-	case PF_ARM64:
+	case Platform::PF_X64:
+	case Platform::PF_IA64:
+	case Platform::PF_ARM64:
 		return L"64-bit";
 
 	default:
