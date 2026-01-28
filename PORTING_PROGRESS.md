@@ -55,11 +55,11 @@ Adding native Linux/KDE Plasma support to Notepad++ while maintaining full Windo
 
 | Component | Header | Implementation | Tests | Status |
 |-----------|--------|----------------|-------|--------|
-| Window | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| StaticDialog | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| ToolBar | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| StatusBar | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| TabBar | ⬜ | ⬜ | ⬜ | NOT STARTED |
+| Window | ✅ | ✅ | ⬜ | COMPLETED |
+| StaticDialog | ✅ | ✅ | ⬜ | COMPLETED |
+| ToolBar | ✅ | ✅ | ⬜ | COMPLETED |
+| StatusBar | ✅ | ✅ | ⬜ | COMPLETED |
+| TabBar | ✅ | ✅ | ⬜ | COMPLETED |
 | TreeView | ⬜ | ⬜ | ⬜ | NOT STARTED |
 | ListView | ⬜ | ⬜ | ⬜ | NOT STARTED |
 | Splitter | ⬜ | ⬜ | ⬜ | NOT STARTED |
@@ -122,6 +122,7 @@ Adding native Linux/KDE Plasma support to Notepad++ while maintaining full Windo
 | 2026-01-28 | - | Git repository reinitialized | COMPLETE |
 | 2026-01-28 | A1 | FileSystem abstraction created | COMPLETE |
 | 2026-01-28 | A5 | CMake build system modernized | COMPLETE |
+| 2026-01-28 | A6 | QtControls framework created | COMPLETE |
 
 ---
 
