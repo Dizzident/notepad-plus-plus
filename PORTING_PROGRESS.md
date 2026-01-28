@@ -13,7 +13,7 @@ Adding native Linux/KDE Plasma support to Notepad++ while maintaining full Windo
 | Phase | Description | Status | Completion % |
 |-------|-------------|--------|--------------|
 | 1 | Foundation & Abstraction Layer | COMPLETED | 100% |
-| 2 | Linux UI Implementation | NOT STARTED | 0% |
+| 2 | Linux UI Implementation | IN PROGRESS | 35% |
 | 3 | Core Functionality Migration | NOT STARTED | 0% |
 | 4 | KDE Plasma Integration | NOT STARTED | 0% |
 | 5 | Polish and Release | NOT STARTED | 0% |
@@ -31,7 +31,7 @@ Adding native Linux/KDE Plasma support to Notepad++ while maintaining full Windo
 | A3 | Platform Abstraction Layer - Process | COMPLETED | adfdf20 | Process.h + Windows/Linux implementations |
 | A4 | Platform Abstraction Layer - FileWatcher | COMPLETED | adfdf20 | FileWatcher.h + Windows/Linux implementations |
 | A5 | CMake Build System Modernization | IN PROGRESS | a01e86d | Updating CMakeLists.txt for dual-platform |
-| A6 | QtControls Framework Setup | IN PROGRESS | a81c510 | Creating QtControls/ directory structure |
+| A6 | QtControls Framework Setup | COMPLETED | a81c510 | Creating QtControls/ directory structure |
 | A7 | Scintilla Qt Integration | PENDING | - | Integrate QScintilla for Linux |
 | A8 | Windows CI/CD Setup | PENDING | - | Ensure Windows builds remain stable |
 
@@ -60,10 +60,10 @@ Adding native Linux/KDE Plasma support to Notepad++ while maintaining full Windo
 | ToolBar | ✅ | ✅ | ⬜ | COMPLETED |
 | StatusBar | ✅ | ✅ | ⬜ | COMPLETED |
 | TabBar | ✅ | ✅ | ⬜ | COMPLETED |
-| TreeView | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| ListView | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| Splitter | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| DockingManager | ⬜ | ⬜ | ⬜ | NOT STARTED |
+| TreeView | ✅ | ✅ | ⬜ | COMPLETED |
+| ListView | ✅ | ✅ | ⬜ | COMPLETED |
+| Splitter | ✅ | ✅ | ⬜ | COMPLETED |
+| DockingManager | ✅ | ✅ | ⬜ | COMPLETED |
 
 ### Linux Dialogs
 
@@ -71,9 +71,9 @@ Adding native Linux/KDE Plasma support to Notepad++ while maintaining full Windo
 |--------|---------|----------------|-------|--------|
 | FindReplaceDlg | ✅ | ✅ | ⬜ | COMPLETED |
 | preferenceDlg | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| GoToLineDlg | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| RunDlg | ⬜ | ⬜ | ⬜ | NOT STARTED |
-| AboutDlg | ⬜ | ⬜ | ⬜ | NOT STARTED |
+| GoToLineDlg | ✅ | ✅ | ⬜ | COMPLETED |
+| RunDlg | ✅ | ✅ | ⬜ | COMPLETED |
+| AboutDlg | ✅ | ✅ | ⬜ | COMPLETED |
 | UserDefineDialog | ⬜ | ⬜ | ⬜ | NOT STARTED |
 | WordStyleDlg | ⬜ | ⬜ | ⬜ | NOT STARTED |
 | ShortcutMapper | ⬜ | ⬜ | ⬜ | NOT STARTED |
@@ -124,6 +124,13 @@ Adding native Linux/KDE Plasma support to Notepad++ while maintaining full Windo
 | 2026-01-28 | A5 | CMake build system modernized | COMPLETE |
 | 2026-01-28 | A6 | QtControls framework created | COMPLETE |
 | 2026-01-28 | A15 | Dialogs abstraction created | COMPLETE |
+| 2026-01-28 | A16 | Qt TreeView control created | COMPLETE |
+| 2026-01-28 | A17 | Qt ListView control created | COMPLETE |
+| 2026-01-28 | A18 | Qt Splitter control created | COMPLETE |
+| 2026-01-28 | A19 | Qt DockingManager created | COMPLETE |
+| 2026-01-28 | A20 | GoToLineDlg for Linux created | COMPLETE |
+| 2026-01-28 | A21 | AboutDlg for Linux created | COMPLETE |
+| 2026-01-28 | A22 | RunDlg for Linux created | COMPLETE |
 
 ---
 
