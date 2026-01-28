@@ -401,6 +401,7 @@ IF (WIN32)
 		./Platform/Windows/FileSystem.cpp
 		./Platform/Windows/Settings.cpp
 		./Platform/Windows/Process.cpp
+		./Platform/Windows/FileWatcher.cpp
 	)
 
 	list(APPEND projIncludDir ./Platform)
@@ -468,6 +469,7 @@ ELSEIF(UNIX AND NOT APPLE)
 		./Platform/Linux/FileSystem.cpp
 		./Platform/Linux/Settings.cpp
 		./Platform/Linux/Process.cpp
+		./Platform/Linux/FileWatcher.cpp
 	)
 
 	# Remove Windows-specific files from Linux build
