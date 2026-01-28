@@ -26,7 +26,7 @@ public:
     SettingsTest();
     ~SettingsTest();
 
-private slots:
+private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
     void init();

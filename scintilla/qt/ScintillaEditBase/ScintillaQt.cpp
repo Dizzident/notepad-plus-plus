@@ -8,6 +8,8 @@
 // Additions Copyright (c) 2011 Archaeopteryx Software, Inc. d/b/a Wingware
 // @file ScintillaQt.cpp - Qt specific subclass of ScintillaBase
 
+#define emit Q_EMIT
+
 #include "ScintillaQt.h"
 #include "PlatQt.h"
 
@@ -100,7 +102,7 @@ public:
 
 	QVariant convertToMime(const QString & /* mime */, QList<QByteArray> data, QString /* flav */) {
 		QByteArray all;
-		foreach (QByteArray i, data) {
+		for (QByteArray i : data) {
 			all += i;
 		}
 		return QVariant(all);
@@ -860,7 +862,7 @@ void ScintillaQt::Drop(const Point &point, const QMimeData *data, bool move)
 
 void ScintillaQt::DropUrls(const QMimeData *data)
 {
-	foreach(const QUrl &url, data->urls()) {
+	for (const QUrl &url : data->urls()) {
 		NotifyURIDropped(url.toString().toUtf8().constData());
 	}
 }

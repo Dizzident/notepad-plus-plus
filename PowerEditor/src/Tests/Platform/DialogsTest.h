@@ -8,13 +8,12 @@
 
 #pragma once
 
+#include <QObject>
 #include <QtTest/QtTest>
 #include <QString>
+#include <QStringList>
 #include <memory>
-
-namespace Platform {
-    class IDialogs;
-}
+#include "Platform/Dialogs.h"
 
 namespace Tests {
 
@@ -28,7 +27,7 @@ public:
     DialogsTest();
     ~DialogsTest();
 
-private slots:
+private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
 
@@ -103,16 +102,16 @@ public:
     void reset();
 
 private:
-    QList<Platform::DialogResult> _results;
-    QList<QString> _fileNames;
-    QList<QStringList> _fileNamesList;
-    QList<bool> _boolResults;
-    QList<int> _intResults;
-    int _resultIndex = 0;
-    int _fileNameIndex = 0;
-    int _fileNamesListIndex = 0;
-    int _boolIndex = 0;
-    int _intIndex = 0;
+    std::vector<Platform::DialogResult> _results;
+    std::vector<QString> _fileNames;
+    std::vector<QStringList> _fileNamesList;
+    std::vector<bool> _boolResults;
+    std::vector<int> _intResults;
+    size_t _resultIndex = 0;
+    size_t _fileNameIndex = 0;
+    size_t _fileNamesListIndex = 0;
+    size_t _boolIndex = 0;
+    size_t _intIndex = 0;
 };
 
 } // namespace Tests

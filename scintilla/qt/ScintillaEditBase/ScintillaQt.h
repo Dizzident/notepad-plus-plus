@@ -84,7 +84,7 @@ public:
 	explicit ScintillaQt(QAbstractScrollArea *parent);
 	virtual ~ScintillaQt();
 
-signals:
+Q_SIGNALS:
 	void horizontalScrolled(int value);
 	void verticalScrolled(int value);
 	void horizontalRangeChanged(int max, int page);
@@ -99,7 +99,7 @@ signals:
 
 	void command(Scintilla::uptr_t wParam, Scintilla::sptr_t lParam);
 
-private slots:
+private Q_SLOTS:
 	void onIdle();
 	void execCommand(QAction *action);
 	void SelectionChanged();

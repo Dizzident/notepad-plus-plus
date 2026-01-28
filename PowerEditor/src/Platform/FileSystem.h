@@ -18,6 +18,16 @@
 #include <cstdint>
 #include <memory>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+// Linux type definitions
+typedef unsigned int DWORD;
+typedef unsigned int UINT;
+const UINT CP_UTF8 = 65001;
+const UINT CP_ACP = 0;
+#endif
+
 namespace Platform {
 
 // File attribute flags (cross-platform abstraction)

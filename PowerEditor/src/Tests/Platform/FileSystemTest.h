@@ -26,7 +26,7 @@ public:
     FileSystemTest();
     ~FileSystemTest();
 
-private slots:
+private Q_SLOTS:
     // Test case setup/cleanup
     void initTestCase();
     void cleanupTestCase();

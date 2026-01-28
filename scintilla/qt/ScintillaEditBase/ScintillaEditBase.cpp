@@ -8,6 +8,8 @@
 // Additions Copyright (c) 2011 Archaeopteryx Software, Inc. d/b/a Wingware
 // @file ScintillaEditBase.cpp - Qt widget that wraps ScintillaQt and provides events and scrolling
 
+#define emit Q_EMIT
+
 #include "ScintillaEditBase.h"
 #include "ScintillaQt.h"
 #include "PlatQt.h"
@@ -457,7 +459,7 @@ namespace {
 
 int GetImeCaretPos(QInputMethodEvent *event)
 {
-	foreach (const QInputMethodEvent::Attribute attr, event->attributes()) {
+	for (const QInputMethodEvent::Attribute &attr : event->attributes()) {
 		if (attr.type == QInputMethodEvent::Cursor)
 			return attr.start;
 	}
@@ -467,7 +469,7 @@ int GetImeCaretPos(QInputMethodEvent *event)
 std::vector<int> MapImeIndicators(QInputMethodEvent *event)
 {
 	std::vector<int> imeIndicator(event->preeditString().size(), IndicatorUnknown);
-	foreach (const QInputMethodEvent::Attribute attr, event->attributes()) {
+	for (const QInputMethodEvent::Attribute &attr : event->attributes()) {
 		if (attr.type == QInputMethodEvent::TextFormat) {
 			const QTextFormat format = attr.value.value<QTextFormat>();
 			const QTextCharFormat charFormat = format.toCharFormat();

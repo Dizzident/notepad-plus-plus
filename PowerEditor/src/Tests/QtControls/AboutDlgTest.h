@@ -25,7 +25,7 @@ public:
     AboutDlgTest();
     ~AboutDlgTest();
 
-private slots:
+private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
     void init();

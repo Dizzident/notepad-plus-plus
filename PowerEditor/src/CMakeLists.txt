@@ -465,7 +465,7 @@ ELSEIF(UNIX AND NOT APPLE)
 	set(CMAKE_AUTOUIC ON)
 
 	# Linux-specific definitions
-	SET(defs -DNPP_LINUX -D_USE_64BIT_TIME_T -DTIXML_USE_STL -DQT_NO_KEYWORDS)
+	SET(defs -DNPP_LINUX -D_USE_64BIT_TIME_T -DTIXML_USE_STL)
 
 	# Add Platform abstraction for Linux
 	list(APPEND src_files
@@ -507,19 +507,20 @@ ELSEIF(UNIX AND NOT APPLE)
 		./main_linux.cpp
 	)
 
-	# Remove Windows-specific files from Linux build
-	list(REMOVE_ITEM src_files
-		./DarkMode/DarkMode.cpp
-		./MISC/Common/verifySignedfile.cpp
-		./MISC/Process/Processus.cpp
-		./MISC/Exception/Win32Exception.cpp
-		./MISC/Exception/MiniDumper.cpp
-		./Win32Explr/
-		./WinControls/ReadDirectoryChanges/ReadDirectoryChanges.cpp
-		./WinControls/ReadDirectoryChanges/ReadDirectoryChangesPrivate.cpp
-		./WinControls/ReadDirectoryChanges/ReadFileChanges.cpp
-		./MISC/RegExt/regExtDlg.cpp
-		./winmain.cpp
+	# For Linux, use a minimal set of files that have been ported or are portable
+	# First clear the existing src_files and rebuild for Linux
+	set(src_files "")
+
+	# Add Qt-specific core files
+	list(APPEND src_files
+		./QtCore/Buffer.cpp
+		./QtCore/NppIO.cpp
+		./QtCore/NppCommands.cpp
+	)
+
+	# Add main entry point
+	list(APPEND src_files
+		./main_linux.cpp
 	)
 
 	# ============================================================================
@@ -633,6 +634,10 @@ ELSEIF(UNIX AND NOT APPLE)
 		"${CMAKE_SOURCE_DIR}/../../lexilla/src/*.cxx"
 		"${CMAKE_SOURCE_DIR}/../../lexilla/lexlib/*.cxx"
 		"${CMAKE_SOURCE_DIR}/../../lexilla/lexers/*.cxx"
+	)
+	# Remove Windows-specific lexers from Linux build
+	list(REMOVE_ITEM LEXILLA_SOURCES
+		"${CMAKE_SOURCE_DIR}/../../lexilla/lexers/LexUser.cxx"
 	)
 	add_library(lexilla STATIC ${LEXILLA_SOURCES})
 	target_include_directories(lexilla PUBLIC

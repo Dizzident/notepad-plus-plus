@@ -79,7 +79,7 @@ private:
 	bool painterOwned = false;
 	SurfaceMode mode;
 	const char *codecName = nullptr;
-	std::unique_ptr<QStringDecoder> decoder;
+	mutable std::unique_ptr<QStringDecoder> decoder;
 	std::unique_ptr<QStringEncoder> encoder;
 
 	void Clear();

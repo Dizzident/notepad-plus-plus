@@ -174,10 +174,14 @@ public:
         }
 
         std::string utf8Path = wstringToUtf8(configPath);
-        std::ifstream file(utf8Path);
+        std::ifstream file(utf8Path, std::ios::binary);
         if (!file.is_open()) return false;
 
-        QXmlStreamReader reader(&file);
+        std::vector<char> buffer((std::istreambuf_iterator<char>(file)),
+                                  std::istreambuf_iterator<char>());
+        QByteArray data(buffer.data(), static_cast<int>(buffer.size()));
+
+        QXmlStreamReader reader(data);
         parseXmlConfig(reader);
 
         return true;
@@ -271,10 +275,14 @@ public:
         }
 
         std::string utf8Path = wstringToUtf8(sessionPath);
-        std::ifstream file(utf8Path);
+        std::ifstream file(utf8Path, std::ios::binary);
         if (!file.is_open()) return false;
 
-        QXmlStreamReader reader(&file);
+        std::vector<char> buffer((std::istreambuf_iterator<char>(file)),
+                                  std::istreambuf_iterator<char>());
+        QByteArray data(buffer.data(), static_cast<int>(buffer.size()));
+
+        QXmlStreamReader reader(data);
 
         session.files.clear();
         session.folderWorkspaces.clear();
@@ -283,7 +291,7 @@ public:
             reader.readNext();
 
             if (reader.isStartElement()) {
-                QStringRef name = reader.name();
+                QStringView name = reader.name();
 
                 if (name == "NotepadPlus") {
                     session.activeIndex = reader.attributes().value("activeIndex").toInt();

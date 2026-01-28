@@ -42,7 +42,7 @@ enum class BufferStatus {
 
 // Document language type enumeration (mirrors LangType from Notepad_plus_msgs.h)
 enum class DocLangType {
-    L_TEXT, L_PHP, L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_RC,
+    L_TEXT, L_PHP, L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_GO, L_RC,
     L_HTML, L_XML, L_MAKEFILE, L_PASCAL, L_BATCH, L_INI,
     L_ASCII, L_USER, L_ASP, L_SQL, L_VB, L_JS_EMBEDDED, L_CSS,
     L_PERL, L_PYTHON, L_LUA, L_TEX, L_FORTRAN, L_BASH, L_FLASH,

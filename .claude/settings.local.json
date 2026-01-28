@@ -4,7 +4,18 @@
       "Bash(cloc:*)",
       "Bash(grep -r:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(find:*)",
+      "Bash(g++:*)",
+      "Bash(wc -l:*)",
+      "Bash(chmod:*)",
+      "Bash(ls -la:*)",
+      "Bash(python3:*)",
+      "Bash(tree:*)",
+      "Bash(cmake -P:*)",
+      "Bash(cmake --version:*)",
+      "Bash(make:*)",
+      "Bash(tail:*)"
     ]
   }
 }

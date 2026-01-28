@@ -71,7 +71,7 @@ public:
 		uptr_t wParam = 0,
 		const char *s = 0) const;
 
-public slots:
+public Q_SLOTS:
 	// Scroll events coming from GUI to be sent to Scintilla.
 	void scrollHorizontal(int value);
 	void scrollVertical(int value);
@@ -80,7 +80,7 @@ public slots:
 	void notifyParent(Scintilla::NotificationData scn);
 	void event_command(Scintilla::uptr_t wParam, Scintilla::sptr_t lParam);
 
-signals:
+Q_SIGNALS:
 	void horizontalScrolled(int value);
 	void verticalScrolled(int value);
 	void horizontalRangeChanged(int max, int page);

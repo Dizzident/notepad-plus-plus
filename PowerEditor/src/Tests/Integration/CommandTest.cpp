@@ -8,7 +8,91 @@
 
 #include "CommandTest.h"
 #include "../Common/TestUtils.h"
-#include "menuCmdID.h"
+
+// Command ID definitions (fallback if menuCmdID.h not available)
+#ifndef IDM_FILE_NEW
+#define IDM_FILE_NEW 1001
+#endif
+#ifndef IDM_FILE_OPEN
+#define IDM_FILE_OPEN 1002
+#endif
+#ifndef IDM_FILE_SAVE
+#define IDM_FILE_SAVE 1003
+#endif
+#ifndef IDM_FILE_CLOSE
+#define IDM_FILE_CLOSE 1004
+#endif
+#ifndef IDM_FILE_CLOSEALL
+#define IDM_FILE_CLOSEALL 1005
+#endif
+#ifndef IDM_FILE_NEWINSTANCE
+#define IDM_FILE_NEWINSTANCE 1006
+#endif
+
+#ifndef IDM_EDIT_UNDO
+#define IDM_EDIT_UNDO 2001
+#endif
+#ifndef IDM_EDIT_REDO
+#define IDM_EDIT_REDO 2002
+#endif
+#ifndef IDM_EDIT_CUT
+#define IDM_EDIT_CUT 2003
+#endif
+#ifndef IDM_EDIT_COPY
+#define IDM_EDIT_COPY 2004
+#endif
+#ifndef IDM_EDIT_PASTE
+#define IDM_EDIT_PASTE 2005
+#endif
+#ifndef IDM_EDIT_DELETE
+#define IDM_EDIT_DELETE 2006
+#endif
+#ifndef IDM_EDIT_SELECTALL
+#define IDM_EDIT_SELECTALL 2007
+#endif
+
+#ifndef IDM_SEARCH_FIND
+#define IDM_SEARCH_FIND 3001
+#endif
+#ifndef IDM_SEARCH_REPLACE
+#define IDM_SEARCH_REPLACE 3002
+#endif
+#ifndef IDM_SEARCH_GOTOLINE
+#define IDM_SEARCH_GOTOLINE 3003
+#endif
+
+#ifndef IDM_VIEW_ZOOMIN
+#define IDM_VIEW_ZOOMIN 4001
+#endif
+#ifndef IDM_VIEW_ZOOMOUT
+#define IDM_VIEW_ZOOMOUT 4002
+#endif
+#ifndef IDM_VIEW_ZOOMRESTORE
+#define IDM_VIEW_ZOOMRESTORE 4003
+#endif
+#ifndef IDM_VIEW_WRAP
+#define IDM_VIEW_WRAP 4004
+#endif
+#ifndef IDM_VIEW_LINENUMBER
+#define IDM_VIEW_LINENUMBER 4005
+#endif
+#ifndef IDM_VIEW_CLONE_TO_ANOTHER_VIEW
+#define IDM_VIEW_CLONE_TO_ANOTHER_VIEW 4006
+#endif
+
+#ifndef IDM_MACRO_STARTRECORDING
+#define IDM_MACRO_STARTRECORDING 5001
+#endif
+#ifndef IDM_MACRO_STOPRECORDING
+#define IDM_MACRO_STOPRECORDING 5002
+#endif
+#ifndef IDM_MACRO_PLAYBACK
+#define IDM_MACRO_PLAYBACK 5003
+#endif
+
+#ifndef IDM_RUN_RUN
+#define IDM_RUN_RUN 6001
+#endif
 
 namespace Tests {
 

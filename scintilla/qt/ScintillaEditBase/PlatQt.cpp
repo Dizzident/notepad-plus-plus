@@ -100,7 +100,7 @@ const char *CharacterSetID(CharacterSet characterSet)
 	}
 }
 
-QString UnicodeFromText(const QStringDecoder& decoder, std::string_view text) {
+QString UnicodeFromText(QStringDecoder& decoder, std::string_view text) {
 	return decoder.decode(QByteArrayView(text.data(), static_cast<int>(text.length())));
 }
 
@@ -1038,7 +1038,7 @@ void ListBoxImpl::Create(Window &parent,
 
 	int maxIconWidth = 0;
 	int maxIconHeight = 0;
-	foreach (QPixmap im, images) {
+	for (QPixmap& im : images) {
 		im.setDevicePixelRatio(imageScale);
 		if (maxIconWidth < im.width() / im.devicePixelRatio())
 			maxIconWidth = im.width() / im.devicePixelRatio();
@@ -1090,7 +1090,7 @@ int ListBoxImpl::CaretFromEdge()
 {
 	ListWidget *list = GetWidget();
 	int maxIconWidth = 0;
-	foreach (QPixmap im, images) {
+	for (const QPixmap& im : images) {
 		if (maxIconWidth < im.width() / im.devicePixelRatio())
 			maxIconWidth = im.width() / im.devicePixelRatio();
 	}
@@ -1270,7 +1270,7 @@ void ListWidget::selectionChanged(const QItemSelection &selected, const QItemSel
 
 int ListWidget::currentSelection() {
 	const QModelIndexList indices = selectionModel()->selectedRows();
-	foreach (const QModelIndex ind, indices) {
+	for (const QModelIndex& ind : indices) {
 		return ind.row();
 	}
 	return -1;
