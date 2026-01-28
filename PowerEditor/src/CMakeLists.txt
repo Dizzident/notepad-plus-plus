@@ -472,6 +472,16 @@ ELSEIF(UNIX AND NOT APPLE)
 		./Platform/Linux/FileWatcher.cpp
 	)
 
+	# Add QtControls for Linux
+	list(APPEND src_files
+		./QtControls/Window/Window.cpp
+		./QtControls/StaticDialog/StaticDialog.cpp
+		./QtControls/ToolBar/ToolBar.cpp
+		./QtControls/StatusBar/StatusBar.cpp
+		./QtControls/TabBar/TabBar.cpp
+		./QtControls/FindReplace/FindReplaceDlg.cpp
+	)
+
 	# Remove Windows-specific files from Linux build
 	list(REMOVE_ITEM src_files
 		./DarkMode/DarkMode.cpp
@@ -490,6 +500,13 @@ ELSEIF(UNIX AND NOT APPLE)
 	# Linux-specific includes
 	list(APPEND projIncludDir
 		./Platform
+		./QtControls
+		./QtControls/Window
+		./QtControls/StaticDialog
+		./QtControls/ToolBar
+		./QtControls/StatusBar
+		./QtControls/TabBar
+		./QtControls/FindReplace
 		${Qt6Core_INCLUDE_DIRS}
 		${Qt6Widgets_INCLUDE_DIRS}
 		${Qt6Gui_INCLUDE_DIRS}

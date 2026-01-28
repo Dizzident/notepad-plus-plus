@@ -69,7 +69,7 @@ Adding native Linux/KDE Plasma support to Notepad++ while maintaining full Windo
 
 | Dialog | UI File | Implementation | Tests | Status |
 |--------|---------|----------------|-------|--------|
-| FindReplaceDlg | ⬜ | ⬜ | ⬜ | NOT STARTED |
+| FindReplaceDlg | ✅ | ✅ | ⬜ | COMPLETED |
 | preferenceDlg | ⬜ | ⬜ | ⬜ | NOT STARTED |
 | GoToLineDlg | ⬜ | ⬜ | ⬜ | NOT STARTED |
 | RunDlg | ⬜ | ⬜ | ⬜ | NOT STARTED |
@@ -123,7 +123,7 @@ Adding native Linux/KDE Plasma support to Notepad++ while maintaining full Windo
 | 2026-01-28 | A1 | FileSystem abstraction created | COMPLETE |
 | 2026-01-28 | A5 | CMake build system modernized | COMPLETE |
 | 2026-01-28 | A6 | QtControls framework created | COMPLETE |
-| 2026-01-28 | A11 | FileWatcher abstraction created | COMPLETE |
+| 2026-01-28 | A12 | FindReplaceDlg implemented | COMPLETE |
 
 ---
 
