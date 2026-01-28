@@ -165,3 +165,11 @@ PowerEditor/src/MISC/md5/RCa06792
 *.db
 *.sln
 *.opendb
+
+# CMake build directories
+PowerEditor/src/build/
+scintilla/qt/**/build/
+lexilla/build/
+
+# Claude local settings
+.claude/
