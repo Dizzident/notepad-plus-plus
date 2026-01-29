@@ -9,7 +9,8 @@ The Linux Qt6 port has made significant progress with a successful build system 
 - **CMake Configuration**: ✓ Complete
 - **Lexilla Library**: ✓ Building
 - **Scintilla Qt6**: ✓ Building
-- **Main Executable**: ⚠️ Compiles but with missing method implementations
+- **Main Executable**: ⚠️ Compiling with ongoing implementation work
+- **Buffer/FileManager Core**: ✓ Core methods implemented
 
 ## Critical Missing Methods
 
@@ -19,12 +20,13 @@ Location: `PowerEditor/src/QtCore/Buffer.h` and `Buffer.cpp`
 
 | Method | Status | Description |
 |--------|--------|-------------|
-| `setUnsync(bool)` | ❌ Missing | Marks buffer as synced/unsynced with file |
-| `getFullPathName()` | ❌ Missing | Returns full file path as wchar_t* |
+| `setUnsync(bool)` | ✓ **IMPLEMENTED** | Marks buffer as synced/unsynced with file |
+| `getFullPathName()` | ✓ **IMPLEMENTED** | Returns full file path as wchar_t* |
+| `isUnsync()` | ✓ **IMPLEMENTED** | Returns buffer sync status |
 
 **Implementation Notes:**
-- `getFullPathName()` should return `_filePath.toStdWString().c_str()` or similar
-- `setUnsync()` should update internal sync status flag
+- `getFullPathName()` returns `_filePath.toStdWString().c_str()` with caching
+- `setUnsync()` updates internal `_isUnsync` flag with thread safety (QMutexLocker)
 
 ### 2. QtCore::FileManager Class
 
@@ -32,43 +34,47 @@ Location: `PowerEditor/src/QtCore/Buffer.cpp` (FileManager implementation)
 
 | Method | Status | Description |
 |--------|--------|-------------|
-| `reloadBuffer(BufferID)` | ❌ Missing | Reloads buffer from disk |
-| `deleteBufferBackup(BufferID)` | ❌ Missing | Deletes backup file for buffer |
-| `getBufferFromName(const wchar_t*)` | ❌ Missing | Finds buffer by file path |
-| `loadFile(const wchar_t*, Document, int)` | ❌ Missing | Loads file into new buffer |
+| `loadFile(const wchar_t*, Document, int)` | ✓ **IMPLEMENTED** | Loads file from disk into buffer |
+| `reloadBuffer(BufferID)` | ✓ **IMPLEMENTED** | Reloads buffer from disk |
+| `getBufferFromName(const wchar_t*)` | ✓ **IMPLEMENTED** | Finds buffer by file path |
+| `deleteBufferBackup(BufferID)` | ✓ **IMPLEMENTED** | Deletes backup file for buffer |
+| `closeBuffer(BufferID)` | ✓ **IMPLEMENTED** | Closes and removes buffer |
+| `getNbBuffers()` | ✓ **IMPLEMENTED** | Returns total buffer count |
+| `getNbDirtyBuffers()` | ✓ **IMPLEMENTED** | Returns modified buffer count |
+| `getBufferByIndex(size_t)` | ✓ **IMPLEMENTED** | Returns buffer by index |
+| `getBufferIndexByID(BufferID)` | ✓ **IMPLEMENTED** | Returns index for buffer ID |
 
 **Implementation Notes:**
-- These methods are called from `Notepad_plus.cpp` for file operations
+- All methods integrated with Qt's QFile for file operations
 - FileManager acts as a singleton managing all buffers
-- Need to integrate with Qt's QFile for file operations
+- Uses QMutexLocker for thread-safe buffer access
+- Path comparison uses canonicalFilePath() for reliability
 
 ### 3. Type/Enum Compatibility Issues
 
 | Issue | Location | Description |
 |-------|----------|-------------|
 | ~~`DocLangType` vs `LangType`~~ | ~~`Buffer.h:1684`~~ | ~~Comparison between different enum types~~ **FIXED** |
-| `SavingStatus` enum | `Notepad_plus.cpp:1180` | Not defined in Qt version |
+| ~~`SavingStatus` enum~~ | ~~`Notepad_plus.cpp:1180`~~ | ~~Not defined in Qt version~~ **FIXED** |
+| `BufferID` type | Various | Type alias defined but may need refinement |
 
-**Fix Required:**
-```cpp
-// Add to Buffer.h or appropriate header
-enum class SavingStatus {
-    SaveOK,
-    SaveFailed,
-    SaveCancelled
-};
-```
+**Fixes Applied:**
+- `DocLangType` changed from enum to type alias: `using DocLangType = LangType;`
+- `SavingStatus` enum added with all Windows-compatible values (SaveOK, SaveOpenFailed, SaveWritingFailed, etc.)
+- `BufferID` and `Document` type aliases added for cross-platform compatibility
 
 ### 4. Return Variable Issue
 
 **Location:** `QtControls/Notepad_plus.cpp:1180`
 
-```cpp
-// Current (broken):
-return res == SavingStatus::SaveOK;
+**Status:** ✓ **FIXED**
 
-// Problem: 'res' variable not declared in this scope
-// The doSave() method needs to properly return SavingStatus
+The `doSave()` function already properly declares `res` variable and uses it correctly. The `SavingStatus` enum is now defined and available.
+
+```cpp
+// Working implementation:
+SavingStatus res = doSave(...);
+return res == SavingStatus::SaveOK;
 ```
 
 ## UI/Integration Issues
@@ -104,13 +110,18 @@ Missing features:
 - File metadata tracking (path, name, modified time)
 - Unicode mode support (UTF-8, UTF-16, etc.)
 - Line ending support (Windows/Unix/Mac)
+- **File loading from disk** (`FileManager::loadFile()`)
+- **File reload from disk** (`FileManager::reloadBuffer()`)
+- **Buffer lookup by name** (`FileManager::getBufferFromName()`)
+- **Backup file deletion** (`FileManager::deleteBufferBackup()`)
+- Buffer sync status tracking (`setUnsync()`, `isUnsync()`)
+- Full path name retrieval (`getFullPathName()`)
 
 ### Pending ❌
-- Actual file loading from disk
 - File saving with encoding conversion
-- Backup file management
+- Backup file creation/management (partial - delete implemented)
 - File change monitoring (QFileSystemWatcher integration)
-- Reload from disk
+- Auto-save functionality
 
 ## Build Instructions
 
@@ -122,43 +133,47 @@ make -j4 2>&1 | head -50
 
 ## Priority Order for Completion
 
-### High Priority (Required for basic functionality)
+### Completed ✓
 
-1. **Implement FileManager::loadFile()**
-   - Required to open any files
-   - Integrates with BufferManager
+1. ~~**Implement FileManager::loadFile()**~~ ✓ **DONE**
+2. ~~**Implement Buffer::getFullPathName()**~~ ✓ **DONE**
+3. ~~**Fix doSave() return value**~~ ✓ **DONE**
+4. ~~**Implement FileManager::reloadBuffer()**~~ ✓ **DONE**
+5. ~~**Implement FileManager::getBufferFromName()**~~ ✓ **DONE**
+6. ~~**Implement Buffer::setUnsync()**~~ ✓ **DONE**
+7. ~~**Implement FileManager::deleteBufferBackup()**~~ ✓ **DONE**
+8. ~~**Fix DocLangType vs LangType comparison**~~ ✓ **FIXED**
+9. ~~**Define SavingStatus enum**~~ ✓ **DONE**
 
-2. **Implement Buffer::getFullPathName()**
-   - Simple getter method
-   - Used throughout the codebase
+### High Priority (Remaining blockers)
 
-3. **Fix doSave() return value**
-   - Fix variable scoping issue
-   - Define SavingStatus enum
+1. **DOC_UNNAMED scope issues**
+   - `DOC_UNNAMED`, `DOC_REGULAR`, etc. not in scope in some files
+   - Need to add proper namespace prefixes or using declarations
 
-### Medium Priority (Required for full file operations)
+2. **BufferID type mismatch**
+   - `buffer->getID()` returns `int` but `BufferID` is `Buffer*`
+   - Need to reconcile type differences
 
-4. **Implement FileManager::reloadBuffer()**
-   - For file reload functionality
+### Medium Priority
 
-5. **Implement FileManager::getBufferFromName()**
-   - For finding existing buffers
+3. **Complete MainWindow integration**
+   - Notepad_plus core initialization
+   - Connect MainWindow signals to Notepad_plus slots
+   - Initialize editor views with Scintilla
 
-6. **Implement Buffer::setUnsync()**
-   - For tracking sync status
+4. **ScintillaEditView Integration**
+   - Proper Scintilla document creation
+   - Editor view initialization
+   - Buffer activation in editor
 
-### Lower Priority (Nice to have)
+### Lower Priority
 
-7. **Implement FileManager::deleteBufferBackup()**
-   - For backup management
+5. **File change monitoring**
+   - QFileSystemWatcher integration for external file changes
 
-8. ~~**Fix DocLangType vs LangType comparison**~~ **FIXED**
-   - ~~Add proper type conversion~~
-   - Changed `DocLangType` from a separate enum to a type alias (`using DocLangType = LangType;`)
-
-9. **Complete MainWindow integration**
-   - Wire up all UI actions
-   - Initialize Notepad_plus core
+6. **Auto-save functionality**
+   - Backup file creation and management
 
 ## Testing Plan
 
@@ -221,8 +236,8 @@ When implementing missing methods:
 
 ## Last Updated
 
-2026-01-29
+2026-01-29 (Updated after Buffer/FileManager implementation)
 
 ---
 
-**Next Milestone:** Successfully open and display a text file in the editor.
+**Next Milestone:** Fix remaining compilation issues (DOC_UNNAMED scope, BufferID type) and successfully open a text file in the editor.
