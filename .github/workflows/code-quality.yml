@@ -319,7 +319,7 @@ jobs:
           gcovr -r .. --txt --txt-summary 2>&1 | tee coverage-summary.txt || true
 
       - name: Comment coverage on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: github.event_name == 'pull_request'
         with:
           script: |
