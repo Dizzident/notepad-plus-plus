@@ -168,6 +168,7 @@ PowerEditor/src/MISC/md5/RCa06792
 
 # CMake build directories
 PowerEditor/src/build/
+PowerEditor/build/
 scintilla/qt/**/build/
 lexilla/build/
 
