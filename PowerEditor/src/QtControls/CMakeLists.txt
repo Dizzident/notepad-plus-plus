@@ -21,9 +21,11 @@ set(QTCONTROLS_SOURCES
     ToolBar/ToolBar.cpp
     StatusBar/StatusBar.cpp
     TabBar/TabBar.cpp
+    DocTabView/DocTabView.cpp
     Splitter/Splitter.cpp
     GoToLine/GoToLineDlg.cpp
     RunDlg/RunDlg.cpp
+    RunMacroDlg/RunMacroDlg.cpp
     AboutDlg/AboutDlg.cpp
     TreeView/TreeView.cpp
     ShortcutMapper/ShortcutMapper.cpp
@@ -64,9 +66,11 @@ set(QTCONTROLS_HEADERS
     ToolBar/ToolBar.h
     StatusBar/StatusBar.h
     TabBar/TabBar.h
+    DocTabView/DocTabView.h
     Splitter/Splitter.h
     GoToLine/GoToLineDlg.h
     RunDlg/RunDlg.h
+    RunMacroDlg/RunMacroDlg.h
     AboutDlg/AboutDlg.h
     TreeView/TreeView.h
     ShortcutMapper/ShortcutMapper.h
@@ -99,9 +103,11 @@ target_include_directories(QtControls PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/ToolBar
     ${CMAKE_CURRENT_SOURCE_DIR}/StatusBar
     ${CMAKE_CURRENT_SOURCE_DIR}/TabBar
+    ${CMAKE_CURRENT_SOURCE_DIR}/DocTabView
     ${CMAKE_CURRENT_SOURCE_DIR}/Splitter
     ${CMAKE_CURRENT_SOURCE_DIR}/GoToLine
     ${CMAKE_CURRENT_SOURCE_DIR}/RunDlg
+    ${CMAKE_CURRENT_SOURCE_DIR}/RunMacroDlg
     ${CMAKE_CURRENT_SOURCE_DIR}/AboutDlg
     ${CMAKE_CURRENT_SOURCE_DIR}/TreeView
     ${CMAKE_CURRENT_SOURCE_DIR}/ShortcutMapper

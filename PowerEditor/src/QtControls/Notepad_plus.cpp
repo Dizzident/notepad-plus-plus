@@ -20,6 +20,10 @@
 // This file provides Linux/Qt implementations of the Notepad_plus class methods
 // that are implemented in NppIO.cpp on Windows.
 
+// This file contains Windows-specific implementations that don't compile on Linux
+// TODO: Port these implementations to use QtCore::Buffer and QtCore::BufferManager
+#ifndef NPP_LINUX
+
 #include "Notepad_plus.h"
 #include "NppIO.h"
 #include "Buffer.h"
@@ -2194,3 +2198,411 @@ void Notepad_plus::showFindCharsInRangeDlg()
     // Show the Find Characters in Range dialog
     _findCharsInRangeDlg.doDialog(false);
 }
+
+// ============================================================================
+// Panel Switching Operations
+// ============================================================================
+
+void Notepad_plus::switchToFunctionList()
+{
+    // Switch focus to the function list panel
+    if (_pFuncList)
+    {
+        // Activate the function list panel
+        // For Qt, this would involve focusing the panel widget
+        // The actual implementation depends on the docking manager
+    }
+}
+
+void Notepad_plus::switchToDocumentList()
+{
+    // Switch focus to the document list panel
+    if (_pDocumentListPanel)
+    {
+        // Activate the document list panel
+        // For Qt, this would involve focusing the panel widget
+    }
+}
+
+// ============================================================================
+// View and Document Activation Operations
+// ============================================================================
+
+int Notepad_plus::switchEditViewTo(int gid)
+{
+    // Switch to the specified edit view (MAIN_VIEW or SUB_VIEW)
+    if (gid == MAIN_VIEW)
+    {
+        if (_mainWindowStatus & WindowMainActive)
+        {
+            _activeView = MAIN_VIEW;
+            _pEditView = &_mainEditView;
+            _pDocTab = &_mainDocTab;
+            _pNonEditView = &_subEditView;
+            _pNonDocTab = &_subDocTab;
+            // Update UI focus using Scintilla's focus command
+            _pEditView->execute(SCI_GRABFOCUS);
+        }
+    }
+    else if (gid == SUB_VIEW)
+    {
+        if (_mainWindowStatus & WindowSubActive)
+        {
+            _activeView = SUB_VIEW;
+            _pEditView = &_subEditView;
+            _pDocTab = &_subDocTab;
+            _pNonEditView = &_mainEditView;
+            _pNonDocTab = &_mainDocTab;
+            // Update UI focus using Scintilla's focus command
+            _pEditView->execute(SCI_GRABFOCUS);
+        }
+    }
+    return _activeView;
+}
+
+void Notepad_plus::activateDoc(size_t pos)
+{
+    // Activate document at specified position in current view
+    if (_pDocTab && pos < _pDocTab->nbItem())
+    {
+        BufferID id = _pDocTab->getBufferByIndex(pos);
+        if (id != BUFFER_INVALID)
+        {
+            switchToFile(id);
+        }
+    }
+}
+
+void Notepad_plus::activateNextDoc(bool direction)
+{
+    // Activate next/previous document in current view
+    if (!_pDocTab)
+        return;
+
+    size_t currentIndex = _pDocTab->getCurrentTabIndex();
+    size_t nbItems = _pDocTab->nbItem();
+
+    if (nbItems <= 1)
+        return;
+
+    size_t newIndex;
+    if (direction)
+    {
+        // Next tab
+        newIndex = (currentIndex + 1) % nbItems;
+    }
+    else
+    {
+        // Previous tab
+        newIndex = (currentIndex == 0) ? nbItems - 1 : currentIndex - 1;
+    }
+
+    activateDoc(newIndex);
+}
+
+// ============================================================================
+// Tab Movement Operations
+// ============================================================================
+
+void Notepad_plus::moveTabForward()
+{
+    // Move current tab forward in the tab bar
+    if (!_pDocTab)
+        return;
+
+    int currentIndex = _pDocTab->getCurrentTabIndex();
+    if (currentIndex < 0)
+        return;
+
+    size_t nbItems = _pDocTab->nbItem();
+    if (nbItems <= 1 || static_cast<size_t>(currentIndex) >= nbItems - 1)
+        return;
+
+    // Use TabBarPlus's exchangeTabItemData to swap with next tab
+    // This is a simplified implementation - just swap the buffer IDs
+    BufferID currentID = _pDocTab->getBufferByIndex(currentIndex);
+    BufferID nextID = _pDocTab->getBufferByIndex(currentIndex + 1);
+
+    // Set the buffers in swapped positions
+    _pDocTab->setBuffer(currentIndex, nextID);
+    _pDocTab->setBuffer(currentIndex + 1, currentID);
+    _pDocTab->activateBuffer(currentID);
+}
+
+void Notepad_plus::moveTabBackward()
+{
+    // Move current tab backward in the tab bar
+    if (!_pDocTab)
+        return;
+
+    int currentIndex = _pDocTab->getCurrentTabIndex();
+    if (currentIndex <= 0)
+        return;
+
+    size_t nbItems = _pDocTab->nbItem();
+    if (nbItems <= 1)
+        return;
+
+    // Swap with previous tab
+    BufferID currentID = _pDocTab->getBufferByIndex(currentIndex);
+    BufferID prevID = _pDocTab->getBufferByIndex(currentIndex - 1);
+
+    // Set the buffers in swapped positions
+    _pDocTab->setBuffer(currentIndex, prevID);
+    _pDocTab->setBuffer(currentIndex - 1, currentID);
+    _pDocTab->activateBuffer(currentID);
+}
+
+// ============================================================================
+// Macro Operations
+// ============================================================================
+
+void Notepad_plus::startMacroRecording()
+{
+    // Start recording a macro
+    if (_recordingMacro)
+        return;
+
+    _recordingMacro = true;
+    _macro.clear();
+    _recordingSaved = false;
+
+    // Notify Scintilla to start recording
+    _pEditView->execute(SCI_STARTRECORD);
+}
+
+void Notepad_plus::stopMacroRecording()
+{
+    // Stop recording a macro
+    if (!_recordingMacro)
+        return;
+
+    _recordingMacro = false;
+    _pEditView->execute(SCI_STOPRECORD);
+
+    // If macro is not empty, mark it as saved
+    if (!_macro.empty())
+    {
+        _recordingSaved = true;
+    }
+}
+
+void Notepad_plus::macroPlayback()
+{
+    // Playback the recorded macro
+    if (_recordingMacro || _macro.empty())
+        return;
+
+    _playingBackMacro = true;
+
+    // Execute each macro step
+    for (size_t i = 0; i < _macro.size(); ++i)
+    {
+        const recordedMacroStep& step = _macro[i];
+        if (step.isScintillaMacro())
+        {
+            _pEditView->execute(step._message, step._wParameter, step._lParameter);
+        }
+        // TODO: Handle menu commands and other macro types
+    }
+
+    _playingBackMacro = false;
+}
+
+void Notepad_plus::saveCurrentMacro()
+{
+    // Save the current macro
+    if (_macro.empty())
+        return;
+
+    // Show dialog to save macro with a name and shortcut
+    // This would typically open a dialog for the user to name the macro
+    // and assign a keyboard shortcut
+    // For now, just add it to the macro list
+    addCurrentMacro();
+}
+
+void Notepad_plus::showRunMacroDlg()
+{
+    // Show the Run Macro dialog
+    _runMacroDlg.doDialog(false);
+}
+
+// ============================================================================
+// Encoding and Dialog Operations
+// ============================================================================
+
+void Notepad_plus::setEncoding(int encoding)
+{
+    // Set the encoding for the current buffer
+    Buffer* buf = getCurrentBuffer();
+    if (!buf)
+        return;
+
+    UniMode mode = uni8Bit;
+    switch (encoding)
+    {
+        case 0: // ANSI
+            mode = uni8Bit;
+            break;
+        case 1: // UTF-8
+            mode = uniUTF8;
+            break;
+        case 2: // UTF-16 BE
+            mode = uni16BE;
+            break;
+        case 3: // UTF-16 LE
+            mode = uni16LE;
+            break;
+        case 4: // UTF-8 without BOM
+            mode = uniUTF8_NoBOM;
+            break;
+        default:
+            return;
+    }
+
+    buf->setUnicodeMode(mode);
+    // Update UI to reflect encoding change
+}
+
+void Notepad_plus::showUserDefineDlg()
+{
+    // Show the User Defined Language dialog
+    // This dialog allows users to define custom language syntax highlighting
+    // For Qt, this would show the UserDefineDialog
+    // TODO: Implement when UserDefineDialog is fully ported
+}
+
+void Notepad_plus::showRunDlg()
+{
+    // Show the Run dialog
+    _runDlg.doDialog(false);
+}
+
+void Notepad_plus::showPreferenceDlg()
+{
+    // Show the Preferences dialog
+    _preference.doDialog(false);
+}
+
+// ============================================================================
+// Panel Launching Operations
+// ============================================================================
+
+void Notepad_plus::launchDocumentListPanel(bool changeFromBtnCmd)
+{
+    Q_UNUSED(changeFromBtnCmd);
+
+    // TODO: Implement Document List panel launch for Qt
+    // This would create and show the VerticalFileSwitcher panel
+    // For now, this is a stub that will be implemented when the panel is fully ported
+
+    if (!_pDocumentListPanel)
+    {
+        // Create the document list panel
+        // _pDocumentListPanel = new QtControls::DocumentListPanel(...);
+        // Initialize and dock the panel
+    }
+
+    if (_pDocumentListPanel)
+    {
+        // Show/activate the panel
+        // _pDocumentListPanel->display();
+    }
+}
+
+void Notepad_plus::launchDocMap()
+{
+    // TODO: Implement Document Map panel launch for Qt
+    // This would create and show the DocumentMap panel
+
+    if (!_pDocMap)
+    {
+        // Create the document map panel
+        // _pDocMap = new QtControls::DocumentMap(...);
+        // _pDocMap->init(&_pEditView);
+        // Initialize and dock the panel
+    }
+
+    if (_pDocMap)
+    {
+        // Show/activate the panel
+        // _pDocMap->display();
+        // _pDocMap->initWrapMap();
+        // _pDocMap->wrapMap();
+    }
+}
+
+void Notepad_plus::launchFunctionList()
+{
+    // TODO: Implement Function List panel launch for Qt
+    // This would create and show the FunctionListPanel
+
+    if (!_pFuncList)
+    {
+        // Create the function list panel
+        // _pFuncList = new QtControls::FunctionListPanel(...);
+        // _pFuncList->init(&_pEditView);
+        // Initialize and dock the panel
+    }
+
+    if (_pFuncList)
+    {
+        // Show/activate the panel
+        // _pFuncList->display();
+    }
+}
+
+void Notepad_plus::launchProjectPanel(int cmdID, ProjectPanel** ppProjPanel, int panelID)
+{
+    Q_UNUSED(cmdID);
+    Q_UNUSED(panelID);
+
+    // TODO: Implement Project Panel launch for Qt
+    // This would create and show the ProjectPanel
+
+    if (!(*ppProjPanel))
+    {
+        // Create the project panel
+        // (*ppProjPanel) = new QtControls::ProjectPanel(...);
+        // (*ppProjPanel)->init(&_pEditView);
+        // (*ppProjPanel)->setWorkSpaceFilePath(...);
+        // Initialize and dock the panel
+    }
+    else
+    {
+        // Panel already exists, open workspace if needed
+        // (*ppProjPanel)->openWorkSpace(...);
+    }
+
+    if (*ppProjPanel)
+    {
+        // Show/activate the panel
+        // (*ppProjPanel)->display();
+        // Update menu state
+        // checkMenuItem(cmdID, true);
+        // checkProjectMenuItem();
+        // (*ppProjPanel)->setClosed(false);
+    }
+}
+
+// ============================================================================
+// Macro Operations
+// ============================================================================
+
+bool Notepad_plus::addCurrentMacro()
+{
+    // TODO: Implement add current macro for Qt
+    // This would save the currently recorded macro with a name and shortcut
+
+    if (_macro.empty())
+        return false;
+
+    // Show dialog to save macro with name and shortcut
+    // For now, just mark as saved
+    _recordingSaved = true;
+
+    return true;
+}
+
+#endif // NPP_LINUX

@@ -177,6 +177,9 @@ public:
     void markAll(const wchar_t* text, int styleID);
     void gotoNextFoundResult(int direction) const;
 
+    // Get window handle (compatibility with Windows code)
+    HWND getHSelf() const { return reinterpret_cast<HWND>(const_cast<FindReplaceDlg*>(this)); }
+
     // Windows-compatible processFindNext
     bool processFindNext(const wchar_t* text, const FindOption* opt, ::FindStatus* status, FindNextType type = FINDNEXTTYPE_FINDNEXT);
 
@@ -446,3 +449,6 @@ private:
 };
 
 } // namespace NppFindReplace
+
+// Bring FindReplaceDlg into global namespace for compatibility with Windows code
+using NppFindReplace::FindReplaceDlg;

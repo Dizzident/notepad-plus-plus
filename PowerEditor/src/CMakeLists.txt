@@ -467,6 +467,11 @@ ELSEIF(UNIX AND NOT APPLE)
 	# Linux-specific definitions
 	SET(defs -DNPP_LINUX -D_USE_64BIT_TIME_T -DTIXML_USE_STL)
 
+	# Remove Windows-specific files that have Qt/Linux replacements
+	list(REMOVE_ITEM src_files
+		./Parameters.cpp
+	)
+
 	# Add Platform abstraction for Linux
 	list(APPEND src_files
 		./Platform/Linux/FileSystem.cpp
@@ -521,6 +526,9 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtCore/NppIO.cpp
 		./QtCore/NppCommands.cpp
 		./QtCore/ScintillaEditViewQt.cpp
+		./QtCore/Parameters.cpp
+		./QtCore/Win32_IO_File.cpp
+		./QtCore/NativeLangSpeaker.cpp
 	)
 
 	# Main entry point for Linux
@@ -554,19 +562,27 @@ ELSEIF(UNIX AND NOT APPLE)
 	# locale functions (LCMAP_SORTKEY, NORM_LINGUISTIC_CASING, LINGUISTIC_IGNORECASE,
 	# SORT_DIGITSASNUMBERS, LINGUISTIC_IGNOREDIACRITIC, NORM_IGNORESYMBOLS,
 	# LOCALE_NAME_USER_DEFAULT, MultiByteToWideChar, LCMapStringEx)
+	# Note: Common.cpp is excluded from Linux build as it uses Windows-specific
+	# APIs (MultiByteToWideChar, WideCharToMultiByte, Windows-specific file APIs).
+	# CommonLinux.cpp provides the Linux implementation using iconv.
 	list(APPEND src_files
 		./MISC/Common/verifySignedfile.cpp
+		./MISC/Common/CommonLinux.cpp
 	)
 
 	# MISC - Cryptography
-	# Note: sha1.cpp is excluded from Linux build as it uses Windows-specific
-	# _wfopen (wide character file open) function. The calc_sha1.cpp file is
-	# kept as it provides portable SHA1 calculation functionality.
+	# Note: sha1.cpp is included for Linux build but with SHA1_NO_UTILITY_FUNCTIONS
+	# defined to exclude the Windows-specific _wfopen function in HashFile.
+	# The CSHA1 class (constructor, Update, Final, GetHash) is fully portable.
 	list(APPEND src_files
 		./MISC/sha1/calc_sha1.cpp
+		./MISC/sha1/sha1.cpp
 		./MISC/sha2/sha-256.cpp
 		./MISC/sha512/sha512.cpp
 	)
+	# Disable SHA1 utility functions (HashFile uses Windows-specific _wfopen)
+	# Also disable STL functions as they depend on utility functions
+	list(APPEND defs -DSHA1_NO_UTILITY_FUNCTIONS -DSHA1_NO_STL_FUNCTIONS)
 
 	# MISC - Plugins and Process
 	# Note: PluginsManager.cpp is excluded from Linux build as it uses Windows-specific
@@ -672,9 +688,11 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/ToolBar/ToolBar.cpp
 		./QtControls/StatusBar/StatusBar.cpp
 		./QtControls/TabBar/TabBar.cpp
+		./QtControls/DocTabView/DocTabView.cpp
 		./QtControls/Splitter/Splitter.cpp
 		./QtControls/GoToLine/GoToLineDlg.cpp
 		./QtControls/RunDlg/RunDlg.cpp
+		./QtControls/RunMacroDlg/RunMacroDlg.cpp
 		./QtControls/AboutDlg/AboutDlg.cpp
 		./QtControls/TreeView/TreeView.cpp
 		./QtControls/FindReplace/FindReplaceDlg.cpp
@@ -691,6 +709,20 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/MainWindow/Notepad_plus_Window.cpp
 		./QtControls/Preference/preferenceDlg.cpp
 		./QtControls/Notepad_plus.cpp
+	)
+
+	# ============================================================================
+	# Localization
+	# ============================================================================
+	list(APPEND src_files
+		./localization.cpp
+	)
+
+	# ============================================================================
+	# Recent Files List
+	# ============================================================================
+	list(APPEND src_files
+		./QtCore/LastRecentFileList.cpp
 	)
 
 	# ============================================================================
@@ -774,6 +806,7 @@ ELSEIF(UNIX AND NOT APPLE)
 		./MISC/Common
 		./WinControls
 		./ScintillaComponent
+		./QtControls
 		${CMAKE_SOURCE_DIR}/../../scintilla/include
 	)
 
@@ -893,6 +926,7 @@ IF(UNIX AND NOT APPLE)
 		./QtControls/ToolBar
 		./QtControls/StatusBar
 		./QtControls/TabBar
+		./QtControls/DocTabView
 		./QtControls/Splitter
 		./QtControls/GoToLine
 		./QtControls/RunDlg

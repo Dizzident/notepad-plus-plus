@@ -31,6 +31,11 @@ using LPARAM = intptr_t;
 using LRESULT = intptr_t;
 using UINT = unsigned int;
 using COLORREF = uint32_t;
+using UCHAR = unsigned char;
+using UINT_PTR = uintptr_t;
+using DWORD_PTR = uintptr_t;
+using DWORD = uint32_t;
+
 
 // Window messages (not used on Linux but defined for compatibility)
 #define WM_USER 0x0400
@@ -63,6 +68,12 @@ using COLORREF = uint32_t;
 #include "UserDefineDialog.h"
 #endif
 #include "NppConstants.h"
+
+#ifndef _WIN32
+// On Linux, include headers for LangType and other definitions
+#include "../MISC/PluginsManager/Notepad_plus_msgs.h"
+#include "../Parameters.h"
+#endif
 
 class NppParameters;
 
@@ -277,16 +288,20 @@ public:
 		++_refCount;
 	}
 
+#ifdef _WIN32
 	~ScintillaEditView() override {
 		--_refCount;
 
 		if (!_refCount && _SciInit)
 		{
-#ifdef _WIN32
 			Scintilla_ReleaseResources();
-#endif
 		}
 	}
+#else
+	// Linux: Destructor defined out-of-line in ScintillaEditViewQt.cpp
+	// to provide a key function for the vtable
+	~ScintillaEditView() override;
+#endif
 
 	void destroy() override {
 		::DestroyWindow(_hSelf);

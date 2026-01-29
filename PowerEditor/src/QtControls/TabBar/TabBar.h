@@ -51,6 +51,7 @@ public:
     int getItemCount() const;
 
     void deleteItemAt(size_t index);
+    void deletItemAt(size_t index) { deleteItemAt(index); }  // Compatibility wrapper for original typo
     void deleteAllItems();
 
     void setImageList(void* himl);

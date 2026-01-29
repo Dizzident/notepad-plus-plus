@@ -16,6 +16,50 @@
 
 #pragma once
 
+// On Linux, use QtCore::Buffer instead of the Windows Buffer class
+#ifdef NPP_LINUX
+#include "../QtCore/Buffer.h"
+
+class Notepad_plus;
+using Buffer = QtCore::Buffer;
+typedef Buffer* BufferID;	//each buffer has unique ID by which it can be retrieved
+
+// BUFFER_INVALID is already defined as a const in QtControls::DocTabView
+// Use a different name to avoid conflicts
+#ifndef BUFFER_INVALID
+const BufferID BUFFER_INVALID = nullptr;
+#endif
+
+// Forward declarations for Linux
+class ScintillaEditView;
+using Document = intptr_t;
+
+// Bring QtCore enums into global namespace for compatibility
+using QtCore::BufferChangeLanguage;
+using QtCore::BufferChangeDirty;
+using QtCore::BufferChangeFormat;
+using QtCore::BufferChangeUnicode;
+using QtCore::BufferChangeReadonly;
+using QtCore::BufferChangeStatus;
+using QtCore::BufferChangeTimestamp;
+using QtCore::BufferChangeFilename;
+using QtCore::BufferChangeRecentTag;
+using QtCore::BufferChangeLexing;
+using QtCore::BufferChangeMask;
+
+// MainFileManager is defined in QtCore/Buffer.h
+
+// Shared definitions for both platforms
+struct BufferViewInfo {
+    BufferID _bufID = 0;
+    int _iView = 0;
+
+    BufferViewInfo() = delete;
+    BufferViewInfo(BufferID buf, int view) : _bufID(buf), _iView(view) {}
+};
+
+#else // Windows
+
 #include <mutex>
 #include "Utf8_16.h"
 
@@ -24,6 +68,12 @@ class Notepad_plus;
 class Buffer;
 typedef Buffer* BufferID;	//each buffer has unique ID by which it can be retrieved
 #define BUFFER_INVALID	reinterpret_cast<BufferID>(0)
+
+#endif // NPP_LINUX
+
+// The rest of this file is Windows-specific code
+// On Linux, QtCore::Buffer provides the Buffer implementation
+#ifndef NPP_LINUX
 
 typedef sptr_t Document;
 
@@ -59,13 +109,7 @@ enum SavingStatus {
 	FullReadOnlySavingForbidden = 4
 };
 
-struct BufferViewInfo {
-	BufferID _bufID = 0;
-	int _iView = 0;
-
-	BufferViewInfo() = delete;
-	BufferViewInfo(BufferID buf, int view) : _bufID(buf), _iView(view) {}
-};
+// BufferViewInfo is defined above (shared between platforms)
 
 const wchar_t UNTITLED_STR[] = L"new ";
 
@@ -490,3 +534,5 @@ private:
 	bool _isRTL = false;
 	bool _isPinned = false;
 };
+
+#endif // NPP_LINUX

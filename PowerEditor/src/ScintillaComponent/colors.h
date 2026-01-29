@@ -17,6 +17,10 @@
 
 #pragma once
 
+#ifndef _WIN32
+#include "../MISC/Common/NppConstants.h"
+#endif
+
 const COLORREF red			            = RGB(0xFF,    0,    0);
 const COLORREF darkRed                  = RGB(0x80,    0,    0);
 const COLORREF offWhite		            = RGB(0xFF, 0xFB, 0xF0);

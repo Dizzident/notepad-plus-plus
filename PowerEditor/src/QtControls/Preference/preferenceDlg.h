@@ -816,6 +816,7 @@ public:
     ~PreferenceDlg() override;
 
     void doDialog();
+    void doDialog(bool isRTL);
 
     // Navigation methods
     void showPage(const QString& internalName);
@@ -835,6 +836,7 @@ private:
     void loadSettings();
     bool saveSettings();
     void connectSignals();
+    bool run_dlgProc(QEvent* event) override;
 
     // UI Components
     QWidget* _mainWidget = nullptr;

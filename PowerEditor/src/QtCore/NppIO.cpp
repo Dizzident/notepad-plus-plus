@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// This file implements Windows-style FileManager interface for file I/O
+// On Linux, this is not used - QtCore::BufferManager provides the implementation
+#ifndef NPP_LINUX
+
 #include "NppIO.h"
 #include "Buffer.h"
 #include "ScintillaEditView.h"
@@ -1590,3 +1594,75 @@ ReadFileResult readFileWithEncoding(const QString& filePath, const QString& sugg
 } // namespace IOUtils
 
 } // namespace QtIO
+
+#else // NPP_LINUX
+
+// ============================================================================
+// Linux Stub Implementations
+// ============================================================================
+// These stubs are required because the MOC (Meta-Object Compiler) generates
+// code that references these methods, even though the full implementation
+// is excluded on Linux. QtCore::BufferManager provides the actual I/O
+// implementation on Linux.
+// ============================================================================
+
+#include "NppIO.h"
+#include <QTimer>
+#include <QFileSystemWatcher>
+
+static QtIO::NppIO* g_nppIO = nullptr;
+
+QtIO::NppIO* getNppIO() {
+    return g_nppIO;
+}
+
+void setNppIO(QtIO::NppIO* nppIO) {
+    g_nppIO = nppIO;
+}
+
+namespace QtIO {
+
+NppIO::NppIO(QObject* parent)
+    : QObject(parent)
+    , _maxRecentFiles(10)
+{
+    // Initialize file watcher
+    _fileWatcher = new QFileSystemWatcher(this);
+    connect(_fileWatcher, &QFileSystemWatcher::fileChanged,
+            this, &NppIO::onFileChanged);
+    connect(_fileWatcher, &QFileSystemWatcher::directoryChanged,
+            this, &NppIO::onDirectoryChanged);
+
+    // Initialize auto-save timer
+    _autoSaveTimer = new QTimer(this);
+    connect(_autoSaveTimer, &QTimer::timeout, this, &NppIO::onAutoSaveTimer);
+
+    ::setNppIO(this);
+}
+
+NppIO::~NppIO() {
+    stopFileChangeDetection();
+    ::setNppIO(nullptr);
+}
+
+void NppIO::onFileChanged(const QString& filePath) {
+    // Stub implementation - file change detection handled by BufferManager on Linux
+    Q_UNUSED(filePath)
+}
+
+void NppIO::onDirectoryChanged(const QString& path) {
+    // Stub implementation - directory change detection handled by BufferManager on Linux
+    Q_UNUSED(path)
+}
+
+void NppIO::onAutoSaveTimer() {
+    // Stub implementation - auto-save handled by BufferManager on Linux
+}
+
+void NppIO::stopFileChangeDetection() {
+    // Stub implementation - file watching handled by BufferManager on Linux
+}
+
+} // namespace QtIO
+
+#endif // NPP_LINUX

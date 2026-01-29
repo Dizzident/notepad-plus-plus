@@ -29,14 +29,14 @@
 
 #include "NppXml.h"
 
-// On Linux, FindReplaceDlg is a typedef, so don't forward declare it
+// Forward declare dialog classes to avoid header dependencies
 #ifndef NPP_LINUX
 class FindReplaceDlg;
-#endif
+class UserDefineDialog;
 class PreferenceDlg;
 class ShortcutMapper;
-class UserDefineDialog;
 class PluginsAdminDlg;
+#endif
 
 class MenuPosition
 {
@@ -74,11 +74,13 @@ public:
 	void changeMenuLang(HMENU menuHandle) const;
 	void changeShortcutLang() const;
 	static void changeStyleCtrlsLang(HWND hDlg, int* idArray, const char** translatedText);
+#ifndef NPP_LINUX
 	void changeUserDefineLang(UserDefineDialog* userDefineDlg) const;
 	void changeUserDefineLangPopupDlg(HWND hDlg) const;
 	void changeFindReplaceDlgLang(FindReplaceDlg& findReplaceDlg);
 	void changePreferenceDlgLang(PreferenceDlg& preference);
 	void changePluginsAdminDlgLang(PluginsAdminDlg& pluginsAdminDlg);
+#endif
 
 	bool getDoSaveOrNotStrings(std::wstring& title, std::wstring& msg);
 

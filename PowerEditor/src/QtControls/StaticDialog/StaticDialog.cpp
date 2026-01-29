@@ -105,6 +105,13 @@ void StaticDialog::goToCenter()
     dialog->show();
 }
 
+void StaticDialog::goToCenter(unsigned int /*swpFlags*/)
+{
+    // The swpFlags parameter is Windows-specific (SetWindowPos flags)
+    // For Qt, we ignore it and use the standard centering behavior
+    goToCenter();
+}
+
 bool StaticDialog::moveForDpiChange()
 {
     // Qt handles DPI changes automatically

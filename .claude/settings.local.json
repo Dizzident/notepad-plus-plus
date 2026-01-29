@@ -60,7 +60,16 @@
       "Bash(export:*)",
       "Bash(set:*)",
       "Bash(ls:*)",
-      "Bash(cd * && ls:*)"
+      "Bash(cd * && ls:*)",
+      "Bash(nm:*)",
+      "Bash(xxd:*)",
+      "Bash(make -C */build:*)",
+      "Bash(make -j* 2>&1)",
+      "Bash(cd */build && make -j* 2>&1)",
+      "Bash(xargs ls:*)",
+      "Bash(xargs:*)",
+      "Bash(/usr/bin/c++:*)",
+      "Bash(c++filt:*)"
     ]
   }
 }

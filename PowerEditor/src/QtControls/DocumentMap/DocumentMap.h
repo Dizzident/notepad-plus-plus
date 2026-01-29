@@ -9,6 +9,10 @@
 #pragma once
 
 #include "../StaticDialog/StaticDialog.h"
+#include <QtWidgets/QWidget>
+#include <QtGui/QColor>
+#include <QtGui/QMouseEvent>
+#include <QtGui/QPaintEvent>
 #include <memory>
 
 // Forward declarations
@@ -20,8 +24,10 @@ class QFrame;
 
 // Forward declaration from ScintillaComponent
 class ScintillaEditView;
-class Buffer;
 struct MapPosition;
+
+// Include Buffer definition
+#include "../../ScintillaComponent/Buffer.h"
 
 namespace QtControls {
 

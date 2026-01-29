@@ -17,8 +17,13 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QDialog>
+#include <QtWidgets/QWidget>
 #include <QtGui/QPainter>
+#include <QtGui/QPaintEvent>
 #include <QtGui/QMouseEvent>
+#include <QtGui/QColor>
+#include <QtGui/QPen>
+#include <QtCore/QRect>
 
 // Scintilla includes
 #include "../../ScintillaComponent/ScintillaEditView.h"
@@ -347,6 +352,8 @@ void DocumentMap::reloadMap()
 
 void DocumentMap::showInMapTemporarily(Buffer* buf2show, ScintillaEditView* fromEditView)
 {
+#ifndef NPP_LINUX
+    // Windows implementation uses Buffer methods not available in QtCore::Buffer
     if (_mapView && fromEditView && buf2show) {
         _mapView->execute(SCI_SETDOCPOINTER, 0,
                          reinterpret_cast<sptr_t>(buf2show->getDocument()));
@@ -369,10 +376,16 @@ void DocumentMap::showInMapTemporarily(Buffer* buf2show, ScintillaEditView* from
 
         _isTemporarilyShowing = true;
     }
+#else
+    // TODO: Qt implementation
+    (void)buf2show;
+    (void)fromEditView;
+#endif
 }
 
 void DocumentMap::setSyntaxHighlighting()
 {
+#ifndef NPP_LINUX
     if (_mapView) {
         Buffer* buf = _mapView->getCurrentBuffer();
         if (buf) {
@@ -380,6 +393,9 @@ void DocumentMap::setSyntaxHighlighting()
             _mapView->showMargin(ScintillaEditView::_SC_MARGE_FOLDER, false);
         }
     }
+#else
+    // TODO: Qt implementation
+#endif
 }
 
 bool DocumentMap::needToRecomputeWith(const ScintillaEditView* editView)

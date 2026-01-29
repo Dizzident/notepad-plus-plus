@@ -24,6 +24,7 @@ using LPARAM = intptr_t;
 using LRESULT = intptr_t;
 using UINT_PTR = uintptr_t;
 using INT_PTR = intptr_t;
+using LONG_PTR = intptr_t;
 using BYTE = uint8_t;
 using UCHAR = unsigned char;
 using WORD = uint16_t;
@@ -395,6 +396,13 @@ struct ACCEL {
 // List box messages
 #define LB_GETCURSEL 0x0188
 
+// Combo box messages
+#define CB_GETCOUNT 0x0146
+#define CB_GETCURSEL 0x0147
+#define CB_RESETCONTENT 0x014B
+#define CB_ADDSTRING 0x0143
+#define CB_SETCURSEL 0x014E
+
 // ListView constants
 #define LVCF_TEXT 0x0004
 #define LVIS_SELECTED 0x0002
@@ -657,6 +665,9 @@ const UINT CP_UTF8 = 65001;
 #define WH_CALLWNDPROCRET 12
 
 // Virtual keys
+#ifndef VK_NULL
+#define VK_NULL 0x00
+#endif
 #ifndef VK_DOWN
 #define VK_DOWN 0x28
 #endif
@@ -769,29 +780,117 @@ const UINT CP_UTF8 = 65001;
 #define VK_NUMPAD8 0x68
 #define VK_NUMPAD9 0x69
 
+// ASCII-based VK codes for 0-9 and A-Z
+#define VK_0 0x30
+#define VK_1 0x31
+#define VK_2 0x32
+#define VK_3 0x33
+#define VK_4 0x34
+#define VK_5 0x35
+#define VK_6 0x36
+#define VK_7 0x37
+#define VK_8 0x38
+#define VK_9 0x39
+#define VK_A 0x41
+#define VK_B 0x42
+#define VK_C 0x43
+#define VK_D 0x44
+#define VK_E 0x45
+#define VK_F 0x46
+#define VK_G 0x47
+#define VK_H 0x48
+#define VK_I 0x49
+#define VK_J 0x4A
+#define VK_K 0x4B
+#define VK_L 0x4C
+#define VK_M 0x4D
+#define VK_N 0x4E
+#define VK_O 0x4F
+#define VK_P 0x50
+#define VK_Q 0x51
+#define VK_R 0x52
+#define VK_S 0x53
+#define VK_T 0x54
+#define VK_U 0x55
+#define VK_V 0x56
+#define VK_W 0x57
+#define VK_X 0x58
+#define VK_Y 0x59
+#define VK_Z 0x5A
+
 // Message box constants
+#ifndef MB_OK
 #define MB_OK 0x00000000
+#endif
+#ifndef MB_OKCANCEL
 #define MB_OKCANCEL 0x00000001
+#endif
+#ifndef MB_ABORTRETRYIGNORE
 #define MB_ABORTRETRYIGNORE 0x00000002
+#endif
+#ifndef MB_YESNOCANCEL
 #define MB_YESNOCANCEL 0x00000003
+#endif
+#ifndef MB_YESNO
 #define MB_YESNO 0x00000004
+#endif
+#ifndef MB_RETRYCANCEL
 #define MB_RETRYCANCEL 0x00000005
+#endif
+#ifndef MB_CANCELTRYCONTINUE
 #define MB_CANCELTRYCONTINUE 0x00000006
+#endif
+#ifndef MB_ICONERROR
 #define MB_ICONERROR 0x00000010
+#endif
+#ifndef MB_ICONHAND
 #define MB_ICONHAND MB_ICONERROR
+#endif
+#ifndef MB_ICONSTOP
 #define MB_ICONSTOP MB_ICONERROR
+#endif
+#ifndef MB_ICONQUESTION
 #define MB_ICONQUESTION 0x00000020
+#endif
+#ifndef MB_ICONWARNING
 #define MB_ICONWARNING 0x00000030
+#endif
+#ifndef MB_ICONINFORMATION
 #define MB_ICONINFORMATION 0x00000040
+#endif
+#ifndef MB_RTLREADING
+#define MB_RTLREADING 0x00100000
+#endif
+#ifndef MB_RIGHT
+#define MB_RIGHT 0x00080000
+#endif
+#ifndef IDOK
 #define IDOK 1
+#endif
+#ifndef IDCANCEL
 #define IDCANCEL 2
+#endif
+#ifndef IDABORT
 #define IDABORT 3
+#endif
+#ifndef IDRETRY
 #define IDRETRY 4
+#endif
+#ifndef IDIGNORE
 #define IDIGNORE 5
+#endif
+#ifndef IDYES
 #define IDYES 6
+#endif
+#ifndef IDNO
 #define IDNO 7
+#endif
+#ifndef IDTRYAGAIN
 #define IDTRYAGAIN 10
+#endif
+#ifndef IDCONTINUE
 #define IDCONTINUE 11
+#endif
 
 // Menu flags
 #define TPM_LEFTALIGN 0x0000
@@ -815,10 +914,22 @@ const UINT CP_UTF8 = 65001;
 #define MF_RIGHTJUSTIFY 0x4000
 #define MF_MOUSESELECT 0x8000
 #define MF_BYCOMMAND 0x0000
+#define MF_STRING 0x0000
 #define MF_UNCHECKED 0x0000
 
 // Color
 #define COLOR_3DFACE 15
+
+// System metrics constants
+#define SM_CXSMICON 49
+#define SM_CYSMICON 50
+
+// Stub for GetSystemMetrics
+inline int GetSystemMetrics(int nIndex) {
+    (void)nIndex;
+    // Return default values for common metrics
+    return 16; // Default icon size
+}
 
 // Image loading
 #define IMAGE_BITMAP 0
@@ -837,6 +948,15 @@ const UINT CP_UTF8 = 65001;
 #define LR_CREATEDIBSECTION 0x2000
 #define LR_COPYFROMRESOURCE 0x4000
 #define LR_SHARED 0x8000
+
+// Window class constants
+#define WC_BUTTON L"Button"
+
+// Window style constants
+#define GWL_STYLE (-16)
+
+// Button styles
+#define BS_TYPEMASK 0x0000000F
 
 // Accelerator flags
 #define FVIRTKEY 0x01
@@ -932,6 +1052,14 @@ inline LRESULT SendDlgItemMessage(HWND, int, UINT, WPARAM, LPARAM) { return 0; }
 inline LRESULT SendMessage(HWND, UINT, WPARAM, LPARAM) { return 0; }
 inline LRESULT SendMessageW(HWND, UINT, WPARAM, LPARAM) { return 0; }
 
+// Window information functions
+inline int GetClassNameW(HWND, wchar_t* className, int maxCount) {
+    (void)className;
+    (void)maxCount;
+    return 0;
+}
+inline intptr_t GetWindowLongPtrW(HWND, int) { return 0; }
+
 // Dialog functions
 inline void ScreenToClient(HWND, POINT*) {}
 inline void ClientToScreen(HWND, POINT*) {}
@@ -963,7 +1091,8 @@ inline DWORD GetCurrentThreadId() { return 0; }
 inline void TrackPopupMenu(HMENU, UINT, int, int, int, HWND, const RECT*) {}
 inline void EnableMenuItem(HMENU, UINT, UINT) {}
 inline void CheckMenuItem(HMENU, UINT, UINT) {}
-inline void ModifyMenu(HMENU, UINT, UINT, HMENU, const wchar_t*) {}
+// ModifyMenu - 4th param is UINT_PTR (command ID or submenu handle)
+inline void ModifyMenu(HMENU, UINT, UINT, UINT_PTR, const wchar_t*) {}
 inline HMENU GetSubMenu(HMENU, int) { return nullptr; }
 inline int GetMenuString(HMENU, UINT, wchar_t*, int, UINT) { return 0; }
 inline UINT GetMenuItemID(HMENU, int) { return 0; }

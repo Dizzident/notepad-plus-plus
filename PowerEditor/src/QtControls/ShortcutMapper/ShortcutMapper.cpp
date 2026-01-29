@@ -78,8 +78,8 @@ void ShortcutMapper::doDialog(GridState initState) {
     _tabWidget->setCurrentIndex(static_cast<int>(initState));
 
     fillGrid();
-    display(true, true);
-    goToCenter();
+    QtControls::StaticDialog::goToCenter();
+    QtControls::StaticDialog::display(true, true);
 }
 
 void ShortcutMapper::setupUI() {
@@ -430,7 +430,7 @@ void ShortcutMapper::onResetAllClicked() {
 }
 
 void ShortcutMapper::onOkClicked() {
-    display(false);
+    hide();
 }
 
 void ShortcutMapper::onFilterClearClicked() {

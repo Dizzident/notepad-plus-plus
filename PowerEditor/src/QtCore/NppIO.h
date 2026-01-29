@@ -28,8 +28,12 @@
 #include <functional>
 #include <memory>
 
+// Include Buffer header from ScintillaComponent which provides the Buffer type alias
+// On Linux: using Buffer = QtCore::Buffer;
+// On Windows: class Buffer;
+#include "../ScintillaComponent/Buffer.h"
+
 // Forward declarations
-class Buffer;
 class ScintillaEditView;
 class QFile;
 class QTextCodec;

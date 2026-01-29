@@ -32,6 +32,10 @@ RunDlg::RunDlg(QWidget* parent)
 RunDlg::~RunDlg() = default;
 
 void RunDlg::doDialog() {
+    doDialog(false);
+}
+
+void RunDlg::doDialog(bool /*isRTL*/) {
     if (!isCreated()) {
         create(tr("Run"), false);
         setupUI();
@@ -304,6 +308,12 @@ void RunDlg::onCommandChanged(const QString& text) {
     if (_runButton) {
         _runButton->setEnabled(hasText);
     }
+}
+
+bool RunDlg::run_dlgProc(QEvent* /*event*/) {
+    // Handle any custom event processing here
+    // Return true if event was handled, false otherwise
+    return false;
 }
 
 } // namespace RunDlg

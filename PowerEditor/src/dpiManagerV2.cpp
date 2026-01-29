@@ -17,14 +17,25 @@
 
 #include "dpiManagerV2.h"
 
+#ifdef _WIN32
 #include <windows.h>
-
 #include <commctrl.h>
+#else
+// Linux/Qt stub implementations
+#include <QtGui/QScreen>
+#include <QtWidgets/QApplication>
+#include <QtGui/QFont>
+#include <QtGui/QFontDatabase>
+#endif
 
+#ifdef _WIN32
 namespace NppDarkMode
 {
 	bool isWindows10();
 }
+#endif
+
+#ifdef _WIN32
 
 template <typename P>
 inline auto LoadFn(HMODULE handle, P& pointer, const char* name) noexcept -> bool
@@ -36,6 +47,10 @@ inline auto LoadFn(HMODULE handle, P& pointer, const char* name) noexcept -> boo
 	}
 	return false;
 }
+
+#endif
+
+#ifdef _WIN32
 
 [[nodiscard]] static UINT WINAPI DummyGetDpiForSystem()
 {
@@ -246,3 +261,115 @@ DWORD DPIManagerV2::getTextScaleFactor()
 	}
 	return defaultVal;
 }
+
+#else // Linux/Qt stub implementations
+
+void DPIManagerV2::initDpiAPI()
+{
+	// No-op on Linux - Qt handles DPI automatically
+}
+
+int DPIManagerV2::getSystemMetricsForDpi(int nIndex, UINT /*dpi*/)
+{
+	// Return default values for common system metrics
+	switch (nIndex)
+	{
+		case 0: // SM_CXSCREEN (primary screen width)
+			return 1920;
+		case 1: // SM_CYSCREEN (primary screen height)
+			return 1080;
+		case 61: // SM_CXVIRTUALSCREEN
+			return 1920;
+		case 62: // SM_CYVIRTUALSCREEN
+			return 1080;
+		default:
+			return 0;
+	}
+}
+
+bool DPIManagerV2::isValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT /*value*/)
+{
+	// DPI awareness contexts are Windows-specific
+	return false;
+}
+
+DPI_AWARENESS_CONTEXT DPIManagerV2::setThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT /*dpiContext*/)
+{
+	// No-op on Linux - Qt handles DPI automatically
+	return nullptr;
+}
+
+bool DPIManagerV2::adjustWindowRectExForDpi(LPRECT /*lpRect*/, DWORD /*dwStyle*/, BOOL /*bMenu*/, DWORD /*dwExStyle*/, UINT /*dpi*/)
+{
+	// No-op on Linux
+	return false;
+}
+
+UINT DPIManagerV2::getDpiForSystem()
+{
+	// Get DPI from Qt's primary screen
+	if (QApplication::primaryScreen())
+	{
+		return static_cast<UINT>(QApplication::primaryScreen()->logicalDotsPerInchX());
+	}
+	return USER_DEFAULT_SCREEN_DPI;
+}
+
+UINT DPIManagerV2::getDpiForWindow(HWND /*hWnd*/)
+{
+	return getDpiForSystem();
+}
+
+void DPIManagerV2::setPositionDpi(LPARAM /*lParam*/, HWND /*hWnd*/, UINT /*flags*/)
+{
+	// No-op on Linux - Qt handles window positioning
+}
+
+LOGFONT DPIManagerV2::getDefaultGUIFontForDpi(UINT dpi, FontType type)
+{
+	LOGFONT lf{};
+
+	// Map FontType to Qt font families
+	QString fontFamily;
+	switch (type)
+	{
+		case FontType::menu:
+		case FontType::message:
+		default:
+			fontFamily = QFontDatabase::systemFont(QFontDatabase::GeneralFont).family();
+			break;
+		case FontType::status:
+			fontFamily = QFontDatabase::systemFont(QFontDatabase::FixedFont).family();
+			break;
+		case FontType::caption:
+			fontFamily = QFontDatabase::systemFont(QFontDatabase::GeneralFont).family();
+			break;
+		case FontType::smcaption:
+			fontFamily = QFontDatabase::systemFont(QFontDatabase::GeneralFont).family();
+			break;
+	}
+
+	// Convert QString to wchar_t array
+	const wchar_t* familyW = reinterpret_cast<const wchar_t*>(fontFamily.utf16());
+	wcsncpy(lf.lfFaceName, familyW, LF_FACESIZE - 1);
+	lf.lfFaceName[LF_FACESIZE - 1] = L'\0';
+
+	// Set height based on DPI
+	lf.lfHeight = scaleFont(11, dpi); // Default 11pt font
+
+	return lf;
+}
+
+void DPIManagerV2::loadIcon(HINSTANCE /*hinst*/, const wchar_t* /*pszName*/, int /*cx*/, int /*cy*/, HICON* phico, UINT /*fuLoad*/)
+{
+	// No-op on Linux - Qt handles icons differently
+	*phico = nullptr;
+}
+
+DWORD DPIManagerV2::getTextScaleFactor()
+{
+	// Return default text scale factor on Linux
+	return 100;
+}
+
+#endif // _WIN32

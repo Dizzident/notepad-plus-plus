@@ -21,7 +21,9 @@
 #include "StaticDialog.h"
 
 class ScintillaEditView;
+#ifndef NPP_LINUX
 class Buffer;
+#endif
 struct MapPosition;
 
 

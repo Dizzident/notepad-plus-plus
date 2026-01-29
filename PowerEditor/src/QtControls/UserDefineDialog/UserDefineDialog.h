@@ -10,6 +10,7 @@
 
 #include "../StaticDialog/StaticDialog.h"
 #include "../../ScintillaComponent/ScintillaEditView.h"
+#include "../../ScintillaComponent/UserDefineResource.h"
 #include <memory>
 #include <vector>
 #include <unordered_map>
@@ -143,15 +144,13 @@ class QColorDialog;
 // Total keyword groups (8 keywords + operators + folders + delimiters + comments + numbers)
 #define SCE_USER_TOTAL_KEYWORD_GROUPS   8
 
-namespace QtControls {
-
 // Forward declarations
 class UserDefineDialog;
 
 // ============================================================================
 // Style Dialog - For editing individual style properties
 // ============================================================================
-class StyleDialog : public StaticDialog {
+class StyleDialog : public QtControls::StaticDialog {
     Q_OBJECT
 
 public:
@@ -218,7 +217,7 @@ private:
 // ============================================================================
 // String Dialog - For entering language names
 // ============================================================================
-class StringDialog : public StaticDialog {
+class StringDialog : public QtControls::StaticDialog {
     Q_OBJECT
 
 public:
@@ -271,10 +270,14 @@ public:
 
 // ============================================================================
 // UserLangContainer - Container for user defined language data
+// Qt version - wrapped in namespace to avoid conflict with Parameters.h version
 // ============================================================================
-struct UserLangContainer {
-    UserLangContainer();
-    UserLangContainer(const QString& name, const QString& ext, bool isDarkModeTheme, const QString& udlVer);
+namespace QtControls {
+
+// Qt-specific UserLangContainer to avoid conflict with Parameters.h version
+struct QtUserLangContainer {
+    QtUserLangContainer();
+    QtUserLangContainer(const QString& name, const QString& ext, bool isDarkModeTheme, const QString& udlVer);
 
     QString _name;
     QString _ext;
@@ -311,10 +314,12 @@ struct UserLangContainer {
     const Style* getStyler(int styleID) const;
 };
 
+} // namespace QtControls
+
 // ============================================================================
 // UserDefineDialog - Main UDL dialog
 // ============================================================================
-class UserDefineDialog : public StaticDialog {
+class UserDefineDialog : public QtControls::StaticDialog {
     Q_OBJECT
 
 public:
@@ -333,6 +338,19 @@ public:
 
     // Change between docked and undocked mode
     void changeStyle();
+
+    // Get window handle (compatibility with Windows code)
+    HWND getHSelf() const { return reinterpret_cast<HWND>(const_cast<UserDefineDialog*>(this)); }
+
+    // Get handles for sub-dialogs (for localization)
+    // In Qt version, these return the main dialog handle since we use tabs instead of separate dialogs
+    HWND getFolderHandle() const { return getHSelf(); }
+    HWND getKeywordsHandle() const { return getHSelf(); }
+    HWND getCommentHandle() const { return getHSelf(); }
+    HWND getSymbolHandle() const { return getHSelf(); }
+
+    // Set tab name (for localization)
+    void setTabName(int index, const wchar_t* name);
 
 private slots:
     void onLanguageChanged(int index);
@@ -371,8 +389,8 @@ private:
     void updateStyleButtons();
 
     // Current language data
-    std::unique_ptr<UserLangContainer> _pCurrentUserLang;
-    UserLangContainer* _pUserLang = nullptr;
+    std::unique_ptr<QtControls::QtUserLangContainer> _pCurrentUserLang;
+    QtControls::QtUserLangContainer* _pUserLang = nullptr;
     ScintillaEditView** _ppEditView = nullptr;
 
     // Dock status
@@ -461,5 +479,3 @@ private:
     // Style buttons array for easy access
     std::vector<QPushButton*> _styleButtons;
 };
-
-} // namespace QtControls

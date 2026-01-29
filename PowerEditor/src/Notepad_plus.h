@@ -17,22 +17,41 @@
 #pragma once
 
 #include "ScintillaEditView.h"
+#ifdef NPP_LINUX
+// On Linux, use Qt versions of dialogs and components
+#include "QtControls/DocTabView/DocTabView.h"
+#include "QtControls/GoToLine/GoToLineDlg.h"
+#include "QtControls/FindReplace/FindReplaceDlg.h"
+#include "QtControls/ShortcutMapper/ShortcutMapper.h"
+#include "QtControls/RunDlg/RunDlg.h"
+#include "QtControls/RunMacroDlg/RunMacroDlg.h"
+#include "QtControls/Preference/preferenceDlg.h"
+#else
 #include "DocTabView.h"
+#endif
 #include "SplitterContainer.h"
 #ifdef NPP_LINUX
 // On Linux, use Qt versions of dialogs
-#include "QtControls/GoToLine/GoToLineDlg.h"
-#include "QtControls/FindReplace/FindReplaceDlg.h"
 using GoToLineDlg = QtControls::GoToLineDlg;
 using FindReplaceDlg = NppFindReplace::FindReplaceDlg;
 using FindIncrementDlg = NppFindReplace::FindIncrementDlg;
+using RunDlg = QtControls::RunDlg::RunDlg;
+using RunMacroDlg = QtControls::RunMacroDlg;
+using PreferenceDlg = QtControls::PreferenceDlg;
+using DocTabView = QtControls::DocTabView;
+using Buffer = QtCore::Buffer;
 #else
 // On Windows, use native dialogs
 #include "FindReplaceDlg.h"
 #include "GoToLineDlg.h"
+#include "RunDlg.h"
+#include "RunMacroDlg.h"
+#include "preferenceDlg.h"
 #endif
 #include "AboutDlg.h"
+#ifndef NPP_LINUX
 #include "RunDlg.h"
+#endif
 #include "StatusBar.h"
 #include "lastRecentFileList.h"
 #include "FindCharsInRange.h"
@@ -40,9 +59,13 @@ using FindIncrementDlg = NppFindReplace::FindIncrementDlg;
 #include "WordStyleDlg.h"
 #include "trayIconControler.h"
 #include "PluginsManager.h"
+#ifndef NPP_LINUX
 #include "preferenceDlg.h"
+#endif
 #include "WindowsDlg.h"
+#ifndef NPP_LINUX
 #include "RunMacroDlg.h"
+#endif
 #include "DockingManager.h"
 #include "Processus.h"
 #include "AutoCompletion.h"
@@ -469,7 +492,11 @@ private:
 	RunMacroDlg _runMacroDlg;
 
 	// For conflict detection when saving Macros or RunCommands
+#ifdef NPP_LINUX
+	QtControls::ShortcutMapper::ShortcutMapper* _pShortcutMapper = nullptr;
+#else
 	ShortcutMapper* _pShortcutMapper = nullptr;
+#endif
 
 	// For hotspot
 	bool _linkTriggered = true;

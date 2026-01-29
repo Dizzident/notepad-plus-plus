@@ -20,8 +20,12 @@
 #include "SizeableDlg.h"
 #include "ContextMenu.h"
 
+// On Linux, DocTabView and Buffer are type aliases, not classes
+// They are defined in Notepad_plus.h via QtControls/DocTabView/DocTabView.h and QtCore/Buffer.h
+#ifndef NPP_LINUX
 class DocTabView;
 class Buffer;
+#endif
 
 typedef enum {
 	WDT_ACTIVATE = 1,

@@ -34,6 +34,10 @@ public:
 
     // Show the dialog
     void doDialog();
+    void doDialog(bool isRTL);
+
+    // Initialize macro list (stub for compatibility)
+    void initMacroList() {}
 
     // Get the current command
     QString getCommand() const;
@@ -50,6 +54,7 @@ public:
 protected:
     void setupUI() override;
     void connectSignals() override;
+    bool run_dlgProc(QEvent* event) override;
 
 private slots:
     void onRunClicked();

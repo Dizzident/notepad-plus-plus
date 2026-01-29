@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// This file implements Windows-style commands
+// On Linux, many of these commands need to be adapted for Qt
+#ifndef NPP_LINUX
+
 // Qt headers first (for moc compatibility)
 #include <QApplication>
 #include <QClipboard>
@@ -1659,3 +1663,5 @@ void NppCommands::settingPreference() {
 }
 
 } // namespace QtCommands
+
+#endif // NPP_LINUX

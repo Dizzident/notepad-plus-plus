@@ -14,10 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#ifdef _WIN32
 #include <winuser.h>
+#else
+// Linux: Define virtual key codes that are used by Notepad++
+// These are normally defined in winuser.h on Windows
+#endif
 
 /*
-See winuser.h
+Virtual Key codes
 Altered list to support VK_0-9 and VK_A-Z, plus VK_NULL
 */
 

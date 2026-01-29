@@ -33,7 +33,16 @@ public:
     void getMappedChildRect(int idChild, QRect& rcChild) const;
     void redrawDlgItem(const QString& objectName, bool forceUpdate = false) const;
 
+    // Redraw the entire dialog (compatibility with Windows code)
+    void redraw(bool forceUpdate = false) {
+        update();
+        if (forceUpdate) {
+            repaint();
+        }
+    }
+
     void goToCenter();
+    void goToCenter(unsigned int swpFlags);
     bool moveForDpiChange();
 
     void display(bool toShow = true, bool enhancedPositioningCheckWhenShowing = false);

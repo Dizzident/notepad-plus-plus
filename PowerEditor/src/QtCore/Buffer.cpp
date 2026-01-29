@@ -178,108 +178,108 @@ static QByteArray convertLineEndings(const QByteArray& content, LineEnding endin
 static DocLangType detectLanguageFromExtension(const QString& ext)
 {
     static const QHash<QString, DocLangType> extMap = {
-        { "txt", DocLangType::L_TEXT },
-        { "php", DocLangType::L_PHP },
-        { "php3", DocLangType::L_PHP },
-        { "php4", DocLangType::L_PHP },
-        { "php5", DocLangType::L_PHP },
-        { "phtml", DocLangType::L_PHP },
-        { "c", DocLangType::L_C },
-        { "h", DocLangType::L_C },
-        { "cpp", DocLangType::L_CPP },
-        { "cxx", DocLangType::L_CPP },
-        { "cc", DocLangType::L_CPP },
-        { "hpp", DocLangType::L_CPP },
-        { "hxx", DocLangType::L_CPP },
-        { "cs", DocLangType::L_CS },
-        { "m", DocLangType::L_OBJC },
-        { "mm", DocLangType::L_OBJC },
-        { "java", DocLangType::L_JAVA },
-        { "rc", DocLangType::L_RC },
-        { "html", DocLangType::L_HTML },
-        { "htm", DocLangType::L_HTML },
-        { "shtml", DocLangType::L_HTML },
-        { "xml", DocLangType::L_XML },
-        { "xaml", DocLangType::L_XML },
-        { "xsl", DocLangType::L_XML },
-        { "xslt", DocLangType::L_XML },
-        { "mak", DocLangType::L_MAKEFILE },
-        { "makefile", DocLangType::L_MAKEFILE },
-        { "pas", DocLangType::L_PASCAL },
-        { "pp", DocLangType::L_PASCAL },
-        { "inc", DocLangType::L_PASCAL },
-        { "bat", DocLangType::L_BATCH },
-        { "cmd", DocLangType::L_BATCH },
-        { "nt", DocLangType::L_BATCH },
-        { "ini", DocLangType::L_INI },
-        { "inf", DocLangType::L_INI },
-        { "reg", DocLangType::L_REGISTRY },
-        { "cfg", DocLangType::L_INI },
-        { "conf", DocLangType::L_INI },
-        { "sql", DocLangType::L_SQL },
-        { "vb", DocLangType::L_VB },
-        { "vbs", DocLangType::L_VBSCRIPT },
-        { "bas", DocLangType::L_VB },
-        { "frm", DocLangType::L_VB },
-        { "cls", DocLangType::L_VB },
-        { "js", DocLangType::L_JAVASCRIPT },
-        { "json", DocLangType::L_JSON },
-        { "css", DocLangType::L_CSS },
-        { "pl", DocLangType::L_PERL },
-        { "pm", DocLangType::L_PERL },
-        { "py", DocLangType::L_PYTHON },
-        { "pyw", DocLangType::L_PYTHON },
-        { "lua", DocLangType::L_LUA },
-        { "tex", DocLangType::L_LATEX },
-        { "latex", DocLangType::L_LATEX },
-        { "f", DocLangType::L_FORTRAN },
-        { "for", DocLangType::L_FORTRAN },
-        { "f90", DocLangType::L_FORTRAN },
-        { "f95", DocLangType::L_FORTRAN },
-        { "f2k", DocLangType::L_FORTRAN },
-        { "sh", DocLangType::L_BASH },
-        { "bash", DocLangType::L_BASH },
-        { "zsh", DocLangType::L_BASH },
-        { "rb", DocLangType::L_RUBY },
-        { "rbw", DocLangType::L_RUBY },
-        { "rake", DocLangType::L_RUBY },
-        { "gemspec", DocLangType::L_RUBY },
-        { "tcl", DocLangType::L_TCL },
-        { "tk", DocLangType::L_TCL },
-        { "lisp", DocLangType::L_LISP },
-        { "lsp", DocLangType::L_LISP },
-        { "scm", DocLangType::L_SCHEME },
-        { "ss", DocLangType::L_SCHEME },
-        { "asm", DocLangType::L_ASM },
-        { "s", DocLangType::L_ASM },
-        { "nasm", DocLangType::L_ASM },
-        { "diff", DocLangType::L_DIFF },
-        { "patch", DocLangType::L_DIFF },
-        { "props", DocLangType::L_PROPS },
-        { "properties", DocLangType::L_PROPS },
-        { "ps", DocLangType::L_PS },
-        { "yaml", DocLangType::L_YAML },
-        { "yml", DocLangType::L_YAML },
-        { "cmake", DocLangType::L_CMAKE },
-        { "md", DocLangType::L_MARKDOWN },
-        { "markdown", DocLangType::L_MARKDOWN },
-        { "rs", DocLangType::L_RUST },
-        { "go", DocLangType::L_TEXT },  // Go not in original enum, map to text
-        { "ts", DocLangType::L_TYPESCRIPT },
-        { "tsx", DocLangType::L_TYPESCRIPT },
-        { "coffee", DocLangType::L_COFFEESCRIPT },
-        { "ps1", DocLangType::L_POWERSHELL },
-        { "psm1", DocLangType::L_POWERSHELL },
-        { "psd1", DocLangType::L_POWERSHELL },
-        { "r", DocLangType::L_R },
-        { "swift", DocLangType::L_SWIFT },
-        { "kt", DocLangType::L_TEXT },  // Kotlin not in original enum
-        { "scala", DocLangType::L_TEXT },  // Scala not in original enum
-        { "gd", DocLangType::L_GDSCRIPT },
+        { "txt", L_TEXT },
+        { "php", L_PHP },
+        { "php3", L_PHP },
+        { "php4", L_PHP },
+        { "php5", L_PHP },
+        { "phtml", L_PHP },
+        { "c", L_C },
+        { "h", L_C },
+        { "cpp", L_CPP },
+        { "cxx", L_CPP },
+        { "cc", L_CPP },
+        { "hpp", L_CPP },
+        { "hxx", L_CPP },
+        { "cs", L_CS },
+        { "m", L_OBJC },
+        { "mm", L_OBJC },
+        { "java", L_JAVA },
+        { "rc", L_RC },
+        { "html", L_HTML },
+        { "htm", L_HTML },
+        { "shtml", L_HTML },
+        { "xml", L_XML },
+        { "xaml", L_XML },
+        { "xsl", L_XML },
+        { "xslt", L_XML },
+        { "mak", L_MAKEFILE },
+        { "makefile", L_MAKEFILE },
+        { "pas", L_PASCAL },
+        { "pp", L_PASCAL },
+        { "inc", L_PASCAL },
+        { "bat", L_BATCH },
+        { "cmd", L_BATCH },
+        { "nt", L_BATCH },
+        { "ini", L_INI },
+        { "inf", L_INI },
+        { "reg", L_REGISTRY },
+        { "cfg", L_INI },
+        { "conf", L_INI },
+        { "sql", L_SQL },
+        { "vb", L_VB },
+        { "vbs", L_VBSCRIPT },
+        { "bas", L_VB },
+        { "frm", L_VB },
+        { "cls", L_VB },
+        { "js", L_JAVASCRIPT },
+        { "json", L_JSON },
+        { "css", L_CSS },
+        { "pl", L_PERL },
+        { "pm", L_PERL },
+        { "py", L_PYTHON },
+        { "pyw", L_PYTHON },
+        { "lua", L_LUA },
+        { "tex", L_LATEX },
+        { "latex", L_LATEX },
+        { "f", L_FORTRAN },
+        { "for", L_FORTRAN },
+        { "f90", L_FORTRAN },
+        { "f95", L_FORTRAN },
+        { "f2k", L_FORTRAN },
+        { "sh", L_BASH },
+        { "bash", L_BASH },
+        { "zsh", L_BASH },
+        { "rb", L_RUBY },
+        { "rbw", L_RUBY },
+        { "rake", L_RUBY },
+        { "gemspec", L_RUBY },
+        { "tcl", L_TCL },
+        { "tk", L_TCL },
+        { "lisp", L_LISP },
+        { "lsp", L_LISP },
+        { "scm", L_SCHEME },
+        { "ss", L_SCHEME },
+        { "asm", L_ASM },
+        { "s", L_ASM },
+        { "nasm", L_ASM },
+        { "diff", L_DIFF },
+        { "patch", L_DIFF },
+        { "props", L_PROPS },
+        { "properties", L_PROPS },
+        { "ps", L_PS },
+        { "yaml", L_YAML },
+        { "yml", L_YAML },
+        { "cmake", L_CMAKE },
+        { "md", L_MARKDOWN },
+        { "markdown", L_MARKDOWN },
+        { "rs", L_RUST },
+        { "go", L_TEXT },  // Go not in original enum, map to text
+        { "ts", L_TYPESCRIPT },
+        { "tsx", L_TYPESCRIPT },
+        { "coffee", L_COFFEESCRIPT },
+        { "ps1", L_POWERSHELL },
+        { "psm1", L_POWERSHELL },
+        { "psd1", L_POWERSHELL },
+        { "r", L_R },
+        { "swift", L_SWIFT },
+        { "kt", L_TEXT },  // Kotlin not in original enum
+        { "scala", L_TEXT },  // Scala not in original enum
+        { "gd", L_GDSCRIPT },
     };
 
     QString lowerExt = ext.toLower();
-    return extMap.value(lowerExt, DocLangType::L_TEXT);
+    return extMap.value(lowerExt, L_TEXT);
 }
 
 static DocLangType detectLanguageFromShebang(const QByteArray& content)
@@ -294,76 +294,76 @@ static DocLangType detectLanguageFromShebang(const QByteArray& content)
         QByteArray firstLine = content.left(newlinePos).trimmed();
         if (firstLine.startsWith("#!")) {
             if (firstLine.contains("python")) {
-                return DocLangType::L_PYTHON;
+                return L_PYTHON;
             } else if (firstLine.contains("perl")) {
-                return DocLangType::L_PERL;
+                return L_PERL;
             } else if (firstLine.contains("ruby")) {
-                return DocLangType::L_RUBY;
+                return L_RUBY;
             } else if (firstLine.contains("bash") || firstLine.contains("sh")) {
-                return DocLangType::L_BASH;
+                return L_BASH;
             } else if (firstLine.contains("php")) {
-                return DocLangType::L_PHP;
+                return L_PHP;
             } else if (firstLine.contains("node")) {
-                return DocLangType::L_JAVASCRIPT;
+                return L_JAVASCRIPT;
             }
         }
     }
 
     // Check for XML declaration
     if (content.trimmed().startsWith("<?xml")) {
-        return DocLangType::L_XML;
+        return L_XML;
     }
 
     // Check for HTML doctype
     QByteArray trimmed = content.trimmed().toLower();
     if (trimmed.startsWith("<!doctype html")) {
-        return DocLangType::L_HTML;
+        return L_HTML;
     }
     if (trimmed.startsWith("<html")) {
-        return DocLangType::L_HTML;
+        return L_HTML;
     }
 
-    return DocLangType::L_TEXT;
+    return L_TEXT;
 }
 
 static QString getLanguageName(DocLangType type)
 {
     static const QHash<DocLangType, QString> langNames = {
-        { DocLangType::L_TEXT, QObject::tr("Normal text") },
-        { DocLangType::L_PHP, QObject::tr("PHP") },
-        { DocLangType::L_C, QObject::tr("C") },
-        { DocLangType::L_CPP, QObject::tr("C++") },
-        { DocLangType::L_CS, QObject::tr("C#") },
-        { DocLangType::L_OBJC, QObject::tr("Objective-C") },
-        { DocLangType::L_JAVA, QObject::tr("Java") },
-        { DocLangType::L_RC, QObject::tr("Resource file") },
-        { DocLangType::L_HTML, QObject::tr("HTML") },
-        { DocLangType::L_XML, QObject::tr("XML") },
-        { DocLangType::L_MAKEFILE, QObject::tr("Makefile") },
-        { DocLangType::L_PASCAL, QObject::tr("Pascal") },
-        { DocLangType::L_BATCH, QObject::tr("Batch") },
-        { DocLangType::L_INI, QObject::tr("INI file") },
-        { DocLangType::L_ASCII, QObject::tr("ASCII") },
-        { DocLangType::L_USER, QObject::tr("User defined") },
-        { DocLangType::L_SQL, QObject::tr("SQL") },
-        { DocLangType::L_VB, QObject::tr("Visual Basic") },
-        { DocLangType::L_JAVASCRIPT, QObject::tr("JavaScript") },
-        { DocLangType::L_CSS, QObject::tr("CSS") },
-        { DocLangType::L_PERL, QObject::tr("Perl") },
-        { DocLangType::L_PYTHON, QObject::tr("Python") },
-        { DocLangType::L_LUA, QObject::tr("Lua") },
-        { DocLangType::L_TEX, QObject::tr("TeX") },
-        { DocLangType::L_FORTRAN, QObject::tr("Fortran") },
-        { DocLangType::L_BASH, QObject::tr("Shell") },
-        { DocLangType::L_RUBY, QObject::tr("Ruby") },
-        { DocLangType::L_YAML, QObject::tr("YAML") },
-        { DocLangType::L_JSON, QObject::tr("JSON") },
-        { DocLangType::L_MARKDOWN, QObject::tr("Markdown") },
-        { DocLangType::L_RUST, QObject::tr("Rust") },
-        { DocLangType::L_TYPESCRIPT, QObject::tr("TypeScript") },
-        { DocLangType::L_POWERSHELL, QObject::tr("PowerShell") },
-        { DocLangType::L_CMAKE, QObject::tr("CMake") },
-        { DocLangType::L_GDSCRIPT, QObject::tr("GDScript") },
+        { L_TEXT, QObject::tr("Normal text") },
+        { L_PHP, QObject::tr("PHP") },
+        { L_C, QObject::tr("C") },
+        { L_CPP, QObject::tr("C++") },
+        { L_CS, QObject::tr("C#") },
+        { L_OBJC, QObject::tr("Objective-C") },
+        { L_JAVA, QObject::tr("Java") },
+        { L_RC, QObject::tr("Resource file") },
+        { L_HTML, QObject::tr("HTML") },
+        { L_XML, QObject::tr("XML") },
+        { L_MAKEFILE, QObject::tr("Makefile") },
+        { L_PASCAL, QObject::tr("Pascal") },
+        { L_BATCH, QObject::tr("Batch") },
+        { L_INI, QObject::tr("INI file") },
+        { L_ASCII, QObject::tr("ASCII") },
+        { L_USER, QObject::tr("User defined") },
+        { L_SQL, QObject::tr("SQL") },
+        { L_VB, QObject::tr("Visual Basic") },
+        { L_JAVASCRIPT, QObject::tr("JavaScript") },
+        { L_CSS, QObject::tr("CSS") },
+        { L_PERL, QObject::tr("Perl") },
+        { L_PYTHON, QObject::tr("Python") },
+        { L_LUA, QObject::tr("Lua") },
+        { L_TEX, QObject::tr("TeX") },
+        { L_FORTRAN, QObject::tr("Fortran") },
+        { L_BASH, QObject::tr("Shell") },
+        { L_RUBY, QObject::tr("Ruby") },
+        { L_YAML, QObject::tr("YAML") },
+        { L_JSON, QObject::tr("JSON") },
+        { L_MARKDOWN, QObject::tr("Markdown") },
+        { L_RUST, QObject::tr("Rust") },
+        { L_TYPESCRIPT, QObject::tr("TypeScript") },
+        { L_POWERSHELL, QObject::tr("PowerShell") },
+        { L_CMAKE, QObject::tr("CMake") },
+        { L_GDSCRIPT, QObject::tr("GDScript") },
     };
 
     return langNames.value(type, QObject::tr("Unknown"));
@@ -453,7 +453,7 @@ bool Buffer::loadFromFile(const QString& filePath)
 
     // Detect language from file name
     _langType = detectLanguageFromFileName(fileInfo.suffix());
-    if (_langType == DocLangType::L_TEXT) {
+    if (_langType == L_TEXT) {
         _langType = detectLanguageFromShebang(content);
     }
 
@@ -579,7 +579,7 @@ void Buffer::setFilePath(const QString& path)
     // Detect language from new file name
     if (!_isUntitled) {
         DocLangType detectedLang = detectLanguageFromExtension(fileInfo.suffix());
-        if (detectedLang != DocLangType::L_TEXT && detectedLang != _langType) {
+        if (detectedLang != L_TEXT && detectedLang != _langType) {
             _langType = detectedLang;
             emit langTypeChanged(_langType);
         }
@@ -944,7 +944,7 @@ void Buffer::setLangTypeFromFileName(const QString& fileName)
     QFileInfo fileInfo(fileName);
     DocLangType detectedLang = detectLanguageFromExtension(fileInfo.suffix());
 
-    if (detectedLang != DocLangType::L_TEXT) {
+    if (detectedLang != L_TEXT) {
         setLangType(detectedLang);
     }
 }
@@ -954,7 +954,7 @@ void Buffer::setLangTypeFromContent()
     QByteArray content = getContent();
     DocLangType detectedLang = detectLanguageFromShebang(content);
 
-    if (detectedLang != DocLangType::L_TEXT) {
+    if (detectedLang != L_TEXT) {
         setLangType(detectedLang);
     }
 }
@@ -1201,12 +1201,10 @@ void Buffer::savePosition()
     QMutexLocker locker(&_mutex);
 
     if (_pView) {
-        _savedPosition.pos = _pView->getCurrentPos();
-        _savedPosition.anchor = _pView->getAnchor();
-        _savedPosition.line = _pView->getCurrentLine();
-        _savedPosition.column = getCurrentColumn();
-        _savedPosition.firstVisibleLine = _pView->getFirstVisibleLine();
-        _savedPosition.xOffset = _pView->getXOffset();
+        _savedPosition._startPos = _pView->getCurrentPos();
+        _savedPosition._endPos = _pView->getAnchor();
+        _savedPosition._firstVisibleLine = _pView->getCurrentLine();
+        _savedPosition._xOffset = _pView->getXOffset();
     }
 }
 
@@ -1215,9 +1213,9 @@ void Buffer::restorePosition()
     QMutexLocker locker(&_mutex);
 
     if (_pView) {
-        _pView->setSelection(_savedPosition.anchor, _savedPosition.pos);
-        _pView->setFirstVisibleLine(_savedPosition.firstVisibleLine);
-        _pView->setXOffset(_savedPosition.xOffset);
+        _pView->setSelection(_savedPosition._endPos, _savedPosition._startPos);
+        _pView->setFirstVisibleLine(_savedPosition._firstVisibleLine);
+        _pView->setXOffset(_savedPosition._xOffset);
     }
 }
 
@@ -1331,52 +1329,52 @@ QString Buffer::getCommentLineSymbol() const
 {
     // Return comment symbols based on language type
     switch (_langType) {
-        case DocLangType::L_CPP:
-        case DocLangType::L_C:
-        case DocLangType::L_JAVA:
-        case DocLangType::L_CS:
-        case DocLangType::L_OBJC:
-        case DocLangType::L_JS_EMBEDDED:
-        case DocLangType::L_JAVASCRIPT:
-        case DocLangType::L_TYPESCRIPT:
-        case DocLangType::L_RUST:
-        case DocLangType::L_SWIFT:
-        case DocLangType::L_GO:
+        case L_CPP:
+        case L_C:
+        case L_JAVA:
+        case L_CS:
+        case L_OBJC:
+        case L_JS_EMBEDDED:
+        case L_JAVASCRIPT:
+        case L_TYPESCRIPT:
+        case L_RUST:
+        case L_SWIFT:
+        case L_GO:
             return "//";
-        case DocLangType::L_PYTHON:
-        case DocLangType::L_RUBY:
-        case DocLangType::L_PERL:
-        case DocLangType::L_BASH:
-        case DocLangType::L_MAKEFILE:
-        case DocLangType::L_YAML:
+        case L_PYTHON:
+        case L_RUBY:
+        case L_PERL:
+        case L_BASH:
+        case L_MAKEFILE:
+        case L_YAML:
             return "#";
-        case DocLangType::L_SQL:
-        case DocLangType::L_LUA:
+        case L_SQL:
+        case L_LUA:
             return "--";
-        case DocLangType::L_LISP:
-        case DocLangType::L_SCHEME:
+        case L_LISP:
+        case L_SCHEME:
             return ";";
-        case DocLangType::L_HTML:
-        case DocLangType::L_XML:
-        case DocLangType::L_MARKDOWN:
+        case L_HTML:
+        case L_XML:
+        case L_MARKDOWN:
             return "<!--";  // Block comment
-        case DocLangType::L_BATCH:
+        case L_BATCH:
             return "REM";
-        case DocLangType::L_VB:
-        case DocLangType::L_VBSCRIPT:
+        case L_VB:
+        case L_VBSCRIPT:
             return "'";
-        case DocLangType::L_PASCAL:
-        case DocLangType::L_ADA:
-        case DocLangType::L_INNO:
+        case L_PASCAL:
+        case L_ADA:
+        case L_INNO:
             return "//";
-        case DocLangType::L_FORTRAN:
-        case DocLangType::L_FORTRAN_77:
+        case L_FORTRAN:
+        case L_FORTRAN_77:
             return "!";
-        case DocLangType::L_MATLAB:
+        case L_MATLAB:
             return "%";
-        case DocLangType::L_LATEX:
+        case L_LATEX:
             return "%";
-        case DocLangType::L_ASM:
+        case L_ASM:
             return ";";
         default:
             return QString();
@@ -1387,26 +1385,26 @@ QString Buffer::getCommentStart() const
 {
     // Return block comment start based on language type
     switch (_langType) {
-        case DocLangType::L_CPP:
-        case DocLangType::L_C:
-        case DocLangType::L_JAVA:
-        case DocLangType::L_CS:
-        case DocLangType::L_OBJC:
-        case DocLangType::L_JS_EMBEDDED:
-        case DocLangType::L_JAVASCRIPT:
-        case DocLangType::L_TYPESCRIPT:
-        case DocLangType::L_RUST:
-        case DocLangType::L_SWIFT:
-        case DocLangType::L_GO:
+        case L_CPP:
+        case L_C:
+        case L_JAVA:
+        case L_CS:
+        case L_OBJC:
+        case L_JS_EMBEDDED:
+        case L_JAVASCRIPT:
+        case L_TYPESCRIPT:
+        case L_RUST:
+        case L_SWIFT:
+        case L_GO:
             return "/*";
-        case DocLangType::L_HTML:
-        case DocLangType::L_XML:
-        case DocLangType::L_MARKDOWN:
+        case L_HTML:
+        case L_XML:
+        case L_MARKDOWN:
             return "<!--";
-        case DocLangType::L_PASCAL:
-        case DocLangType::L_ADA:
+        case L_PASCAL:
+        case L_ADA:
             return "(*";
-        case DocLangType::L_HASKELL:
+        case L_HASKELL:
             return "{-";
         default:
             return QString();
@@ -1417,26 +1415,26 @@ QString Buffer::getCommentEnd() const
 {
     // Return block comment end based on language type
     switch (_langType) {
-        case DocLangType::L_CPP:
-        case DocLangType::L_C:
-        case DocLangType::L_JAVA:
-        case DocLangType::L_CS:
-        case DocLangType::L_OBJC:
-        case DocLangType::L_JS_EMBEDDED:
-        case DocLangType::L_JAVASCRIPT:
-        case DocLangType::L_TYPESCRIPT:
-        case DocLangType::L_RUST:
-        case DocLangType::L_SWIFT:
-        case DocLangType::L_GO:
+        case L_CPP:
+        case L_C:
+        case L_JAVA:
+        case L_CS:
+        case L_OBJC:
+        case L_JS_EMBEDDED:
+        case L_JAVASCRIPT:
+        case L_TYPESCRIPT:
+        case L_RUST:
+        case L_SWIFT:
+        case L_GO:
             return "*/";
-        case DocLangType::L_HTML:
-        case DocLangType::L_XML:
-        case DocLangType::L_MARKDOWN:
+        case L_HTML:
+        case L_XML:
+        case L_MARKDOWN:
             return "-->";
-        case DocLangType::L_PASCAL:
-        case DocLangType::L_ADA:
+        case L_PASCAL:
+        case L_ADA:
             return "*)";
-        case DocLangType::L_HASKELL:
+        case L_HASKELL:
             return "-}";
         default:
             return QString();
@@ -1778,12 +1776,202 @@ QString BufferManager::getNextUntitledName() const
     return QString("new %1").arg(maxNumber + 1);
 }
 
+// ============================================================================
+// Compatibility methods for ScintillaEditView integration
+// ============================================================================
+
+void Buffer::setHideLineChanged(bool isHide, size_t location)
+{
+    QMutexLocker locker(&_mutex);
+    // Stub implementation - hide line tracking would be implemented here
+    Q_UNUSED(isHide)
+    Q_UNUSED(location)
+}
+
+void Buffer::setHeaderLineState(const std::vector<size_t>& folds, void* identifier)
+{
+    QMutexLocker locker(&_mutex);
+    // Find or create entry for this view identifier
+    for (size_t i = 0; i < _viewIdentifiers.size(); ++i) {
+        if (_viewIdentifiers[i] == identifier) {
+            if (i < _foldStates.size()) {
+                _foldStates[i] = folds;
+            }
+            return;
+        }
+    }
+    // New view identifier
+    _viewIdentifiers.push_back(identifier);
+    _foldStates.push_back(folds);
+}
+
+std::vector<size_t> Buffer::getHeaderLineState(void* identifier) const
+{
+    QMutexLocker locker(&_mutex);
+    for (size_t i = 0; i < _viewIdentifiers.size(); ++i) {
+        if (_viewIdentifiers[i] == identifier && i < _foldStates.size()) {
+            return _foldStates[i];
+        }
+    }
+    return std::vector<size_t>();
+}
+
+void* Buffer::getDocument() const
+{
+    QMutexLocker locker(&_mutex);
+    // Return the document pointer (would be Scintilla document in full implementation)
+    return _document;
+}
+
+Buffer::UniMode Buffer::getUnicodeMode() const
+{
+    QMutexLocker locker(&_mutex);
+    return _unicodeMode;
+}
+
+void Buffer::setUnicodeMode(UniMode mode)
+{
+    QMutexLocker locker(&_mutex);
+    _unicodeMode = mode;
+}
+
+Buffer::EolType Buffer::getEolFormat() const
+{
+    QMutexLocker locker(&_mutex);
+    // Convert LineEnding to EolType
+    switch (_lineEnding) {
+        case LineEnding::Windows:
+            return eolWindows;
+        case LineEnding::Unix:
+            return eolUnix;
+        case LineEnding::MacOS:
+            return eolMac;
+        default:
+            return eolUnix;
+    }
+}
+
+void Buffer::setEolFormat(EolType format)
+{
+    QMutexLocker locker(&_mutex);
+    _eolFormat = format;
+    // Convert EolType to LineEnding
+    switch (format) {
+        case eolWindows:
+            _lineEnding = LineEnding::Windows;
+            break;
+        case eolUnix:
+            _lineEnding = LineEnding::Unix;
+            break;
+        case eolMac:
+            _lineEnding = LineEnding::MacOS;
+            break;
+        default:
+            _lineEnding = LineEnding::Unix;
+            break;
+    }
+}
+
+bool Buffer::getNeedsLexing() const
+{
+    QMutexLocker locker(&_mutex);
+    return _needsLexing;
+}
+
+void Buffer::setNeedsLexing(bool needs)
+{
+    QMutexLocker locker(&_mutex);
+    _needsLexing = needs;
+}
+
+// ============================================================================
+// FileManager implementation - Compatibility layer for Notepad++ core
+// ============================================================================
+
+FileManager* FileManager::getInstance()
+{
+    static FileManager instance;
+    return &instance;
+}
+
+Buffer* FileManager::getBufferByID(Buffer* id)
+{
+    // id is the Buffer pointer itself
+    return id;
+}
+
+Buffer* FileManager::newEmptyDocument()
+{
+    // Create a new buffer through the BufferManager
+    BufferManager* mgr = BufferManager::getInstance();
+    Buffer* buf = mgr->createBuffer();
+    return buf;
+}
+
+// ============================================================================
+// Additional Buffer compatibility methods
+// ============================================================================
+
+void Buffer::setPosition(const Position& pos, void* identifier)
+{
+    QMutexLocker locker(&_mutex);
+    // Store position for the given view identifier
+    // This is a simplified implementation
+    Q_UNUSED(pos)
+    Q_UNUSED(identifier)
+}
+
+Position Buffer::getPosition(void* identifier) const
+{
+    QMutexLocker locker(&_mutex);
+    // Return position for the given view identifier
+    // This is a simplified implementation
+    Q_UNUSED(identifier)
+    return Position();
+}
+
+int Buffer::getEncodingNumber() const
+{
+    QMutexLocker locker(&_mutex);
+    // Convert QString encoding to int
+    // This is a simplified mapping - full implementation would map all encodings
+    if (_encoding == "UTF-8") return 65001;
+    if (_encoding == "UTF-16 LE") return 1200;
+    if (_encoding == "UTF-16 BE") return 1201;
+    // Return -1 for unknown (use default)
+    return -1;
+}
+
+void Buffer::setEncodingNumber(int encoding)
+{
+    QMutexLocker locker(&_mutex);
+    // Convert int encoding to QString
+    switch (encoding) {
+        case 65001:
+            _encoding = "UTF-8";
+            break;
+        case 1200:
+            _encoding = "UTF-16 LE";
+            break;
+        case 1201:
+            _encoding = "UTF-16 BE";
+            break;
+        default:
+            _encoding = "UTF-8";
+            break;
+    }
+}
+
 } // namespace QtCore
 
 // ============================================================================
 // FileManager implementation - Compatibility layer for Notepad++ core
 // This implements the FileManager interface from ScintillaComponent/Buffer.h
 // ============================================================================
+
+// This code is only for Windows compatibility mode
+// On Linux, QtCore::BufferManager provides the buffer management
+#ifndef NPP_LINUX
 
 // Include required headers for FileManager implementation
 #include "Notepad_plus.h"
@@ -2839,3 +3027,5 @@ void Buffer::normalizeTabName(std::wstring& tabName)
 // ============================================================================
 // End of FileManager implementation (global namespace)
 // ============================================================================
+
+#endif // NPP_LINUX

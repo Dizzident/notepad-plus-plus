@@ -29,8 +29,6 @@
 #include <QtWidgets/QFrame>
 #include <QtGui/QFontDatabase>
 
-namespace QtControls {
-
 // ============================================================================
 // GlobalMappers Implementation
 // ============================================================================
@@ -110,9 +108,11 @@ GlobalMappers& GlobalMappers::instance()
 }
 
 // ============================================================================
-// UserLangContainer Implementation
+// QtUserLangContainer Implementation (in QtControls namespace)
 // ============================================================================
-UserLangContainer::UserLangContainer()
+namespace QtControls {
+
+QtUserLangContainer::QtUserLangContainer()
     : _name("new user define"), _ext(""), _isDarkModeTheme(false), _udlVersion("")
 {
     for (int i = 0; i < SCE_USER_KWLIST_TOTAL; ++i) {
@@ -121,7 +121,7 @@ UserLangContainer::UserLangContainer()
     _styles.resize(SCE_USER_STYLE_TOTAL_STYLES);
 }
 
-UserLangContainer::UserLangContainer(const QString& name, const QString& ext,
+QtUserLangContainer::QtUserLangContainer(const QString& name, const QString& ext,
                                      bool isDarkModeTheme, const QString& udlVer)
     : _name(name), _ext(ext), _isDarkModeTheme(isDarkModeTheme), _udlVersion(udlVer)
 {
@@ -131,14 +131,15 @@ UserLangContainer::UserLangContainer(const QString& name, const QString& ext,
     _styles.resize(SCE_USER_STYLE_TOTAL_STYLES);
 }
 
-void UserLangContainer::addStyler(int styleID, const QString& name)
+void QtUserLangContainer::addStyler(int styleID, const QString& name)
 {
     if (styleID >= 0 && styleID < SCE_USER_STYLE_TOTAL_STYLES) {
         // Style already exists in vector, just update name if needed
+        (void)name;
     }
 }
 
-UserLangContainer::Style* UserLangContainer::getStyler(int styleID)
+QtUserLangContainer::Style* QtUserLangContainer::getStyler(int styleID)
 {
     if (styleID >= 0 && styleID < static_cast<int>(_styles.size())) {
         return &_styles[styleID];
@@ -146,13 +147,15 @@ UserLangContainer::Style* UserLangContainer::getStyler(int styleID)
     return nullptr;
 }
 
-const UserLangContainer::Style* UserLangContainer::getStyler(int styleID) const
+const QtUserLangContainer::Style* QtUserLangContainer::getStyler(int styleID) const
 {
     if (styleID >= 0 && styleID < static_cast<int>(_styles.size())) {
         return &_styles[styleID];
     }
     return nullptr;
 }
+
+} // namespace QtControls
 
 // ============================================================================
 // StyleDialog Implementation
@@ -564,7 +567,7 @@ bool StringDialog::isAllowed(const QString& text) const
 // ============================================================================
 UserDefineDialog::UserDefineDialog(QWidget* parent)
     : StaticDialog(parent)
-    , _pCurrentUserLang(std::make_unique<UserLangContainer>())
+    , _pCurrentUserLang(std::make_unique<QtControls::QtUserLangContainer>())
 {
     // Initialize keyword list pointers
     for (int i = 0; i < 8; ++i) {
@@ -1182,6 +1185,13 @@ void UserDefineDialog::changeStyle()
     // TODO: Emit signal or call parent to handle docking
 }
 
+void UserDefineDialog::setTabName(int index, const wchar_t* name)
+{
+    if (_mainTabs && index >= 0 && index < _mainTabs->count()) {
+        _mainTabs->setTabText(index, QString::fromWCharArray(name));
+    }
+}
+
 void UserDefineDialog::onLanguageChanged(int index)
 {
     enableLangAndControlsBy(index);
@@ -1546,4 +1556,3 @@ void UserDefineDialog::updateStyleButtons()
     updateBtn(_defaultStyleBtn, SCE_USER_STYLE_DEFAULT);
 }
 
-} // namespace QtControls

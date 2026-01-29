@@ -26,6 +26,10 @@
 #include <QMutex>
 #include <QList>
 
+// Include LangType and Position definitions
+#include "MISC/PluginsManager/Notepad_plus_msgs.h"
+#include "Parameters.h"
+
 // Forward declaration for Scintilla
 namespace Scintilla {
 class ScintillaEditView;
@@ -41,7 +45,8 @@ enum class BufferStatus {
 };
 
 // Document language type enumeration (mirrors LangType from Notepad_plus_msgs.h)
-enum class DocLangType {
+// Using regular enum (not enum class) for implicit conversion compatibility with LangType
+enum DocLangType {
     L_TEXT, L_PHP, L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_GO, L_RC,
     L_HTML, L_XML, L_MAKEFILE, L_PASCAL, L_BATCH, L_INI,
     L_ASCII, L_USER, L_ASP, L_SQL, L_VB, L_JS_EMBEDDED, L_CSS,
@@ -68,15 +73,25 @@ enum class LineEnding {
     OSDefault
 };
 
-// Position structure for saving/restoring cursor position
-struct Position {
-    int line = 0;
-    int column = 0;
-    int pos = 0;
-    int anchor = 0;
-    int firstVisibleLine = 0;
-    int xOffset = 0;
+// Buffer change notification flags (mirrors BufferStatusInfo from Windows Buffer.h)
+enum BufferStatusInfo {
+    BufferChangeNone        = 0x000,  // Nothing to change
+    BufferChangeLanguage    = 0x001,  // Language was altered
+    BufferChangeDirty       = 0x002,  // Buffer has changed dirty state
+    BufferChangeFormat      = 0x004,  // EOL type was changed
+    BufferChangeUnicode     = 0x008,  // Unicode type was changed
+    BufferChangeReadonly    = 0x010,  // Readonly state was changed, can be both file and user
+    BufferChangeStatus      = 0x020,  // Filesystem Status has changed
+    BufferChangeTimestamp   = 0x040,  // Timestamp was changed
+    BufferChangeFilename    = 0x080,  // Filename was changed
+    BufferChangeRecentTag   = 0x100,  // Recent tag has changed
+    BufferChangeLexing      = 0x200,  // Document needs lexing
+    BufferChangeMask        = 0x3FF   // Mask: covers all changes
 };
+
+// Position structure is defined in Parameters.h
+// Use a typedef for QtCore::Position to refer to the global ::Position
+typedef ::Position Position;
 
 // Map position for document map
 struct MapPosition {
@@ -177,6 +192,9 @@ public:
     void setLangTypeFromFileName(const QString& fileName);
     void setLangTypeFromContent();
 
+    // Compatibility: get language as LangType
+    LangType getLanguage() const { return static_cast<LangType>(getLangType()); }
+
     // Format
     bool isIndentTab() const;
     void setIndentTab(bool useTab);
@@ -243,6 +261,34 @@ public:
     QString getCommentStart() const;
     QString getCommentEnd() const;
 
+    // Compatibility methods for ScintillaEditView integration
+    void setHideLineChanged(bool isHide, size_t location);
+    void setHeaderLineState(const std::vector<size_t>& folds, void* identifier);
+    std::vector<size_t> getHeaderLineState(void* identifier) const;
+    void* getDocument() const;
+
+    // Position compatibility (for save/restore) - uses Position from QtCore namespace
+    void setPosition(const Position& pos, void* identifier);
+    Position getPosition(void* identifier) const;
+
+    // Unicode mode compatibility
+    enum UniMode { uni8Bit, uniUTF8, uni16BE, uni16LE, uniCookie, uni7Bit, uni16BE_NoBOM, uni16LE_NoBOM, uniUTF8_NoBOM };
+    UniMode getUnicodeMode() const;
+    void setUnicodeMode(UniMode mode);
+
+    // EOL format compatibility
+    enum EolType { eolWindows, eolUnix, eolMac, eolUnknown };
+    EolType getEolFormat() const;
+    void setEolFormat(EolType format);
+
+    // Lexing state
+    bool getNeedsLexing() const;
+    void setNeedsLexing(bool needs);
+
+    // Encoding as int (for compatibility with Windows API)
+    int getEncodingNumber() const;
+    void setEncodingNumber(int encoding);
+
 signals:
     void contentChanged();
     void statusChanged(BufferStatus status);
@@ -275,7 +321,7 @@ private:
     LineEnding _lineEnding = LineEnding::OSDefault;
 
     // Language/Lexer
-    DocLangType _langType = DocLangType::L_TEXT;
+    DocLangType _langType = L_TEXT;
     QString _userLangName;
 
     // Status
@@ -324,6 +370,14 @@ private:
 
     // Mutex for thread safety
     mutable QMutex _mutex;
+
+    // Compatibility members for ScintillaEditView integration
+    UniMode _unicodeMode = uniUTF8;
+    EolType _eolFormat = eolUnix;
+    bool _needsLexing = false;
+    void* _document = nullptr;
+    std::vector<std::vector<size_t>> _foldStates;  // Per-view fold states
+    std::vector<void*> _viewIdentifiers;  // View identifiers for fold states
 
     // Helper methods
     void updateStatus();
@@ -389,4 +443,27 @@ private:
     mutable QMutex _mutex;
 };
 
+/**
+ * @brief The FileManager class provides compatibility with Notepad++ Windows API.
+ *
+ * This is a simplified compatibility layer that wraps BufferManager functionality
+ * to match the Windows FileManager interface.
+ */
+class FileManager {
+public:
+    static FileManager* getInstance();
+
+    Buffer* getBufferByID(Buffer* id);
+    Buffer* newEmptyDocument();
+
+private:
+    FileManager() = default;
+    ~FileManager() = default;
+    FileManager(const FileManager&) = delete;
+    FileManager& operator=(const FileManager&) = delete;
+};
+
 } // namespace QtCore
+
+// Compatibility macro for Notepad++ Windows API
+#define MainFileManager (*QtCore::FileManager::getInstance())

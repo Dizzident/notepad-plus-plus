@@ -35,6 +35,12 @@
 #include "Window.h"
 #include "menuCmdID.h"
 #include "resource.h"
+#include "ScintillaComponent/UserDefineResource.h"
+
+#ifndef NPP_LINUX
+#include "ScintillaComponent/FindReplaceDlg.h"
+#include "ScintillaComponent/UserDefineDialog.h"
+#endif
 
 
 static constexpr MenuPosition g_menuFolderPositions[]{
@@ -735,6 +741,7 @@ void NativeLangSpeaker::changeStyleCtrlsLang(HWND hDlg, int* idArray, const char
 	}
 }
 
+#ifndef NPP_LINUX
 void NativeLangSpeaker::changeUserDefineLangPopupDlg(HWND hDlg) const
 {
 	if (!_nativeLang) return;
@@ -928,6 +935,7 @@ void NativeLangSpeaker::changeFindReplaceDlgLang(FindReplaceDlg& findReplaceDlg)
 	changeDlgLang(findReplaceDlg.getHSelf(), "Find");
 }
 
+#ifndef NPP_LINUX
 void NativeLangSpeaker::changePluginsAdminDlgLang(PluginsAdminDlg& pluginsAdminDlg)
 {
 	if (_nativeLang)
@@ -993,6 +1001,7 @@ void NativeLangSpeaker::changePluginsAdminDlgLang(PluginsAdminDlg& pluginsAdminD
 		}
 	}
 }
+#endif
 
 void NativeLangSpeaker::changePreferenceDlgLang(PreferenceDlg& preference)
 {
@@ -1642,3 +1651,4 @@ void NativeLangSpeaker::resizeCheckboxRadioBtn(HWND hWnd)
 		}
 	}
 }
+#endif

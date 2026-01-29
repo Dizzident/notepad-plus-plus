@@ -2380,6 +2380,11 @@ void PreferenceDlg::connectSignals()
 
 void PreferenceDlg::doDialog()
 {
+    doDialog(false);
+}
+
+void PreferenceDlg::doDialog(bool /*isRTL*/)
+{
     if (!isCreated()) {
         create(tr("Preferences"), false);
         setupUI();
@@ -2448,6 +2453,13 @@ void PreferenceDlg::onCancelClicked()
 void PreferenceDlg::onApplyClicked()
 {
     saveSettings();
+}
+
+bool PreferenceDlg::run_dlgProc(QEvent* /*event*/)
+{
+    // Handle any custom event processing here
+    // Return true if event was handled, false otherwise
+    return false;
 }
 
 } // namespace QtControls

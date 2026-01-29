@@ -24,6 +24,7 @@
 #include <cstdint>
 using COLORREF = uint32_t;
 using HWND = void*;
+using ULONG = unsigned long;
 #endif
 
 enum class FluentColor;
