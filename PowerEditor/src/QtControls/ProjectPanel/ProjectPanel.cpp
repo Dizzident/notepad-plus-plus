@@ -90,6 +90,12 @@ void ProjectPanel::doDialog()
     display(true);
 }
 
+bool ProjectPanel::run_dlgProc(QEvent* event)
+{
+    (void)event;
+    return false;
+}
+
 void ProjectPanel::setupUI()
 {
     _widget = new QWidget(this);

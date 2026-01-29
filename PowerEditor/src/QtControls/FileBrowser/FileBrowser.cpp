@@ -67,6 +67,12 @@ void FileBrowser::doDialog()
     activateWindow();
 }
 
+bool FileBrowser::run_dlgProc(QEvent* event)
+{
+    (void)event;
+    return false;
+}
+
 void FileBrowser::setupUI()
 {
     auto* mainLayout = new QVBoxLayout(this);

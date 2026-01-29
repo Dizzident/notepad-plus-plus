@@ -75,6 +75,12 @@ public:
     // Show the panel
     void doDialog();
 
+    // Bring getDialog into public scope for getWidget
+    using StaticDialog::getDialog;
+
+    // Get widget for docking integration
+    QWidget* getWidget() const { return getDialog(); }
+
     // Add text to history
     void addToHistory(const QString& text);
 

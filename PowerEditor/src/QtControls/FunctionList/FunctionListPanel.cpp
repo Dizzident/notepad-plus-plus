@@ -567,6 +567,12 @@ void FunctionListPanel::doDialog()
     }
 }
 
+bool FunctionListPanel::run_dlgProc(QEvent* event)
+{
+    (void)event;
+    return false;
+}
+
 void FunctionListPanel::parseCurrentDocument()
 {
     if (!_ppEditView || !*_ppEditView) {

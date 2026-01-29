@@ -43,6 +43,15 @@ public:
     void init(ScintillaEditView** ppEditView);
     void doDialog();
 
+    // Event processing override
+    bool run_dlgProc(QEvent* event) override;
+
+    // Bring getDialog into public scope for getWidget
+    using StaticDialog::getDialog;
+
+    // Get widget for docking integration
+    QWidget* getWidget() const { return getDialog(); }
+
     void setRootPath(const QString& path);
     QString getRootPath() const { return _rootPath; }
     void navigateToFile(const QString& filePath);

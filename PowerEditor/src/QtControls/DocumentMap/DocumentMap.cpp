@@ -313,6 +313,12 @@ void DocumentMap::doDialog()
     display(true);
 }
 
+bool DocumentMap::run_dlgProc(QEvent* event)
+{
+    (void)event;
+    return false;
+}
+
 void DocumentMap::reloadMap()
 {
     if (_mapView && _ppEditView && *_ppEditView) {

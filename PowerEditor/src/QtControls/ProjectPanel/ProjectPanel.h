@@ -79,6 +79,15 @@ public:
     // Show the panel
     void doDialog();
 
+    // Event processing override
+    bool run_dlgProc(QEvent* event) override;
+
+    // Bring getDialog into public scope for getWidget
+    using StaticDialog::getDialog;
+
+    // Get widget for docking integration
+    QWidget* getWidget() const { return getDialog(); }
+
     // Workspace operations
     void newWorkspace();
     void openWorkspace(const QString& filePath);

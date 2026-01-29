@@ -104,6 +104,7 @@ public:
 
     // Special view modes
     void toggleFullScreen();
+    void setFullScreen(bool fullScreen);
     void togglePostItMode();
     void toggleDistractionFreeMode();
     bool isFullScreen() const { return _isFullScreen; }

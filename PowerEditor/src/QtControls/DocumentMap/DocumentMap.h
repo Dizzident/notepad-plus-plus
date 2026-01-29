@@ -77,6 +77,15 @@ public:
     // Show the dialog/panel
     void doDialog();
 
+    // Event processing override
+    bool run_dlgProc(QEvent* event) override;
+
+    // Bring getDialog into public scope for getWidget
+    using StaticDialog::getDialog;
+
+    // Get widget for docking integration
+    QWidget* getWidget() const { return getDialog(); }
+
     // Update the map view from the main editor
     void updateMap();
 

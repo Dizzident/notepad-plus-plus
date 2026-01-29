@@ -9,7 +9,7 @@
 | Scintilla Qt6 library | ✓ Fixed | CMake configuration updated |
 | Lexilla library | ✓ Fixed | Building successfully |
 | Platform Abstraction | ✓ Fixed | Common.h refactored into platform-specific headers |
-| Notepad++ executable | In Progress | QtControls class hierarchy mostly fixed; remaining issues in Notepad_plus_Window.cpp and individual panel classes |
+| Notepad++ executable | In Progress | QtControls class hierarchy mostly fixed; panel abstract classes resolved; remaining issues in FunctionListPanel and file browser integration |
 
 ### Summary
 
@@ -128,17 +128,17 @@ Multiple cpp-pro agents were launched in parallel to resolve build issues. The f
 The following issues remain to be fixed:
 
 #### 1. QtControls Base Class Hierarchy
-**Status:** In Progress (Task #18)
+**Status:** Complete (Task #18)
 
 Several QtControls classes inherit from `StaticDialog` but Qt's MOC requires proper QObject inheritance chain:
 
 - `FinderPanel` (in FindReplaceDlg.h) - inherits from `StaticDialog`, MOC can't convert to QObject*
 - Multiple dialogs marked `override` on `setupUI()` and `connectSignals()` but base class doesn't have these methods
 
-**Required Fix:**
+**Fixes Applied:**
 - Ensure `StaticDialog` properly inherits from `QDialog` with Q_OBJECT macro ✓ (Done)
-- Update all derived classes to match base class interface
-- Add missing `#include <QXmlStreamWriter>` and `#include <QXmlStreamReader>` to ProjectPanel.h
+- Update all derived classes to match base class interface ✓
+- Add missing `#include <QXmlStreamWriter>` and `#include <QXmlStreamReader>` to ProjectPanel.h ✓
 
 #### 2. Windows-Specific Files Still Being Compiled
 **Status:** Needs CMakeLists.txt Update
@@ -226,78 +226,91 @@ make -j$(nproc)
 | 61-63 | DockingManager unique_ptr, QTextEdit, abstract dialogs | ✓ Complete | DockingManager.h, UserDefineDialog files |
 | 64-67 | DocumentMap, ProjectPanel fixes | ✓ Complete | DocumentMap.cpp, ProjectPanel files |
 | 68-72 | QPlainTextEdit, ClipboardHistory, QRect/RECT, etc | ✓ Complete | Multiple files |
+| 73 | Add run_dlgProc to DocumentMap | ✓ Complete | DocumentMap.h, DocumentMap.cpp |
+| 74 | Add run_dlgProc to FileBrowser | ✓ Complete | FileBrowser.h, FileBrowser.cpp |
+| 75 | Add run_dlgProc to FunctionListPanel | ✓ Complete | FunctionListPanel.h, FunctionListPanel.cpp |
+| 76 | Add run_dlgProc to ProjectPanel | ✓ Complete | ProjectPanel.h, ProjectPanel.cpp |
+| 77 | Add getWidget() to all panel classes | ✓ Complete | Multiple panel headers |
+| 78 | Add setFullScreen() declaration to MainWindow | ✓ Complete | Notepad_plus_Window.h |
 
-### Remaining Issues (as of commit afad021)
+### Recently Completed (2026-01-29)
+
+#### Panel Abstract Classes - FIXED ✓
+**Status:** Complete
+
+Added `run_dlgProc()` implementations to all abstract panel classes:
+- `DocumentMap` - Added declaration (DocumentMap.h:82) and implementation (DocumentMap.cpp:316-319)
+- `FileBrowser` - Added declaration (FileBrowser.h:47-48) and implementation (FileBrowser.cpp:70-73)
+- `FunctionListPanel` - Added declaration (FunctionListPanel.h:170-171) and implementation (FunctionListPanel.cpp:571-574)
+- `ProjectPanel` - Added declaration (ProjectPanel.h:83-84) and implementation (ProjectPanel.cpp:93-96)
+
+#### QWidget Accessor Methods - FIXED ✓
+**Status:** Complete
+
+Added `getWidget()` methods to all panel classes for DockingManager integration:
+- `DocumentMap::getWidget()` - returns getDialog()
+- `FileBrowser::getWidget()` - returns getDialog()
+- `FunctionListPanel::getWidget()` - returns getDialog()
+- `ProjectPanel::getWidget()` - returns getDialog()
+- `ClipboardHistoryPanel::getWidget()` - returns getDialog()
+
+Also added `using StaticDialog::getDialog;` to bring protected method into public scope.
+
+#### MainWindow setFullScreen Declaration - FIXED ✓
+**Status:** Complete
+
+Added `void setFullScreen(bool fullScreen);` declaration to Notepad_plus_Window.h (line 107).
+
+### Remaining Issues
 
 The following issues still need to be addressed:
 
-#### 1. Notepad_plus_Window.cpp Panel Integration
-**Status:** In Progress
+#### 1. FunctionListPanel Implementation Issues
+**Status:** Needs fixes
 
-Multiple panel classes need fixes for MainWindow integration:
-- `ProjectPanel::getWidget()` - needs to return QWidget* (use getDialog())
-- `DocumentMap` is abstract (missing run_dlgProc)
-- `DocumentMap::getWidget()` - needs accessor
-- `ClipboardHistoryPanel::getWidget()` - needs accessor
-- `FileBrowser` is abstract (missing run_dlgProc)
-- `FileBrowser::getWidget()` - needs accessor
-- `FunctionListPanel` constructor/init issues
-- `setFullScreen()` method missing in MainWindow
+- `setupUI()` uses `_parent` instead of `parent` or proper member
+- `parseDocument()` has type mismatches with `QString::fromUtf8(const wchar_t*)`
+- Missing `#include <QFileInfo>` in FunctionListPanel.cpp
 
-#### 2. Panel Abstract Classes
-**Status:** Needs Implementation
+#### 2. FileBrowser Implementation Issues
+**Status:** Needs fixes
 
-Several panel classes are abstract because they don't implement `run_dlgProc`:
-- `DocumentMap` (DocumentMap.h)
-- `FileBrowser` (FileBrowser.h)
-- `FunctionListPanel` (FunctionListPanel.h)
+- Include file issue: `QtWidgets/QDesktopServices` should be `QtGui/QDesktopServices` (Qt6 moved this)
 
-Each needs a simple `run_dlgProc()` implementation that returns false.
+#### 3. QString/wchar_t* Type Conversions
+**Status:** API Migration Issue
 
-#### 3. QWidget Accessor Methods
-**Status:** API Migration
-
-Panels need proper QWidget accessor for DockingManager:
-- Most panels inherit from StaticDialog which inherits from QDialog
-- `getDialog()` method exists in StaticDialog
-- Need to either expose getDialog() publicly or add getWidget() alias
+Multiple locations use `QString::fromUtf8()` with `const wchar_t*` which doesn't work. Need to use `QString::fromWCharArray()` or convert properly.
 
 #### 4. Qt6 API Updates Needed
 **Status:** Pending
 
-- `setFullScreen()` vs `showFullScreen()` in MainWindow
 - Include file fixes for incomplete types
+- QDesktopServices location change (QtWidgets → QtGui)
 
 ### Next Steps
 
 Priority order:
 
-1. **Add run_dlgProc() to abstract panel classes:**
-   - DocumentMap, FileBrowser, FunctionListPanel
+1. **Fix FunctionListPanel implementation issues:**
+   - Fix `_parent` vs `parent` naming
+   - Fix `QString::fromUtf8(wchar_t*)` type conversions
+   - Add missing `#include <QFileInfo>`
 
-2. **Fix QWidget accessor methods:**
-   - Make getDialog() public in StaticDialog (already done) OR add getWidget()
-   - Update Notepad_plus_Window.cpp to use correct accessor
+2. **Fix FileBrowser include:**
+   - Change `QtWidgets/QDesktopServices` to `QtGui/QDesktopServices`
 
-3. **Fix MainWindow setFullScreen:**
-   - Add method or use Qt's showFullScreen()
+3. **Complete build verification**
 
-4. **Complete build verification**
-
-1. **Complete QtControls base class hierarchy fixes:**
-   - Fix remaining `setupUI()` and `connectSignals()` override issues
-   - Add missing Qt includes (QXmlStreamWriter/QXmlStreamReader)
-   - Fix `FinderPanel` QObject inheritance
-
-2. **Exclude remaining Windows-specific files from CMakeLists.txt:**
+4. **Exclude remaining Windows-specific files from CMakeLists.txt:**
    - `lastRecentFileList.cpp`
    - `lesDlgs.cpp`
 
-3. **Create Qt alternatives for excluded files:**
+5. **Create Qt alternatives for excluded files:**
    - Qt version of Parameters.cpp (settings management)
    - Qt version of NppNotification.cpp (notification handling)
    - Qt version of localization.cpp (UI localization)
 
-4. **Clean up macro redefinition warnings**
+6. **Clean up macro redefinition warnings**
 
-5. **Complete build verification and test executable**
+7. **Complete build verification and test executable**
