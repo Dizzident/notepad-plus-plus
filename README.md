@@ -1,6 +1,8 @@
 What is Notepad++ ?
 ===================
 
+This is a fork of Notepad++ where I am experimenting with converting a large windows based application into a Linux native application.
+
 [![GitHub release](https://img.shields.io/github/release/notepad-plus-plus/notepad-plus-plus.svg)](../../releases/latest)&nbsp;&nbsp;&nbsp;&nbsp;[![Build Status](https://img.shields.io/github/actions/workflow/status/notepad-plus-plus/notepad-plus-plus/CI_build.yml)](https://github.com/notepad-plus-plus/notepad-plus-plus/actions/workflows/CI_build.yml)
 &nbsp;&nbsp;&nbsp;&nbsp;[![Join the discussions at https://community.notepad-plus-plus.org/](https://notepad-plus-plus.org/assets/images/NppCommunityBadge.svg)](https://community.notepad-plus-plus.org/)
 
@@ -42,21 +44,6 @@ See the [Linux documentation](docs/) for detailed information:
 - [User Manual](docs/USER_MANUAL.md)
 - [Architecture Documentation](docs/ARCHITECTURE.md)
 - [FAQ](docs/FAQ.md)
-
-
-Notepad++ GPG Release Key
--------------------------
-_Since the release of version 7.6.5 Notepad++ is signed using GPG with the following key:_
-
-- **Signer:** Notepad++
-- **E-mail:** don.h@free.fr
-- **Key ID:** 0x8D84F46E
-- **Key fingerprint:** 14BC E436 2749 B2B5 1F8C 7122 6C42 9F1D 8D84 F46E
-- **Key type:** RSA 4096/4096
-- **Created:** 2019-03-11
-- **Expires:** 2027-03-13
-
-https://github.com/notepad-plus-plus/notepad-plus-plus/blob/master/nppGpgPub.asc
 
 
 Supported OS
@@ -121,4 +108,5 @@ Contributions are welcome. Be mindful of our [Contribution Rules](CONTRIBUTING.m
 For Linux-specific contributions, see [Linux Contributing Guide](docs/CONTRIBUTING.md).
 
 [Notepad++ Contributors](https://github.com/notepad-plus-plus/notepad-plus-plus/graphs/contributors)
+
 
