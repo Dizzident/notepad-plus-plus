@@ -164,7 +164,7 @@ jobs:
         run: ninja -j$(nproc)
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: notepad-plus-plus-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}
           path: PowerEditor/src/build/notepad-plus-plus
@@ -225,7 +225,7 @@ jobs:
             . 2> cppcheck-report.xml || true
 
       - name: Upload analysis results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: static-analysis-report
           path: |

@@ -73,21 +73,21 @@ jobs:
 
       - name: Archive artifacts (x64 Release)
         if: matrix.build_platform == 'x64' && matrix.build_configuration == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Notepad++.MSVC.x64.Release
           path: PowerEditor\bin64\Notepad++.exe
 
       - name: Archive artifacts (Win32 Release)
         if: matrix.build_platform == 'Win32' && matrix.build_configuration == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Notepad++.MSVC.Win32.Release
           path: PowerEditor\bin\Notepad++.exe
 
       - name: Archive artifacts (ARM64 Release)
         if: matrix.build_platform == 'ARM64' && matrix.build_configuration == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Notepad++.MSVC.ARM64.Release
           path: PowerEditor\binarm64\Notepad++.exe
@@ -149,14 +149,14 @@ jobs:
 
       - name: Archive artifacts (Release)
         if: matrix.build_configuration == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Notepad++.MinGW.${{ matrix.build_platform }}.Release
           path: bin.${{ matrix.build_platform }}\notepad++.exe
 
       - name: Archive artifacts (Debug)
         if: matrix.build_configuration == 'Debug'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Notepad++.MinGW.${{ matrix.build_platform }}.Debug
           path: bin.${{ matrix.build_platform }}-debug\notepad++.exe
@@ -216,7 +216,7 @@ jobs:
           cmake --build . --config ${{ matrix.build_configuration }}
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Notepad++.CMake.${{ matrix.build_platform }}.${{ matrix.build_configuration }}
           path: |

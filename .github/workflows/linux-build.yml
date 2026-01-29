@@ -86,7 +86,7 @@ jobs:
         run: ninja -j$(nproc)
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: notepad-plus-plus-ubuntu-${{ matrix.ubuntu_version }}-${{ matrix.compiler }}-${{ matrix.build_type }}
           path: |
@@ -148,7 +148,7 @@ jobs:
         run: ninja -j$(nproc)
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: notepad-plus-plus-fedora-${{ matrix.compiler }}-${{ matrix.build_type }}
           path: |
@@ -200,7 +200,7 @@ jobs:
         run: ninja -j$(nproc)
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: notepad-plus-plus-arch-${{ matrix.build_type }}
           path: |
@@ -315,7 +315,7 @@ jobs:
           lcov --remove coverage.info '/usr/*' --output-file coverage.info || true
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-report
           path: |

@@ -105,7 +105,7 @@ jobs:
           fi
 
       - name: Upload clang-format report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: clang-format-report
           path: clang-format-output.txt
@@ -186,7 +186,7 @@ jobs:
           echo "clang-tidy analysis complete"
 
       - name: Upload clang-tidy report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: clang-tidy-report
           path: PowerEditor/src/clang-tidy-report.txt
@@ -262,7 +262,7 @@ jobs:
           echo "cppcheck analysis complete"
 
       - name: Upload cppcheck report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cppcheck-report
           path: |

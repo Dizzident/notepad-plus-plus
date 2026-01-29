@@ -72,7 +72,7 @@ jobs:
         run: strip notepad-plus-plus || true
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: notepad-plus-plus-linux-${{ matrix.arch }}
           path: PowerEditor/src/build/notepad-plus-plus
@@ -189,7 +189,7 @@ jobs:
           fi
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: notepad-plus-plus-appimage
           path: |
@@ -268,7 +268,7 @@ jobs:
           fi
 
       - name: Upload Flatpak
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: notepad-plus-plus-flatpak
           path: flatpak-build/*.flatpak
@@ -358,7 +358,7 @@ jobs:
           dpkg-deb --build debian-package notepad-plus-plus_8.6.0-1_amd64.deb
 
       - name: Upload Debian package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: notepad-plus-plus-debian
           path: PowerEditor/src/build-deb/*.deb
@@ -449,7 +449,7 @@ jobs:
           rpmbuild -ba ~/rpmbuild/SPECS/notepad-plus-plus.spec || true
 
       - name: Upload RPM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: notepad-plus-plus-rpm
           path: /github/home/rpmbuild/RPMS/**/*.rpm
