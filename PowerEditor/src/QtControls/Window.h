@@ -8,18 +8,21 @@
 
 #pragma once
 
+#include <QObject>
 #include <QWidget>
 #include <QRect>
 #include <QString>
 
 namespace QtControls {
 
-class Window
+class Window : public QObject
 {
+    Q_OBJECT
+
 public:
     //! \name Constructors & Destructor
     //@{
-    Window() = default;
+    Window(QObject* parent = nullptr) : QObject(parent) {}
     Window(const Window&) = delete;
     virtual ~Window() = default;
     //@}

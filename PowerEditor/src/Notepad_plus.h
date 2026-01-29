@@ -353,6 +353,27 @@ public:
 	DocTabView* getSubDocTab() { return &_subDocTab; }
 	DocTabView* getCurrentDocTab() { return _pDocTab; }
 
+	// Brace matching for Qt implementation
+	void findMatchingBracePos(intptr_t& braceAtCaret, intptr_t& braceOpposite);
+
+	// View commands for Qt implementation
+	void fullScreenToggle();
+	void postItToggle();
+	void distractionFreeToggle();
+	int otherView();
+	int switchEditViewTo(int gid);
+	void activateDoc(size_t pos);
+	void activateNextDoc(bool direction);
+
+	// Search commands for Qt implementation
+	void cutMarkedLines();
+	void copyMarkedLines();
+	void pasteToMarkedLines();
+	void deleteMarkedLines(bool isMarked);
+	void inverseMarks();
+	bool goToNextIndicator(int indicID2Search, bool isWrap = true) const;
+	bool goToPreviousIndicator(int indicID2Search, bool isWrap = true) const;
+
 private:
 	Notepad_plus_Window* _pPublicInterface = nullptr;
     Window* _pMainWindow = nullptr;
@@ -429,9 +450,6 @@ private:
 
 	// For FullScreen/PostIt/DistractionFree features
 	VisibleGUIConf	_beforeSpecialView;
-	void fullScreenToggle();
-	void postItToggle();
-	void distractionFreeToggle();
 
 	// Keystroke macro recording and playback
 	Macro _macro;
@@ -523,10 +541,6 @@ private:
 		return _activeView;
 	}
 
-	int otherView() {
-		return (_activeView == MAIN_VIEW?SUB_VIEW:MAIN_VIEW);
-	}
-
 	int otherFromView(int whichOne) {
 		return (whichOne == MAIN_VIEW?SUB_VIEW:MAIN_VIEW);
 	}
@@ -534,8 +548,6 @@ private:
 	bool canHideView(int whichOne);	//true if view can safely be hidden (no open docs etc)
 
 	bool isEmpty(); // true if we have 1 view with 1 clean, untitled doc
-
-	int switchEditViewTo(int gid);	//activate other view (set focus etc)
 
 	void docGotoAnotherEditView(FileTransferMode mode);	//TransferMode
 	void docOpenInNewInstance(FileTransferMode mode, int x = 0, int y = 0);
@@ -632,19 +644,10 @@ private:
 		_pEditView->execute(SCI_MARKERDELETEALL, MARK_BOOKMARK);
 	}
 
-	void copyMarkedLines();
-	void cutMarkedLines();
-	void deleteMarkedLines(bool isMarked);
-	void pasteToMarkedLines();
 	void deleteMarkedline(size_t ln);
-	void inverseMarks();
 	void replaceMarkedline(size_t ln, const wchar_t *str);
 	std::wstring getMarkedLine(size_t ln);
-    void findMatchingBracePos(intptr_t& braceAtCaret, intptr_t& braceOpposite);
     bool braceMatch();
-
-    void activateNextDoc(bool direction);
-	void activateDoc(size_t pos);
 
 	void updateStatusBar();
 	size_t getSelectedCharNumber(UniMode);
@@ -688,8 +691,6 @@ private:
 	}
 	std::vector<std::wstring> loadCommandlineParams(const wchar_t * commandLine, const CmdLineParamsDTO * pCmdParams);
 	bool noOpenedDoc() const;
-	bool goToPreviousIndicator(int indicID2Search, bool isWrap = true) const;
-	bool goToNextIndicator(int indicID2Search, bool isWrap = true) const;
 	int wordCount();
 
 	void wsTabConvert(spaceTab whichWay);

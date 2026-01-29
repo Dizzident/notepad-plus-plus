@@ -39,7 +39,7 @@ public:
     ~ListView() override = default;
 
     // Initialization
-    virtual bool init(QWidget* parent);
+    virtual void init(QWidget* parent) override;
     void destroy() override;
 
     // Item management

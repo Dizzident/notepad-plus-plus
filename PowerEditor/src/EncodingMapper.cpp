@@ -19,6 +19,11 @@
 #include "EncodingMapper.h"
 #include "Scintilla.h"
 
+#ifndef _WIN32
+#include <strings.h>
+#define _stricmp strcasecmp
+#endif
+
 // Don't change the order
 static EncodingUnit encodings[] = {
     {1250,  "windows-1250"},                                                                    //IDM_FORMAT_WIN_1250

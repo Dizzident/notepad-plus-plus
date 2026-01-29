@@ -26,6 +26,8 @@ class QHBoxLayout;
 class QVBoxLayout;
 class QGridLayout;
 
+enum fontStyleType {BOLD_STATUS, ITALIC_STATUS, UNDERLINE_STATUS};
+
 namespace QtControls {
 
 // Forward declaration

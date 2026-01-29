@@ -42,7 +42,7 @@ void ListViewTest::cleanup() {
 // Initialization Tests
 // ============================================================================
 void ListViewTest::testInit() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
     QVERIFY(_listView->getListWidget() != nullptr);
 }
 
@@ -56,7 +56,7 @@ void ListViewTest::testDestroy() {
 // Item Management Tests
 // ============================================================================
 void ListViewTest::testAddItem() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -65,7 +65,7 @@ void ListViewTest::testAddItem() {
 }
 
 void ListViewTest::testInsertItem() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 3");
@@ -76,7 +76,7 @@ void ListViewTest::testInsertItem() {
 }
 
 void ListViewTest::testRemoveItem() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -88,7 +88,7 @@ void ListViewTest::testRemoveItem() {
 }
 
 void ListViewTest::testClear() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -100,7 +100,7 @@ void ListViewTest::testClear() {
 }
 
 void ListViewTest::testGetItemCount() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     QCOMPARE(_listView->getItemCount(), 0);
 
@@ -115,14 +115,14 @@ void ListViewTest::testGetItemCount() {
 // Item Text Tests
 // ============================================================================
 void ListViewTest::testGetItemText() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Test Text");
     QCOMPARE(_listView->getItemText(0), QString("Test Text"));
 }
 
 void ListViewTest::testSetItemText() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Original");
     _listView->setItemText(0, "Updated");
@@ -133,7 +133,7 @@ void ListViewTest::testSetItemText() {
 // Item Data Tests
 // ============================================================================
 void ListViewTest::testSetItemData() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item");
     _listView->setItemData(0, QVariant(42), Qt::UserRole);
@@ -143,7 +143,7 @@ void ListViewTest::testSetItemData() {
 }
 
 void ListViewTest::testGetItemData() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item");
     _listView->setItemData(0, QVariant("test data"), Qt::UserRole);
@@ -156,7 +156,7 @@ void ListViewTest::testGetItemData() {
 // Selection Tests
 // ============================================================================
 void ListViewTest::testGetSelectedIndex() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -166,7 +166,7 @@ void ListViewTest::testGetSelectedIndex() {
 }
 
 void ListViewTest::testSetSelectedIndex() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -179,7 +179,7 @@ void ListViewTest::testSetSelectedIndex() {
 }
 
 void ListViewTest::testGetSelectedIndexes() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->setSelectionMode(ListViewSelectionMode::Multi);
     _listView->addItem("Item 1");
@@ -194,7 +194,7 @@ void ListViewTest::testGetSelectedIndexes() {
 }
 
 void ListViewTest::testSetSelectedIndexes() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->setSelectionMode(ListViewSelectionMode::Multi);
     _listView->addItem("Item 1");
@@ -210,7 +210,7 @@ void ListViewTest::testSetSelectedIndexes() {
 }
 
 void ListViewTest::testSelectItem() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -223,7 +223,7 @@ void ListViewTest::testSelectItem() {
 }
 
 void ListViewTest::testIsItemSelected() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -238,7 +238,7 @@ void ListViewTest::testIsItemSelected() {
 // Selection Mode Tests
 // ============================================================================
 void ListViewTest::testSetSelectionMode() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->setSelectionMode(ListViewSelectionMode::Single);
     QCOMPARE(_listView->getSelectionMode(), ListViewSelectionMode::Single);
@@ -248,7 +248,7 @@ void ListViewTest::testSetSelectionMode() {
 }
 
 void ListViewTest::testGetSelectionMode() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     // Default should be Single
     QCOMPARE(_listView->getSelectionMode(), ListViewSelectionMode::Single);
@@ -261,7 +261,7 @@ void ListViewTest::testGetSelectionMode() {
 // Current Item Tests
 // ============================================================================
 void ListViewTest::testGetCurrentIndex() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -271,7 +271,7 @@ void ListViewTest::testGetCurrentIndex() {
 }
 
 void ListViewTest::testSetCurrentIndex() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -287,7 +287,7 @@ void ListViewTest::testSetCurrentIndex() {
 // Sorting Tests
 // ============================================================================
 void ListViewTest::testSetSortingEnabled() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->setSortingEnabled(true);
     QVERIFY(_listView->isSortingEnabled());
@@ -297,7 +297,7 @@ void ListViewTest::testSetSortingEnabled() {
 }
 
 void ListViewTest::testIsSortingEnabled() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     QVERIFY(!_listView->isSortingEnabled());
 
@@ -306,7 +306,7 @@ void ListViewTest::testIsSortingEnabled() {
 }
 
 void ListViewTest::testSortItems() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Charlie");
     _listView->addItem("Alpha");
@@ -323,7 +323,7 @@ void ListViewTest::testSortItems() {
 // Visibility Tests
 // ============================================================================
 void ListViewTest::testEnsureItemVisible() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     // Add many items
     for (int i = 0; i < 100; ++i) {
@@ -339,7 +339,7 @@ void ListViewTest::testEnsureItemVisible() {
 // Check State Tests
 // ============================================================================
 void ListViewTest::testSetItemCheckState() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item");
     _listView->setItemCheckState(0, Qt::Checked);
@@ -351,7 +351,7 @@ void ListViewTest::testSetItemCheckState() {
 }
 
 void ListViewTest::testGetItemCheckState() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item");
     QCOMPARE(_listView->getItemCheckState(0), Qt::Unchecked);
@@ -361,7 +361,7 @@ void ListViewTest::testGetItemCheckState() {
 }
 
 void ListViewTest::testGetCheckedIndexes() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Item 1");
     _listView->addItem("Item 2");
@@ -380,7 +380,7 @@ void ListViewTest::testGetCheckedIndexes() {
 // Search Tests
 // ============================================================================
 void ListViewTest::testFindItem() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Alpha");
     _listView->addItem("Beta");
@@ -394,7 +394,7 @@ void ListViewTest::testFindItem() {
 }
 
 void ListViewTest::testFindItems() {
-    QVERIFY(_listView->init(_parentWidget.get()));
+    _listView->init(_parentWidget.get());
 
     _listView->addItem("Apple");
     _listView->addItem("Application");

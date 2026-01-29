@@ -18,6 +18,26 @@
 
 #include "Utf8_16.h"
 
+#ifndef _WIN32
+// Define _countof for Linux
+#ifndef _countof
+#define _countof(arr) (sizeof(arr) / sizeof(arr[0]))
+#endif
+
+// Define _byteswap_ushort for Linux (GCC/Clang)
+#ifndef _byteswap_ushort
+#define _byteswap_ushort(x) __builtin_bswap16(x)
+#endif
+
+// IsTextUnicode stub for Linux - uchardet is used instead
+#ifndef IsTextUnicode
+inline BOOL IsTextUnicode(const void*, int, int*) { return FALSE; }
+#endif
+#ifndef IS_TEXT_UNICODE_STATISTICS
+#define IS_TEXT_UNICODE_STATISTICS 0
+#endif
+#endif
+
 const Utf8_16::utf8 Utf8_16::k_Boms[][3] = {
 	{0x00, 0x00, 0x00},  // Unknown
 	{0xEF, 0xBB, 0xBF},  // UTF8

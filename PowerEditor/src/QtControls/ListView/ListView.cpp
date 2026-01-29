@@ -11,9 +11,9 @@
 
 namespace QtControls {
 
-bool ListView::init(QWidget* parent)
+void ListView::init(QWidget* parent)
 {
-    if (!parent) return false;
+    if (!parent) return;
 
     _parent = parent;
 
@@ -34,8 +34,6 @@ bool ListView::init(QWidget* parent)
     connect(listWidget, &QListWidget::currentItemChanged, this, &ListView::onCurrentItemChanged);
     connect(listWidget, &QListWidget::itemChanged, this, &ListView::onItemChanged);
     connect(listWidget, &QListWidget::customContextMenuRequested, this, &ListView::onCustomContextMenuRequested);
-
-    return true;
 }
 
 void ListView::destroy()

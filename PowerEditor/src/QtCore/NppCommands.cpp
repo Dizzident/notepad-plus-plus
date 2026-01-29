@@ -14,15 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "NppCommands.h"
-#include "Notepad_plus.h"
-#include "ScintillaEditView.h"
-#include "Buffer.h"
-#include "Parameters.h"
-#include "FindReplaceDlg.h"
-#include "GoToLineDlg.h"
-#include "menuCmdID.h"
-
+// Qt headers first (for moc compatibility)
 #include <QApplication>
 #include <QClipboard>
 #include <QMimeData>
@@ -32,6 +24,16 @@
 #include <QPrinter>
 #include <QPainter>
 #include <QTextDocument>
+
+// Local headers
+#include "NppCommands.h"
+#include "Notepad_plus.h"
+#include "ScintillaEditView.h"
+#include "Buffer.h"
+#include "Parameters.h"
+#include "FindReplaceDlg.h"
+#include "GoToLineDlg.h"
+#include "menuCmdID.h"
 
 namespace QtCommands {
 
@@ -368,7 +370,7 @@ void NppCommands::registerEditCommands() {
     _handler.registerCommand(CMD_EDIT_UPPERCASE, [this]() { editUpperCase(); });
     _handler.registerCommand(CMD_EDIT_LOWERCASE, [this]() { editLowerCase(); });
     _handler.registerCommand(CMD_EDIT_BLOCK_COMMENT, [this]() { editBlockComment(); });
-    _handler.registerCommand(IDM_EDIT_BLOCK_COMMENT_SET, [this]() { editBlockCommentSet(); });
+    _handler.registerCommand(CMD_EDIT_BLOCK_COMMENT_SET, [this]() { editBlockCommentSet(); });
     _handler.registerCommand(CMD_EDIT_BLOCK_UNCOMMENT, [this]() { editBlockUncomment(); });
     _handler.registerCommand(CMD_EDIT_STREAM_COMMENT, [this]() { editStreamComment(); });
     _handler.registerCommand(CMD_EDIT_STREAM_UNCOMMENT, [this]() { editStreamUncomment(); });
@@ -968,10 +970,10 @@ void NppCommands::searchGoToLine() {
 
 void NppCommands::searchGoToMatchingBrace() {
     ScintillaEditView* view = getCurrentEditView();
-    if (view) {
+    if (view && _pNotepad_plus) {
         intptr_t braceAtCaret = -1;
         intptr_t braceOpposite = -1;
-        findMatchingBracePos(braceAtCaret, braceOpposite);
+        _pNotepad_plus->findMatchingBracePos(braceAtCaret, braceOpposite);
 
         if (braceOpposite != -1) {
             view->execute(SCI_GOTOPOS, braceOpposite);
@@ -982,10 +984,10 @@ void NppCommands::searchGoToMatchingBrace() {
 
 void NppCommands::searchSelectMatchingBraces() {
     ScintillaEditView* view = getCurrentEditView();
-    if (view) {
+    if (view && _pNotepad_plus) {
         intptr_t braceAtCaret = -1;
         intptr_t braceOpposite = -1;
-        findMatchingBracePos(braceAtCaret, braceOpposite);
+        _pNotepad_plus->findMatchingBracePos(braceAtCaret, braceOpposite);
 
         if (braceOpposite != -1) {
             view->execute(SCI_SETSEL,

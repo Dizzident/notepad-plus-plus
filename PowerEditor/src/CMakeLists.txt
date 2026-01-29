@@ -507,23 +507,37 @@ ELSEIF(UNIX AND NOT APPLE)
 		./main_linux.cpp
 	)
 
-	# For Linux, use a minimal set of files that have been ported or are portable
+	# For Linux, use a set of files that have been ported or are portable
 	# First clear the existing src_files and rebuild for Linux
 	set(src_files "")
 
-	# Add Qt-specific core files
+	# ============================================================================
+	# Core Notepad++ Source Files
+	# ============================================================================
+
+	# Qt-specific core files (Linux adaptations)
 	list(APPEND src_files
 		./QtCore/Buffer.cpp
 		./QtCore/NppIO.cpp
 		./QtCore/NppCommands.cpp
 	)
 
-	# Add main entry point
+	# Main entry point for Linux
 	list(APPEND src_files
 		./main_linux.cpp
 	)
 
-	# Add Platform Linux files
+	# Core application files (portable or Qt-specific)
+	list(APPEND src_files
+		./EncodingMapper.cpp
+		./Utf8_16.cpp
+		./lastRecentFileList.cpp
+		./lesDlgs.cpp
+	)
+
+	# ============================================================================
+	# Platform Abstraction Layer
+	# ============================================================================
 	list(APPEND src_files
 		./Platform/Linux/FileSystem.cpp
 		./Platform/Linux/Settings.cpp
@@ -531,6 +545,137 @@ ELSEIF(UNIX AND NOT APPLE)
 		./Platform/Linux/FileWatcher.cpp
 		./Platform/Linux/Clipboard.cpp
 		./Platform/Linux/Threading.cpp
+		./Platform/Linux/Dialogs.cpp
+	)
+
+	# ============================================================================
+	# MISC - Common Utilities
+	# ============================================================================
+	list(APPEND src_files
+		./MISC/Common/Common.cpp
+		./MISC/Common/FileInterface.cpp
+		./MISC/Common/SortLocale.cpp
+		./MISC/Common/verifySignedfile.cpp
+	)
+
+	# MISC - Cryptography
+	list(APPEND src_files
+		./MISC/md5/md5Dlgs.cpp
+		./MISC/sha1/calc_sha1.cpp
+		./MISC/sha1/sha1.cpp
+		./MISC/sha2/sha-256.cpp
+		./MISC/sha512/sha512.cpp
+	)
+
+	# MISC - Plugins and Process
+	list(APPEND src_files
+		./MISC/PluginsManager/PluginsManager.cpp
+		./MISC/Process/Processus.cpp
+		./MISC/RegExt/regExtDlg.cpp
+	)
+
+	# MISC - Exception handling (MiniDumper only - Win32Exception is Windows-specific)
+	list(APPEND src_files
+		./MISC/Exception/MiniDumper.cpp
+	)
+
+	# ============================================================================
+	# Scintilla Component
+	# ============================================================================
+	list(APPEND src_files
+		./ScintillaComponent/AutoCompletion.cpp
+		./ScintillaComponent/Buffer.cpp
+		./ScintillaComponent/columnEditor.cpp
+		./ScintillaComponent/DocTabView.cpp
+		./ScintillaComponent/FindReplaceDlg.cpp
+		./ScintillaComponent/FunctionCallTip.cpp
+		./ScintillaComponent/GoToLineDlg.cpp
+		./ScintillaComponent/Printer.cpp
+		./ScintillaComponent/ScintillaCtrls.cpp
+		./ScintillaComponent/ScintillaEditView.cpp
+		./ScintillaComponent/SmartHighlighter.cpp
+		./ScintillaComponent/UserDefineDialog.cpp
+		./ScintillaComponent/xmlMatchedTagsHighlighter.cpp
+	)
+
+	# ============================================================================
+	# Character Encoding Detection (uchardet)
+	# ============================================================================
+	list(APPEND src_files
+		./uchardet/CharDistribution.cpp
+		./uchardet/JpCntx.cpp
+		./uchardet/LangBulgarianModel.cpp
+		./uchardet/LangCyrillicModel.cpp
+		./uchardet/LangGreekModel.cpp
+		./uchardet/LangHebrewModel.cpp
+		./uchardet/LangHungarianModel.cpp
+		./uchardet/LangThaiModel.cpp
+		./uchardet/nsBig5Prober.cpp
+		./uchardet/nsCharSetProber.cpp
+		./uchardet/nsEscCharsetProber.cpp
+		./uchardet/nsEscSM.cpp
+		./uchardet/nsEUCJPProber.cpp
+		./uchardet/nsEUCKRProber.cpp
+		./uchardet/nsEUCTWProber.cpp
+		./uchardet/nsGB2312Prober.cpp
+		./uchardet/nsHebrewProber.cpp
+		./uchardet/nsLatin1Prober.cpp
+		./uchardet/nsMBCSGroupProber.cpp
+		./uchardet/nsMBCSSM.cpp
+		./uchardet/nsSBCharSetProber.cpp
+		./uchardet/nsSBCSGroupProber.cpp
+		./uchardet/nsSJISProber.cpp
+		./uchardet/nsUniversalDetector.cpp
+		./uchardet/nsUTF8Prober.cpp
+		./uchardet/uchardet.cpp
+	)
+
+	# ============================================================================
+	# XML Processing
+	# ============================================================================
+	list(APPEND src_files
+		./pugixml/pugixml.cpp
+		./TinyXml/tinystr.cpp
+		./TinyXml/tinyxml.cpp
+		./TinyXml/tinyxmlerror.cpp
+		./TinyXml/tinyxmlparser.cpp
+	)
+
+	# ============================================================================
+	# Dark Mode Support
+	# ============================================================================
+	list(APPEND src_files
+		./DarkMode/DarkMode.cpp
+	)
+
+	# ============================================================================
+	# Qt Controls (Linux-specific UI implementations)
+	# ============================================================================
+	list(APPEND src_files
+		./QtControls/StaticDialog/StaticDialog.cpp
+		./QtControls/ToolBar/ToolBar.cpp
+		./QtControls/StatusBar/StatusBar.cpp
+		./QtControls/TabBar/TabBar.cpp
+		./QtControls/Splitter/Splitter.cpp
+		./QtControls/GoToLine/GoToLineDlg.cpp
+		./QtControls/RunDlg/RunDlg.cpp
+		./QtControls/AboutDlg/AboutDlg.cpp
+		./QtControls/TreeView/TreeView.cpp
+		./QtControls/FindReplace/FindReplaceDlg.cpp
+		./QtControls/ShortcutMapper/ShortcutMapper.cpp
+		./QtControls/KDEStyle/KDEStyleManager.cpp
+		./QtControls/KDEStyle/KDEUtils.cpp
+		./QtControls/DockingManager/DockingManager.cpp
+		./QtControls/ListView/ListView.cpp
+		./QtControls/WordStyleDlg/WordStyleDlg.cpp
+		./QtControls/UserDefineDialog/UserDefineDialog.cpp
+		./QtControls/ClipboardHistory/ClipboardHistoryPanel.cpp
+		./QtControls/DocumentMap/DocumentMap.cpp
+		./QtControls/ProjectPanel/ProjectPanel.cpp
+		./QtControls/FileBrowser/FileBrowser.cpp
+		./QtControls/FunctionList/FunctionListPanel.cpp
+		./QtControls/MainWindow/Notepad_plus_Window.cpp
+		./QtControls/Preference/preferenceDlg.cpp
 	)
 
 	# ============================================================================
@@ -703,6 +848,15 @@ IF(UNIX AND NOT APPLE)
 		./QtCore
 		./MISC
 		./MISC/Common
+		./MISC/Process
+		./MISC/PluginsManager
+		./MISC/RegExt
+		./MISC/md5
+		./MISC/sha1
+		./MISC/sha2
+		./MISC/sha512
+		./MISC/Exception
+		./ScintillaComponent
 		./QtControls
 		./QtControls/StaticDialog
 		./QtControls/ToolBar
@@ -716,6 +870,52 @@ IF(UNIX AND NOT APPLE)
 		./QtControls/FindReplace
 		./QtControls/ShortcutMapper
 		./QtControls/KDEStyle
+		./QtControls/DockingManager
+		./QtControls/ListView
+		./QtControls/WordStyleDlg
+		./QtControls/UserDefineDialog
+		./QtControls/ClipboardHistory
+		./QtControls/DocumentMap
+		./QtControls/ProjectPanel
+		./QtControls/FileBrowser
+		./QtControls/FunctionList
+		./QtControls/MainWindow
+		./QtControls/Preference
+		./WinControls
+		./WinControls/AboutDlg
+		./WinControls/AnsiCharPanel
+		./WinControls/ClipboardHistory
+		./WinControls/ColourPicker
+		./WinControls/ContextMenu
+		./WinControls/DockingWnd
+		./WinControls/DocumentMap
+		./WinControls/FileBrowser
+		./WinControls/FindCharsInRange
+		./WinControls/FunctionList
+		./WinControls/Grid
+		./WinControls/ImageListSet
+		./WinControls/OpenSaveFileDialog
+		./WinControls/PluginsAdmin
+		./WinControls/Preference
+		./WinControls/ProjectPanel
+		./WinControls/ReadDirectoryChanges
+		./WinControls/Shortcut
+		./WinControls/SplitterContainer
+		./WinControls/StaticDialog
+		./WinControls/StaticDialog/RunDlg
+		./WinControls/StatusBar
+		./WinControls/TabBar
+		./WinControls/TaskList
+		./WinControls/ToolBar
+		./WinControls/ToolTip
+		./WinControls/TrayIcon
+		./WinControls/TreeView
+		./WinControls/VerticalFileSwitcher
+		./WinControls/WindowsDlg
+		./uchardet
+		./TinyXml
+		./pugixml
+		./DarkMode
 	)
 ENDIF()
 

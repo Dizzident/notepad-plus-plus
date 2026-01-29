@@ -37,8 +37,13 @@ using COLORREF = uint32_t;
 // SCINTILLA_USER defined in resource.h
 
 // Define common Windows constants
+#ifndef MB_OK
 #define MB_OK 0
+#endif
+
+#ifndef MB_ICONHAND
 #define MB_ICONHAND 0
+#endif
 
 #endif // _WIN32
 

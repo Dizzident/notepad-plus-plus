@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "../Window.h"
 #include <QDialog>
 #include <QCheckBox>
 
@@ -16,15 +15,17 @@ namespace QtControls {
 
 enum class PosAlign { left, right, top, bottom };
 
-class StaticDialog : public Window
+class StaticDialog : public QDialog
 {
+    Q_OBJECT
+
 public:
     ~StaticDialog() override;
 
     virtual void create(const QString& title = QString(), bool isRTL = false);
 
     virtual bool isCreated() const {
-        return (_widget != nullptr);
+        return true;  // QDialog is always created when constructed
     }
 
     void getMappedChildRect(QWidget* child, QRect& rcChild) const;
@@ -46,12 +47,12 @@ public:
     void setChecked(const QString& checkControlName, bool checkOrNot = true) const;
     void setChecked(int checkControlID, bool checkOrNot = true) const;
 
-    void destroy() override;
+    void destroy();
 
 protected:
     QRect _rc{};
 
-    QDialog* getDialog() const { return qobject_cast<QDialog*>(_widget); }
+    QDialog* getDialog() const { return const_cast<StaticDialog*>(this); }
 
     static bool dlgProc(QWidget* hwnd, QEvent* event);
     virtual bool run_dlgProc(QEvent* event) = 0;

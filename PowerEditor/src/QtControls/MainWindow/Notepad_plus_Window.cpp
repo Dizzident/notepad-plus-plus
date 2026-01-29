@@ -29,14 +29,10 @@ namespace MainWindow {
 
 MainWindow::MainWindow()
     : QMainWindow(nullptr)
-    , StaticDialog()
 {
     // Set window properties
     setWindowTitle("Notepad++");
     setAcceptDrops(true);
-
-    // Create the main widget for StaticDialog interface
-    _widget = this;
 }
 
 MainWindow::~MainWindow()
@@ -155,7 +151,7 @@ void MainWindow::createDockWindows()
 }
 
 // ============================================================================
-// StaticDialog Interface
+// Window Interface
 // ============================================================================
 
 void MainWindow::destroy()
@@ -212,9 +208,6 @@ void MainWindow::destroy()
         delete _tabBar;
         _tabBar = nullptr;
     }
-
-    // Don't delete _widget (which is 'this') - Qt handles that
-    _widget = nullptr;
 }
 
 void MainWindow::display(bool toShow)
@@ -231,13 +224,6 @@ void MainWindow::display(bool toShow)
 void MainWindow::reSizeTo(QRect& rc)
 {
     setGeometry(rc);
-}
-
-bool MainWindow::run_dlgProc(QEvent* event)
-{
-    // Handle dialog-specific events
-    (void)event;
-    return false;
 }
 
 // ============================================================================

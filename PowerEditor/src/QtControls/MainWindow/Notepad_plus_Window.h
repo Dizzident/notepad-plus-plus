@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "../StaticDialog/StaticDialog.h"
 #include "../ToolBar/ToolBar.h"
 #include "../StatusBar/StatusBar.h"
 #include "../TabBar/TabBar.h"
@@ -47,7 +46,7 @@ namespace MainWindow {
 // ============================================================================
 // MainWindow - Qt-based main application window for Notepad++
 // ============================================================================
-class MainWindow : public QMainWindow, public StaticDialog {
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
@@ -57,12 +56,10 @@ public:
     // Initialize with Notepad_plus core
     bool init(Notepad_plus* pNotepad_plus);
 
-    // StaticDialog interface
-    void destroy() override;
-
     // Window operations
-    void display(bool toShow = true) override;
-    void reSizeTo(QRect& rc) override;
+    void destroy();
+    void display(bool toShow = true);
+    void reSizeTo(QRect& rc);
 
     // Menu operations
     void initMenuBar();
@@ -127,9 +124,6 @@ protected:
     void changeEvent(QEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
-
-    // StaticDialog pure virtual
-    bool run_dlgProc(QEvent* event) override;
 
 private slots:
     // File menu
