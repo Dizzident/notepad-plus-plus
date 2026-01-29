@@ -19,12 +19,22 @@
 #include "ScintillaEditView.h"
 #include "DocTabView.h"
 #include "SplitterContainer.h"
+#ifdef NPP_LINUX
+// On Linux, use Qt versions of dialogs
+#include "QtControls/GoToLine/GoToLineDlg.h"
+#include "QtControls/FindReplace/FindReplaceDlg.h"
+using GoToLineDlg = QtControls::GoToLineDlg;
+using FindReplaceDlg = NppFindReplace::FindReplaceDlg;
+using FindIncrementDlg = NppFindReplace::FindIncrementDlg;
+#else
+// On Windows, use native dialogs
 #include "FindReplaceDlg.h"
+#include "GoToLineDlg.h"
+#endif
 #include "AboutDlg.h"
 #include "RunDlg.h"
 #include "StatusBar.h"
 #include "lastRecentFileList.h"
-#include "GoToLineDlg.h"
 #include "FindCharsInRange.h"
 #include "columnEditor.h"
 #include "WordStyleDlg.h"

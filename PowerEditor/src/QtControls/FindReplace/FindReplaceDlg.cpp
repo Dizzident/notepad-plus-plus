@@ -693,6 +693,26 @@ void FindReplaceDlg::updateComboHistory(QComboBox* combo, const std::vector<QStr
     combo->setCurrentText(currentText);
 }
 
+void FindReplaceDlg::saveComboHistory(QComboBox* combo, std::vector<QString>& history, int maxCount) {
+    if (!combo) return;
+    QString text = combo->currentText();
+    if (text.isEmpty()) return;
+
+    // Remove if already exists
+    auto it = std::find(history.begin(), history.end(), text);
+    if (it != history.end()) {
+        history.erase(it);
+    }
+
+    // Add to front
+    history.insert(history.begin(), text);
+
+    // Limit size
+    if (history.size() > static_cast<size_t>(maxCount)) {
+        history.resize(maxCount);
+    }
+}
+
 bool FindReplaceDlg::processFindNext(const QString& text, const FindOptions& options) {
     if (!_ppEditView || !*_ppEditView) return false;
 
@@ -949,6 +969,93 @@ void FindReplaceDlg::resizeEvent(QResizeEvent* event) {
     // Adjust layout if needed
 }
 
+bool FindReplaceDlg::run_dlgProc(QEvent* event) {
+    Q_UNUSED(event);
+    return true;
+}
+
+// ============================================================================
+// Windows-compatible interface methods
+// ============================================================================
+
+void FindReplaceDlg::doDialog(DIALOG_TYPE type, bool isRTL, bool isDelete) {
+    Q_UNUSED(isRTL);
+    Q_UNUSED(isDelete);
+
+    // Map DIALOG_TYPE to FindDialogType
+    FindDialogType dlgType;
+    switch (type) {
+        case REPLACE_DLG:
+            dlgType = FindDialogType::Replace;
+            break;
+        case FINDINFILES_DLG:
+            dlgType = FindDialogType::FindInFiles;
+            break;
+        case FINDINPROJECTS_DLG:
+            dlgType = FindDialogType::FindInProjects;
+            break;
+        case MARK_DLG:
+            dlgType = FindDialogType::Mark;
+            break;
+        case FIND_DLG:
+        default:
+            dlgType = FindDialogType::Find;
+            break;
+    }
+
+    showDialog(dlgType);
+}
+
+void FindReplaceDlg::setSearchText(const wchar_t* text) {
+    if (text) {
+        setSearchText(QString::fromWCharArray(text));
+    }
+}
+
+void FindReplaceDlg::markAll(const wchar_t* text, int styleID) {
+    if (text) {
+        setSearchText(QString::fromWCharArray(text));
+    }
+    markAll(styleID);
+}
+
+void FindReplaceDlg::gotoNextFoundResult(int direction) const {
+    Q_UNUSED(direction);
+    // TODO: Implement navigation to next found result
+}
+
+bool FindReplaceDlg::processFindNext(const wchar_t* text, const FindOption* opt, ::FindStatus* status, FindNextType type) {
+    Q_UNUSED(type);
+
+    if (!text || !opt) {
+        if (status) *status = FSNoMessage;
+        return false;
+    }
+
+    // Convert wchar_t to QString
+    QString searchText = QString::fromWCharArray(text);
+
+    // Convert FindOption to FindOptions
+    FindOptions options;
+    options.isWholeWord = opt->_isWholeWord;
+    options.isMatchCase = opt->_isMatchCase;
+    options.isWrapAround = opt->_isWrapAround;
+    options.direction = opt->_whichDirection ? SearchDirection::Down : SearchDirection::Up;
+    options.searchType = static_cast<SearchType>(opt->_searchType);
+
+    // Call the Qt implementation
+    bool result = processFindNext(searchText, options);
+
+    if (status) {
+        *status = result ? FSFound : FSNotFound;
+    }
+
+    return result;
+}
+
+// Initialize the _env alias
+FindOptions* FindReplaceDlg::_env = &FindReplaceDlg::options;
+
 // ============================================================================
 // FindIncrementDlg implementation
 // ============================================================================
@@ -1019,6 +1126,16 @@ void FindIncrementDlg::connectSignals() {
 void FindIncrementDlg::setSearchText(const QString& text) {
     if (_searchEdit) {
         _searchEdit->setText(text);
+    }
+}
+
+void FindIncrementDlg::display(bool toShow) {
+    if (toShow) {
+        show();
+        raise();
+        activateWindow();
+    } else {
+        hide();
     }
 }
 
@@ -1094,6 +1211,11 @@ void FindIncrementDlg::onRegexToggled(bool checked) {
     (void)checked;
     // Update search
     onTextChanged(_searchEdit->text());
+}
+
+bool FindIncrementDlg::run_dlgProc(QEvent* event) {
+    Q_UNUSED(event);
+    return true;
 }
 
 // ============================================================================

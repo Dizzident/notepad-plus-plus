@@ -164,6 +164,23 @@ bool isCoreWindows();
 std::wstring stringToLower(const std::wstring& str);
 std::wstring stringToUpper(const std::wstring& str);
 std::wstring stringReplace(const std::wstring& str, const std::wstring& from, const std::wstring& to);
+void stringSplit(const std::wstring& input, const std::wstring& delimiter, std::vector<std::wstring>& output);
+void stringJoin(const std::vector<std::wstring>& strings, const std::wstring& separator, std::wstring& joinedString);
+
+// Vector utilities - remove duplicate elements while preserving order
+template<typename T>
+size_t vecRemoveDuplicates(std::vector<T>& vec) {
+    std::unordered_set<T> seen;
+    size_t writeIndex = 0;
+    for (size_t readIndex = 0; readIndex < vec.size(); ++readIndex) {
+        if (seen.find(vec[readIndex]) == seen.end()) {
+            seen.insert(vec[readIndex]);
+            vec[writeIndex++] = vec[readIndex];
+        }
+    }
+    vec.resize(writeIndex);
+    return writeIndex;
+}
 
 // Windows-only classes
 #ifdef _WIN32

@@ -17,6 +17,11 @@
 
 #pragma once
 
+// Skip this header on Linux - use Qt version instead
+#ifdef NPP_LINUX
+// Qt version already included
+#else
+
 #include <map>
 #include "FindReplaceDlg_rc.h"
 #include "ScintillaEditView.h"
@@ -627,3 +632,5 @@ private:
 
 	DPIManagerV2 _dpiManager;
 };
+
+#endif // NPP_LINUX

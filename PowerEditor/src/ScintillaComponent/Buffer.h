@@ -298,6 +298,7 @@ public:
 		if (!_isFromNetwork && _currentStatus == DOC_UNNAMED)
 			_tabCreatedTimeString = getFileTime(Buffer::ft_created); // while DOC_UNNAMED, getFileTime will retrieve time from backup file
 	}
+#ifndef __linux__
 	void setTabCreatedTimeStringWithCurrentTime() {
 		if (_currentStatus == DOC_UNNAMED)
 		{
@@ -306,6 +307,9 @@ public:
 			_tabCreatedTimeString = getTimeString(now);
 		}
 	}
+#else
+	void setTabCreatedTimeStringWithCurrentTime();
+#endif
 
 	size_t docLength() const {
 		assert(_pManager != nullptr);

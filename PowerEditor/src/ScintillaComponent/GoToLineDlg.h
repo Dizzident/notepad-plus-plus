@@ -16,6 +16,11 @@
 
 
 #pragma once
+
+// If the Qt version of GoToLineDlg was already included, skip this header
+#ifdef NPP_LINUX
+// Qt version already defined GoToLineDlg via typedef
+#else
 #include "resource.h"
 #include "ScintillaEditView.h"
 
@@ -72,3 +77,5 @@ private :
 		return strtoll(goLineEditStr, &p_end, 10);
 	}
 };
+
+#endif // NPP_LINUX

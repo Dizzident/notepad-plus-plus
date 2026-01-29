@@ -520,6 +520,7 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtCore/Buffer.cpp
 		./QtCore/NppIO.cpp
 		./QtCore/NppCommands.cpp
+		./QtCore/ScintillaEditViewQt.cpp
 	)
 
 	# Main entry point for Linux
@@ -666,6 +667,7 @@ ELSEIF(UNIX AND NOT APPLE)
 	# Qt Controls (Linux-specific UI implementations)
 	# ============================================================================
 	list(APPEND src_files
+		./QtControls/Window.cpp
 		./QtControls/StaticDialog/StaticDialog.cpp
 		./QtControls/ToolBar/ToolBar.cpp
 		./QtControls/StatusBar/StatusBar.cpp
@@ -688,6 +690,7 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/FunctionList/FunctionListPanel.cpp
 		./QtControls/MainWindow/Notepad_plus_Window.cpp
 		./QtControls/Preference/preferenceDlg.cpp
+		./QtControls/Notepad_plus.cpp
 	)
 
 	# ============================================================================
@@ -870,6 +873,8 @@ ADD_EXECUTABLE(notepad++ ${option} ${src_files} ${include_files} ${rcFiles})
 # ============================================================================
 IF(UNIX AND NOT APPLE)
 	# Use target_include_directories with Qt6 targets for proper include path propagation
+	# Note: QtControls paths must come BEFORE ScintillaComponent to ensure Qt versions
+	# of dialogs (GoToLineDlg, FindReplaceDlg, etc.) are found first
 	TARGET_INCLUDE_DIRECTORIES(notepad++ PRIVATE
 		./Platform
 		./QtCore
@@ -883,7 +888,6 @@ IF(UNIX AND NOT APPLE)
 		./MISC/sha2
 		./MISC/sha512
 		./MISC/Exception
-		./ScintillaComponent
 		./QtControls
 		./QtControls/StaticDialog
 		./QtControls/ToolBar

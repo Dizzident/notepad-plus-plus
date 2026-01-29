@@ -1713,7 +1713,7 @@ void MultiInstanceSubDlg::onDateTimeFormatChanged(const QString& format)
     if (_useCustomDateTime && !format.isEmpty()) {
         _dateTimePreviewLabel->setText(tr("Preview: ") + QDateTime::currentDateTime().toString(format));
     } else {
-        _dateTimePreviewLabel->setText(tr("Preview: ") + QDateTime::currentDateTime().toString(Qt::DefaultLocaleShortDate));
+        _dateTimePreviewLabel->setText(tr("Preview: ") + QLocale().toString(QDateTime::currentDateTime(), QLocale::ShortFormat));
     }
 }
 
@@ -2174,9 +2174,9 @@ void MISCSubDlg::onConfirmDeleteToggled(bool checked)
 // ============================================================================
 // PreferenceDlg Implementation
 // ============================================================================
-PreferenceDlg::PreferenceDlg(QWidget* parent)
+PreferenceDlg::PreferenceDlg(QWidget* parent) : StaticDialog(parent)
 {
-    init(parent);
+    setupUI();
     _settings = &PlatformLayer::ISettings::getInstance();
 }
 
@@ -2417,6 +2417,17 @@ int PreferenceDlg::getCurrentPageIndex() const
 
 void PreferenceDlg::onCategoryChanged(int index)
 {
+    if (index >= 0 && index < _pagesStack->count()) {
+        _pagesStack->setCurrentIndex(index);
+    }
+}
+
+void PreferenceDlg::onCategoryItemClicked(QListWidgetItem* item)
+{
+    if (!item)
+        return;
+
+    int index = _categoryList->row(item);
     if (index >= 0 && index < _pagesStack->count()) {
         _pagesStack->setCurrentIndex(index);
     }

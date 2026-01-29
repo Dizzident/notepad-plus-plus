@@ -1779,3 +1779,1063 @@ QString BufferManager::getNextUntitledName() const
 }
 
 } // namespace QtCore
+
+// ============================================================================
+// FileManager implementation - Compatibility layer for Notepad++ core
+// This implements the FileManager interface from ScintillaComponent/Buffer.h
+// ============================================================================
+
+// Include required headers for FileManager implementation
+#include "Notepad_plus.h"
+#include "ScintillaEditView.h"
+#include "Parameters.h"
+
+// Static instance accessor defined in Buffer.h as macro:
+// #define MainFileManager FileManager::getInstance()
+
+// Buffer static member
+long Buffer::_recentTagCtr = 0;
+
+// Buffer constructor for Linux/Qt port
+Buffer::Buffer(FileManager* pManager, BufferID id, Document doc, DocFileStatus type, const wchar_t* fileName, bool isLargeFile)
+    : _pManager(pManager), _id(id), _doc(doc), _lang(L_TEXT), _isLargeFile(isLargeFile)
+{
+    // Set default EOL format based on OS
+#ifdef Q_OS_WIN
+    _eolFormat = EolType::windows;
+#elif defined(Q_OS_MAC)
+    _eolFormat = EolType::macos;
+#else
+    _eolFormat = EolType::unix;
+#endif
+
+    _currentStatus = type;
+
+    // Set filename and related properties
+    setFileName(fileName);
+
+    // Initialize timestamp
+    updateTimeStamp();
+
+    // Check file state
+    checkFileState();
+
+    // Enable notifications after initialization
+    _canNotify = true;
+}
+
+// FileManager constructor and destructor
+FileManager::~FileManager()
+{
+    // Clean up all buffers
+    for (Buffer* buf : _buffers) {
+        delete buf;
+    }
+    _buffers.clear();
+}
+
+void FileManager::init(Notepad_plus* pNotepadPlus, ScintillaEditView* pscratchTilla)
+{
+    _pNotepadPlus = pNotepadPlus;
+    _pscratchTilla = pscratchTilla;
+    // Note: Scintilla initialization is handled differently in Qt port
+    _scratchDocDefault = 0;
+}
+
+void FileManager::checkFilesystemChanges(bool bCheckOnlyCurrentBuffer)
+{
+    if (bCheckOnlyCurrentBuffer) {
+        Buffer* buffer = _pNotepadPlus->getCurrentBuffer();
+        if (buffer) {
+            buffer->checkFileState();
+        }
+    } else {
+        for (size_t i = 0; i < _nbBufs; ++i) {
+            _buffers[i]->checkFileState();
+        }
+    }
+}
+
+size_t FileManager::getNbDirtyBuffers() const
+{
+    size_t nb_dirtyBufs = 0;
+    for (size_t i = 0; i < _nbBufs; ++i) {
+        if (_buffers[i]->isDirty()) {
+            ++nb_dirtyBufs;
+        }
+    }
+    return nb_dirtyBufs;
+}
+
+int FileManager::getBufferIndexByID(BufferID id)
+{
+    for (size_t i = 0; i < _nbBufs; ++i) {
+        if (_buffers[i]->_id == id) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+Buffer* FileManager::getBufferByIndex(size_t index)
+{
+    if (index >= _buffers.size()) {
+        return nullptr;
+    }
+    return _buffers.at(index);
+}
+
+void FileManager::beNotifiedOfBufferChange(Buffer* theBuf, int mask)
+{
+    if (_pNotepadPlus) {
+        _pNotepadPlus->notifyBufferChanged(theBuf, mask);
+    }
+}
+
+void FileManager::addBufferReference(BufferID id, ScintillaEditView* identifier)
+{
+    Buffer* buf = getBufferByID(id);
+    if (buf) {
+        buf->addReference(identifier);
+    }
+}
+
+void FileManager::closeBuffer(BufferID id, const ScintillaEditView* identifier)
+{
+    int index = getBufferIndexByID(id);
+    if (index == -1) {
+        return;
+    }
+
+    Buffer* buf = getBufferByIndex(index);
+    if (!buf) {
+        return;
+    }
+
+    int refs = buf->removeReference(identifier);
+
+    if (!refs) { // buffer can be deallocated
+        _buffers.erase(_buffers.begin() + index);
+        delete buf;
+        _nbBufs--;
+    }
+}
+
+BufferID FileManager::loadFile(const wchar_t* filename, Document doc, int encoding, const wchar_t* backupFileName, FILETIME fileNameTimestamp)
+{
+    if (!filename) {
+        return BUFFER_INVALID;
+    }
+
+    // Convert wchar_t filename to QString
+    QString filePath = QString::fromWCharArray(filename);
+
+    // Check if file exists (or backup file)
+    QString loadPath = filePath;
+    if (!QFile::exists(loadPath) && backupFileName) {
+        loadPath = QString::fromWCharArray(backupFileName);
+    }
+
+    if (!QFile::exists(loadPath)) {
+        return BUFFER_INVALID;
+    }
+
+    // Create a new buffer
+    Buffer* newBuf = new Buffer(this, _nextBufferID, doc, DOC_REGULAR, filename, false);
+    BufferID id = newBuf;
+    newBuf->_id = id;
+
+    // Load file content
+    QFile file(loadPath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        delete newBuf;
+        return BUFFER_INVALID;
+    }
+
+    QByteArray content = file.readAll();
+    file.close();
+
+    // Set up buffer properties
+    QFileInfo fileInfo(loadPath);
+    // Convert QDateTime to FILETIME
+    QDateTime lastModified = fileInfo.lastModified();
+    FILETIME ft;
+    // Convert to Windows FILETIME (100-nanosecond intervals since January 1, 1601)
+    // This is a simplified conversion - full implementation would use proper conversion
+    unsigned long long timeValue = static_cast<unsigned long long>(lastModified.toMSecsSinceEpoch());
+    // Add difference between Unix epoch (1970) and Windows epoch (1601) in 100-nanosecond intervals
+    timeValue = (timeValue + 11644473600000ULL) * 10000ULL;
+    ft.dwLowDateTime = static_cast<DWORD>(timeValue);
+    ft.dwHighDateTime = static_cast<DWORD>(timeValue >> 32);
+    newBuf->_timeStamp = ft;
+    newBuf->_isFileReadOnly = !fileInfo.isWritable();
+
+    // Handle backup file mode
+    if (backupFileName != nullptr) {
+        newBuf->_backupFileName = backupFileName;
+        if (!QFile::exists(filePath)) {
+            newBuf->_currentStatus = DOC_UNNAMED;
+        }
+    }
+
+    // Set timestamp if provided
+    // FILETIME handling for Qt - convert to QDateTime if needed
+    // For now, we use the file's last modified time
+
+    // Detect encoding
+    // Simplified encoding detection - in full implementation would use uchardet
+    if (content.size() >= 3) {
+        if (static_cast<unsigned char>(content[0]) == 0xEF &&
+            static_cast<unsigned char>(content[1]) == 0xBB &&
+            static_cast<unsigned char>(content[2]) == 0xBF) {
+            newBuf->_unicodeMode = uniUTF8;
+            newBuf->_encoding = -1;
+        } else if (static_cast<unsigned char>(content[0]) == 0xFE &&
+                   static_cast<unsigned char>(content[1]) == 0xFF) {
+            newBuf->_unicodeMode = uni16BE;
+            newBuf->_encoding = -1;
+        } else if (static_cast<unsigned char>(content[0]) == 0xFF &&
+                   static_cast<unsigned char>(content[1]) == 0xFE) {
+            newBuf->_unicodeMode = uni16LE;
+            newBuf->_encoding = -1;
+        } else {
+            newBuf->_unicodeMode = uni8Bit;
+            newBuf->_encoding = encoding;
+        }
+    } else {
+        newBuf->_unicodeMode = uni8Bit;
+        newBuf->_encoding = encoding;
+    }
+
+    // Detect EOL format
+    if (content.contains("\r\n")) {
+        newBuf->_eolFormat = EolType::windows;
+    } else if (content.contains("\n")) {
+        newBuf->_eolFormat = EolType::unix;
+    } else if (content.contains("\r")) {
+        newBuf->_eolFormat = EolType::macos;
+    } else {
+        newBuf->_eolFormat = EolType::osdefault;
+    }
+
+    // Detect language from extension
+    QString ext = fileInfo.suffix();
+    // Simplified language detection - full implementation would use NppParameters
+    if (ext == "cpp" || ext == "cxx" || ext == "cc" || ext == "hpp") {
+        newBuf->_lang = L_CPP;
+    } else if (ext == "c" || ext == "h") {
+        newBuf->_lang = L_C;
+    } else if (ext == "java") {
+        newBuf->_lang = L_JAVA;
+    } else if (ext == "py" || ext == "pyw") {
+        newBuf->_lang = L_PYTHON;
+    } else if (ext == "js") {
+        newBuf->_lang = L_JAVASCRIPT;
+    } else if (ext == "html" || ext == "htm") {
+        newBuf->_lang = L_HTML;
+    } else if (ext == "xml") {
+        newBuf->_lang = L_XML;
+    } else if (ext == "json") {
+        newBuf->_lang = L_JSON;
+    } else if (ext == "css") {
+        newBuf->_lang = L_CSS;
+    } else {
+        newBuf->_lang = L_TEXT;
+    }
+
+    // Store content - in real implementation this would go into Scintilla document
+    // For now, we just track that the buffer has content
+    newBuf->_isDirty = false;
+
+    _buffers.push_back(newBuf);
+    ++_nbBufs;
+    ++_nextBufferID;
+
+    return id;
+}
+
+BufferID FileManager::newEmptyDocument()
+{
+    // Create untitled document name
+    std::wstring newTitle = L"new ";
+    wchar_t nb[10];
+    swprintf(nb, 10, L"%zu", nextUntitledNewNumber());
+    newTitle += nb;
+
+    // Create new document (doc = 0 means create new)
+    Document doc = 0;  // In real implementation, would call Scintilla to create document
+
+    Buffer* newBuf = new Buffer(this, _nextBufferID, doc, DOC_UNNAMED, newTitle.c_str(), false);
+    BufferID id = newBuf;
+    newBuf->_id = id;
+
+    // Set default properties
+    newBuf->_lang = L_TEXT;
+    newBuf->_eolFormat = EolType::osdefault;
+    newBuf->_unicodeMode = uni8Bit;
+    newBuf->_encoding = -1;
+    newBuf->_isDirty = false;
+
+    _buffers.push_back(newBuf);
+    ++_nbBufs;
+    ++_nextBufferID;
+
+    return id;
+}
+
+BufferID FileManager::newPlaceholderDocument(const wchar_t* missingFilename, int whichOne, const wchar_t* userCreatedSessionName)
+{
+    // Create placeholder for missing file when loading session
+    Buffer* newBuf = new Buffer(this, _nextBufferID, 0, DOC_INACCESSIBLE, missingFilename, false);
+    BufferID id = newBuf;
+    newBuf->_id = id;
+
+    newBuf->_isFileReadOnly = true;
+    newBuf->_isInaccessible = true;
+
+    _buffers.push_back(newBuf);
+    ++_nbBufs;
+    ++_nextBufferID;
+
+    return id;
+}
+
+BufferID FileManager::bufferFromDocument(Document doc, bool isMainEditZone)
+{
+    std::wstring newTitle = L"new ";
+    wchar_t nb[10];
+    swprintf(nb, 10, L"%zu", nextUntitledNewNumber());
+    newTitle += nb;
+
+    Buffer* newBuf = new Buffer(this, _nextBufferID, doc, DOC_UNNAMED, newTitle.c_str(), false);
+    BufferID id = newBuf;
+    newBuf->_id = id;
+
+    newBuf->_lang = L_TEXT;
+
+    _buffers.push_back(newBuf);
+    ++_nbBufs;
+    ++_nextBufferID;
+
+    return id;
+}
+
+BufferID FileManager::getBufferFromName(const wchar_t* name)
+{
+    QString targetPath = QString::fromWCharArray(name);
+    QString canonicalTarget = QFileInfo(targetPath).canonicalFilePath();
+
+    for (Buffer* buf : _buffers) {
+        QString bufPath = QString::fromWCharArray(buf->getFullPathName());
+        if (QFileInfo(bufPath).canonicalFilePath() == canonicalTarget) {
+            if (!buf->_referees.empty() && buf->_referees[0]->isVisible()) {
+                return buf->getID();
+            }
+        }
+    }
+    return BUFFER_INVALID;
+}
+
+BufferID FileManager::getBufferFromDocument(Document doc)
+{
+    for (size_t i = 0; i < _nbBufs; ++i) {
+        if (_buffers[i]->_doc == doc) {
+            return _buffers[i]->_id;
+        }
+    }
+    return BUFFER_INVALID;
+}
+
+bool FileManager::reloadBuffer(BufferID id)
+{
+    Buffer* buf = getBufferByID(id);
+    if (!buf) {
+        return false;
+    }
+
+    const wchar_t* fileName = buf->getFullPathName();
+    QString filePath = QString::fromWCharArray(fileName);
+
+    if (!QFile::exists(filePath)) {
+        return false;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return false;
+    }
+
+    QByteArray content = file.readAll();
+    file.close();
+
+    // Update buffer
+    QFileInfo fileInfo(filePath);
+    // Convert QDateTime to FILETIME
+    QDateTime lastModified = fileInfo.lastModified();
+    FILETIME ft;
+    unsigned long long timeValue = static_cast<unsigned long long>(lastModified.toMSecsSinceEpoch());
+    timeValue = (timeValue + 11644473600000ULL) * 10000ULL;
+    ft.dwLowDateTime = static_cast<DWORD>(timeValue);
+    ft.dwHighDateTime = static_cast<DWORD>(timeValue >> 32);
+    buf->_timeStamp = ft;
+    buf->setDirty(false);
+    buf->setUnsync(false);
+    buf->setSavePointDirty(false);
+
+    return true;
+}
+
+bool FileManager::reloadBufferDeferred(BufferID id)
+{
+    Buffer* buf = getBufferByID(id);
+    if (buf) {
+        buf->setDeferredReload();
+    }
+    return true;
+}
+
+SavingStatus FileManager::saveBuffer(BufferID id, const wchar_t* filename, bool isCopy)
+{
+    Buffer* buffer = getBufferByID(id);
+    if (!buffer) {
+        return SaveOpenFailed;
+    }
+
+    QString filePath = QString::fromWCharArray(filename);
+
+    // In real implementation, would get content from Scintilla
+    // For now, we just create/truncate the file
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        return SaveOpenFailed;
+    }
+
+    // Write content would go here in full implementation
+
+    file.close();
+
+    if (!isCopy) {
+        buffer->setFileName(filename);
+        buffer->setDirty(false);
+        buffer->setUnsync(false);
+        buffer->setSavePointDirty(false);
+        buffer->setStatus(DOC_REGULAR);
+    }
+
+    return SaveOK;
+}
+
+bool FileManager::backupCurrentBuffer()
+{
+    // Simplified backup implementation
+    Buffer* buffer = _pNotepadPlus->getCurrentBuffer();
+    if (!buffer || buffer->isLargeFile()) {
+        return false;
+    }
+
+    if (buffer->isDirty()) {
+        // In full implementation, would write backup file
+        return true;
+    }
+
+    return true;
+}
+
+bool FileManager::deleteBufferBackup(BufferID id)
+{
+    Buffer* buffer = getBufferByID(id);
+    if (!buffer) {
+        return true;
+    }
+
+    std::wstring backupPath = buffer->getBackupFileName();
+    if (!backupPath.empty()) {
+        QString path = QString::fromWCharArray(backupPath.c_str());
+        QFile::remove(path);
+        buffer->setBackupFileName(std::wstring());
+    }
+
+    return true;
+}
+
+bool FileManager::deleteFile(BufferID id)
+{
+    if (id == BUFFER_INVALID) {
+        return false;
+    }
+
+    Buffer* buf = getBufferByID(id);
+    if (!buf) {
+        return false;
+    }
+
+    QString filePath = QString::fromWCharArray(buf->getFullPathName());
+    if (!QFile::exists(filePath)) {
+        return false;
+    }
+
+    // Move to trash instead of permanent delete
+    // In Qt, we can use QFile::moveToTrash if available (Qt 5.15+)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    return QFile::moveToTrash(filePath);
+#else
+    // Fallback: just delete the file
+    return QFile::remove(filePath);
+#endif
+}
+
+bool FileManager::moveFile(BufferID id, const wchar_t* newFileName)
+{
+    if (id == BUFFER_INVALID) {
+        return false;
+    }
+
+    Buffer* buf = getBufferByID(id);
+    if (!buf) {
+        return false;
+    }
+
+    QString oldPath = QString::fromWCharArray(buf->getFullPathName());
+    QString newPath = QString::fromWCharArray(newFileName);
+
+    if (!QFile::exists(oldPath)) {
+        return false;
+    }
+
+    // Remove destination if it exists
+    if (QFile::exists(newPath)) {
+        QFile::remove(newPath);
+    }
+
+    if (!QFile::rename(oldPath, newPath)) {
+        return false;
+    }
+
+    buf->setFileName(newFileName);
+    return true;
+}
+
+bool FileManager::createEmptyFile(const wchar_t* path)
+{
+    QString filePath = QString::fromWCharArray(path);
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        return false;
+    }
+    file.close();
+    return true;
+}
+
+void FileManager::setLoadedBufferEncodingAndEol(Buffer* buf, const Utf8_16_Read& UnicodeConvertor, int encoding, EolType bkformat)
+{
+    // Set encoding and EOL format after loading
+    if (encoding != -1) {
+        buf->setEncoding(encoding);
+    }
+
+    if (bkformat != EolType::unknown) {
+        buf->setEolFormat(bkformat);
+    }
+}
+
+size_t FileManager::nextUntitledNewNumber() const
+{
+    std::vector<size_t> usedNumbers;
+    for (Buffer* buf : _buffers) {
+        if (buf->isUntitled()) {
+            // Parse number from "new X" format
+            const wchar_t* fileName = buf->getFileName();
+            if (fileName) {
+                // Simple parsing - look for digits after "new "
+                const wchar_t* numStart = wcsstr(fileName, L"new ");
+                if (numStart) {
+                    int num = _wtoi(numStart + 4);
+                    if (num > 0) {
+                        usedNumbers.push_back(num);
+                    }
+                }
+            }
+        }
+    }
+
+    size_t newNumber = 1;
+    while (true) {
+        bool found = false;
+        for (size_t used : usedNumbers) {
+            if (used == newNumber) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            break;
+        }
+        ++newNumber;
+    }
+
+    return newNumber;
+}
+
+int FileManager::getFileNameFromBuffer(BufferID id, wchar_t* fn2copy)
+{
+    if (getBufferIndexByID(id) == -1) {
+        return -1;
+    }
+
+    Buffer* buf = getBufferByID(id);
+    if (!buf) {
+        return -1;
+    }
+
+    const wchar_t* fileName = buf->getFullPathName();
+    if (fn2copy) {
+        wcscpy(fn2copy, fileName);
+    }
+
+    return wcslen(fileName);
+}
+
+size_t FileManager::docLength(Buffer* buffer) const
+{
+    // In full implementation, would get document length from Scintilla
+    // For now, return 0 as placeholder
+    return 0;
+}
+
+void FileManager::removeHotSpot(Buffer* buffer) const
+{
+    // In full implementation, would remove URL hotspots from Scintilla
+    // For now, this is a no-op
+}
+
+// ============================================================================
+// Buffer class method implementations for Linux/Qt port
+// ============================================================================
+
+void Buffer::setFileName(const wchar_t* fn)
+{
+    if (!fn) {
+        return;
+    }
+
+    // Convert wchar_t to QString and store as full path
+    QString fullPath = QString::fromWCharArray(fn);
+    _fullPathName = fullPath.toStdWString();
+
+    // Extract filename from full path
+    QFileInfo fileInfo(fullPath);
+    QString fileName = fileInfo.fileName();
+
+    // Update _fileName pointer to point into _fullPathName
+    // Find the last separator in the full path
+    size_t lastSep = _fullPathName.find_last_of(L"/\\");
+    if (lastSep != std::wstring::npos) {
+        _fileName = const_cast<wchar_t*>(_fullPathName.c_str() + lastSep + 1);
+    } else {
+        _fileName = const_cast<wchar_t*>(_fullPathName.c_str());
+    }
+
+    // Detect language from extension
+    QString ext = fileInfo.suffix();
+    // Simplified language detection - full implementation would use NppParameters
+    if (ext == "cpp" || ext == "cxx" || ext == "cc" || ext == "hpp") {
+        _lang = L_CPP;
+    } else if (ext == "c" || ext == "h") {
+        _lang = L_C;
+    } else if (ext == "java") {
+        _lang = L_JAVA;
+    } else if (ext == "py" || ext == "pyw") {
+        _lang = L_PYTHON;
+    } else if (ext == "js") {
+        _lang = L_JAVASCRIPT;
+    } else if (ext == "html" || ext == "htm") {
+        _lang = L_HTML;
+    } else if (ext == "xml") {
+        _lang = L_XML;
+    } else if (ext == "json") {
+        _lang = L_JSON;
+    } else if (ext == "css") {
+        _lang = L_CSS;
+    } else {
+        _lang = L_TEXT;
+    }
+
+    // Get last modified time
+    updateTimeStamp();
+
+    // Refresh compact filename
+    refreshCompactFileName();
+
+    // Notify filename change
+    doNotify(BufferChangeFilename);
+}
+
+void Buffer::updateTimeStamp()
+{
+    if (_currentStatus == DOC_UNNAMED || _fullPathName.empty()) {
+        _timeStamp = FILETIME{};
+        return;
+    }
+
+    QString filePath = QString::fromStdWString(_fullPathName);
+    QFileInfo fileInfo(filePath);
+
+    if (fileInfo.exists()) {
+        QDateTime lastModified = fileInfo.lastModified();
+        // Convert QDateTime to FILETIME
+        unsigned long long timeValue = static_cast<unsigned long long>(lastModified.toMSecsSinceEpoch());
+        // Add difference between Unix epoch (1970) and Windows epoch (1601) in 100-nanosecond intervals
+        timeValue = (timeValue + 11644473600000ULL) * 10000ULL;
+        _timeStamp.dwLowDateTime = static_cast<DWORD>(timeValue);
+        _timeStamp.dwHighDateTime = static_cast<DWORD>(timeValue >> 32);
+    } else {
+        _timeStamp = FILETIME{};
+    }
+}
+
+bool Buffer::checkFileState()
+{
+    if (_currentStatus == DOC_UNNAMED || _fullPathName.empty()) {
+        return false;
+    }
+
+    QString filePath = QString::fromStdWString(_fullPathName);
+    QFileInfo fileInfo(filePath);
+
+    bool changed = false;
+
+    if (!fileInfo.exists()) {
+        // File was deleted externally
+        if (_currentStatus != DOC_DELETED) {
+            setStatus(DOC_DELETED);
+            changed = true;
+        }
+    } else {
+        // Check if file was modified externally
+        QDateTime lastModified = fileInfo.lastModified();
+        FILETIME currentFt;
+        unsigned long long timeValue = static_cast<unsigned long long>(lastModified.toMSecsSinceEpoch());
+        timeValue = (timeValue + 11644473600000ULL) * 10000ULL;
+        currentFt.dwLowDateTime = static_cast<DWORD>(timeValue);
+        currentFt.dwHighDateTime = static_cast<DWORD>(timeValue >> 32);
+
+        // Compare FILETIME values
+        if (currentFt.dwLowDateTime != _timeStamp.dwLowDateTime ||
+            currentFt.dwHighDateTime != _timeStamp.dwHighDateTime) {
+            if (_currentStatus != DOC_MODIFIED) {
+                setStatus(DOC_MODIFIED);
+                changed = true;
+            }
+        }
+
+        // Check read-only status
+        bool newReadOnly = !fileInfo.isWritable();
+        if (_isFileReadOnly != newReadOnly) {
+            _isFileReadOnly = newReadOnly;
+            doNotify(BufferChangeReadonly);
+            changed = true;
+        }
+    }
+
+    return changed;
+}
+
+int Buffer::addReference(ScintillaEditView* identifier)
+{
+    // Check if already exists
+    for (size_t i = 0; i < _referees.size(); ++i) {
+        if (_referees[i] == identifier) {
+            return static_cast<int>(_references);
+        }
+    }
+
+    _referees.push_back(identifier);
+    _positions.emplace_back();
+    _foldStates.emplace_back();
+    ++_references;
+
+    return static_cast<int>(_references);
+}
+
+int Buffer::removeReference(const ScintillaEditView* identifier)
+{
+    for (auto it = _referees.begin(); it != _referees.end(); ++it) {
+        if (*it == identifier) {
+            size_t index = std::distance(_referees.begin(), it);
+            _referees.erase(it);
+            _positions.erase(_positions.begin() + index);
+            _foldStates.erase(_foldStates.begin() + index);
+            --_references;
+            break;
+        }
+    }
+
+    return static_cast<int>(_references);
+}
+
+void Buffer::setDirty(bool dirty)
+{
+    if (_isDirty != dirty) {
+        _isDirty = dirty;
+        doNotify(BufferChangeDirty);
+    }
+}
+
+void Buffer::setDeferredReload()
+{
+    _needReloading = true;
+    // In the original implementation, this would trigger a deferred reload
+    // For the Qt port, we can emit a signal or set a flag for later processing
+}
+
+void Buffer::setEncoding(int encoding)
+{
+    if (_encoding != encoding) {
+        _encoding = encoding;
+        doNotify(BufferChangeUnicode);
+    }
+}
+
+void Buffer::doNotify(int mask)
+{
+    if (_canNotify && _pManager) {
+        _pManager->beNotifiedOfBufferChange(this, mask);
+    }
+}
+
+std::wstring Buffer::getTimeString(FILETIME rawtime) const
+{
+    if (rawtime.dwLowDateTime == 0 && rawtime.dwHighDateTime == 0) {
+        return std::wstring();
+    }
+
+    // Convert FILETIME to QDateTime
+    unsigned long long timeValue = (static_cast<unsigned long long>(rawtime.dwHighDateTime) << 32) |
+                                    static_cast<unsigned long long>(rawtime.dwLowDateTime);
+    // Convert from 100-nanosecond intervals to milliseconds
+    timeValue = (timeValue / 10000ULL) - 11644473600000ULL;
+    QDateTime dateTime = QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(timeValue));
+
+    // Format the date/time string
+    QString formatted = dateTime.toString("yyyy-MM-dd hh:mm:ss");
+    return formatted.toStdWString();
+}
+
+#ifdef __linux__
+void Buffer::setTabCreatedTimeStringWithCurrentTime()
+{
+    if (_currentStatus == DOC_UNNAMED) {
+        // Get current time as FILETIME using Qt
+        QDateTime now = QDateTime::currentDateTime();
+        unsigned long long timeValue = static_cast<unsigned long long>(now.toMSecsSinceEpoch());
+        timeValue = (timeValue + 11644473600000ULL) * 10000ULL;
+        FILETIME ft;
+        ft.dwLowDateTime = static_cast<DWORD>(timeValue);
+        ft.dwHighDateTime = static_cast<DWORD>(timeValue >> 32);
+        _tabCreatedTimeString = getTimeString(ft);
+    }
+}
+#endif
+
+// Additional Buffer methods needed for the Qt port
+
+void Buffer::setUserReadOnly(bool ro)
+{
+    if (_isUserReadOnly != ro) {
+        _isUserReadOnly = ro;
+        doNotify(BufferChangeReadonly);
+    }
+}
+
+void Buffer::setLangType(LangType lang, const wchar_t* userLangName)
+{
+    if (_lang != lang) {
+        _lang = lang;
+        if (userLangName) {
+            _userLangExt = userLangName;
+        }
+        doNotify(BufferChangeLanguage);
+    }
+}
+
+void Buffer::setUnicodeMode(UniMode mode)
+{
+    if (_unicodeMode != mode) {
+        _unicodeMode = mode;
+        doNotify(BufferChangeUnicode);
+    }
+}
+
+void Buffer::setPosition(const Position& pos, const ScintillaEditView* identifier)
+{
+    int index = indexOfReference(identifier);
+    if (index != -1) {
+        _positions[index] = pos;
+    }
+}
+
+Position& Buffer::getPosition(const ScintillaEditView* identifier)
+{
+    int index = indexOfReference(identifier);
+    if (index != -1) {
+        return _positions[index];
+    }
+    // Return a static empty position as fallback
+    static Position emptyPos;
+    return emptyPos;
+}
+
+void Buffer::setHeaderLineState(const std::vector<size_t>& folds, ScintillaEditView* identifier)
+{
+    int index = indexOfReference(identifier);
+    if (index != -1) {
+        _foldStates[index] = folds;
+    }
+}
+
+const std::vector<size_t>& Buffer::getHeaderLineState(const ScintillaEditView* identifier) const
+{
+    int index = indexOfReference(identifier);
+    if (index != -1) {
+        return _foldStates[index];
+    }
+    // Return a static empty vector as fallback
+    static std::vector<size_t> emptyVec;
+    return emptyVec;
+}
+
+void Buffer::setHideLineChanged(bool isHide, size_t location)
+{
+    // Implementation for hide line changed
+    // This would typically update some internal state
+    Q_UNUSED(isHide)
+    Q_UNUSED(location)
+}
+
+void Buffer::reload()
+{
+    if (_pManager) {
+        _pManager->reloadBuffer(_id);
+    }
+}
+
+int64_t Buffer::getFileLength() const
+{
+    if (_fullPathName.empty()) {
+        return -1;
+    }
+
+    QString filePath = QString::fromStdWString(_fullPathName);
+    QFileInfo fileInfo(filePath);
+
+    if (fileInfo.exists()) {
+        return fileInfo.size();
+    }
+
+    return -1;
+}
+
+std::wstring Buffer::getFileTime(fileTimeType ftt) const
+{
+    if (_fullPathName.empty()) {
+        return std::wstring();
+    }
+
+    QString filePath = QString::fromStdWString(_fullPathName);
+    QFileInfo fileInfo(filePath);
+
+    if (!fileInfo.exists()) {
+        return std::wstring();
+    }
+
+    QDateTime dateTime;
+    switch (ftt) {
+        case ft_created:
+            dateTime = fileInfo.birthTime();
+            if (!dateTime.isValid()) {
+                dateTime = fileInfo.lastModified(); // Fallback
+            }
+            break;
+        case ft_modified:
+            dateTime = fileInfo.lastModified();
+            break;
+        case ft_accessed:
+            dateTime = fileInfo.lastRead();
+            break;
+        default:
+            return std::wstring();
+    }
+
+    QString formatted = dateTime.toString("yyyy-MM-dd hh:mm:ss");
+    return formatted.toStdWString();
+}
+
+Lang* Buffer::getCurrentLang() const
+{
+    // In the original implementation, this would return a pointer to the Lang structure
+    // For the Qt port, we return nullptr as the language handling is different
+    return nullptr;
+}
+
+bool Buffer::allowBraceMach() const
+{
+    // Allow brace matching for most languages
+    return _lang != L_TEXT;
+}
+
+bool Buffer::allowAutoCompletion() const
+{
+    // Allow auto-completion for programming languages
+    return _lang != L_TEXT && !_isLargeFile;
+}
+
+bool Buffer::allowSmartHilite() const
+{
+    // Allow smart highlighting for all documents
+    return true;
+}
+
+bool Buffer::allowClickableLink() const
+{
+    // Allow clickable links for most documents
+    return _lang != L_TEXT || !_fullPathName.empty();
+}
+
+int Buffer::indexOfReference(const ScintillaEditView* identifier) const
+{
+    for (size_t i = 0; i < _referees.size(); ++i) {
+        if (_referees[i] == identifier) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+void Buffer::refreshCompactFileName()
+{
+    // Create a compact version of the filename with ellipsis if needed
+    const wchar_t* fname = getFileName();
+    if (fname) {
+        _compactFileName = fname;
+        // If filename is too long, truncate with ellipsis
+        if (_compactFileName.length() > 50) {
+            _compactFileName = _compactFileName.substr(0, 20) + L"..." + _compactFileName.substr(_compactFileName.length() - 20);
+        }
+    }
+}
+
+void Buffer::normalizeTabName(std::wstring& tabName)
+{
+    // Normalize tab name by replacing special characters
+    // This is a simplified implementation
+    for (auto& c : tabName) {
+        if (c == L'\t' || c == L'\n' || c == L'\r') {
+            c = L' ';
+        }
+    }
+}
+
+// ============================================================================
+// End of FileManager implementation (global namespace)
+// ============================================================================

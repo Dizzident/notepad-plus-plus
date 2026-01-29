@@ -21,7 +21,7 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QApplication>
-#include <QtWidgets/QDesktopServices>
+#include <QtGui/QDesktopServices>
 #include <QtGui/QClipboard>
 #include <QtCore/QUrl>
 #include <QtCore/QProcess>

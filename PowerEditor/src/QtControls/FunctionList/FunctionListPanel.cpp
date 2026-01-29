@@ -24,6 +24,7 @@
 #include <QApplication>
 #include <QHeaderView>
 #include <QDebug>
+#include <QFileInfo>
 
 namespace QtControls {
 
@@ -461,7 +462,7 @@ void FunctionListPanel::init(ScintillaEditView** ppEditView)
 void FunctionListPanel::setupUI()
 {
     // Create main widget
-    _widget = new QWidget(_parent);
+    _widget = new QWidget(this);
     _widget->setObjectName("FunctionListPanel");
 
     QVBoxLayout* mainLayout = new QVBoxLayout(_widget);
@@ -588,8 +589,12 @@ void FunctionListPanel::parseDocument()
         return;
     }
 
-    // Get document content
-    QString content = QString::fromUtf8((*_ppEditView)->getCurrentBuffer()->getDocument()->getCharPointer());
+    // Get document content using Scintilla API
+    ScintillaEditView* pEditView = *_ppEditView;
+    auto length = pEditView->execute(SCI_GETTEXTLENGTH);
+    std::string buffer(length + 1, '\0');
+    pEditView->execute(SCI_GETTEXT, length + 1, reinterpret_cast<LPARAM>(buffer.data()));
+    QString content = QString::fromUtf8(buffer.data(), static_cast<int>(length));
 
     // Detect language
     QString lang = detectLanguage();
@@ -601,7 +606,7 @@ void FunctionListPanel::parseDocument()
     FunctionParser* parser = _parserMgr->getParser(lang);
     if (!parser) {
         // Try by file extension
-        QString fileName = QString::fromUtf8((*_ppEditView)->getCurrentBuffer()->getFileName());
+        QString fileName = QString::fromWCharArray((*_ppEditView)->getCurrentBuffer()->getFileName());
         QString ext = QFileInfo(fileName).suffix();
         parser = _parserMgr->getParserForExtension(ext);
     }
@@ -633,7 +638,7 @@ void FunctionListPanel::rebuildTree()
     // Add root node with file name
     QString fileName;
     if (_ppEditView && *_ppEditView) {
-        fileName = QString::fromUtf8((*_ppEditView)->getCurrentBuffer()->getFileName());
+        fileName = QString::fromWCharArray((*_ppEditView)->getCurrentBuffer()->getFileName());
     } else {
         fileName = tr("Functions");
     }
@@ -811,7 +816,7 @@ QString FunctionListPanel::detectLanguage() const
         return QString();
     }
 
-    QString fileName = QString::fromUtf8((*_ppEditView)->getCurrentBuffer()->getFileName());
+    QString fileName = QString::fromWCharArray((*_ppEditView)->getCurrentBuffer()->getFileName());
     QString ext = QFileInfo(fileName).suffix().toLower();
 
     // Map extension to language

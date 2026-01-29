@@ -44,6 +44,20 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+// ============================================================================
+// Static Global Instance (outside namespace for global access)
+// ============================================================================
+
+static QtIO::NppIO* g_nppIO = nullptr;
+
+QtIO::NppIO* getNppIO() {
+    return g_nppIO;
+}
+
+void setNppIO(QtIO::NppIO* nppIO) {
+    g_nppIO = nppIO;
+}
+
 namespace QtIO {
 
 // ============================================================================
@@ -58,20 +72,6 @@ namespace {
     const char* RECENT_FILES_KEY = "RecentFiles";
     const char* SESSION_FILE_EXT = ".session";
     const char* WORKSPACE_FILE_EXT = ".workspace";
-}
-
-// ============================================================================
-// Static Global Instance
-// ============================================================================
-
-static NppIO* g_nppIO = nullptr;
-
-NppIO* getNppIO() {
-    return g_nppIO;
-}
-
-void setNppIO(NppIO* nppIO) {
-    g_nppIO = nppIO;
 }
 
 // ============================================================================

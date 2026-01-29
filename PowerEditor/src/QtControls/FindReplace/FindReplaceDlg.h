@@ -14,6 +14,30 @@
 #include <vector>
 #include <functional>
 
+// Windows-compatible type definitions (must match Windows version)
+enum DIALOG_TYPE {FIND_DLG, REPLACE_DLG, FINDINFILES_DLG, FINDINPROJECTS_DLG, MARK_DLG};
+enum FindStatus {FSFound, FSNotFound, FSTopReached, FSEndReached, FSMessage, FSNoMessage, FSWarning};
+enum FindNextType {FINDNEXTTYPE_FINDNEXT, FINDNEXTTYPE_REPLACENEXT};
+#define DIR_DOWN true
+#define DIR_UP false
+
+// Search type constants
+enum SearchTypeConst {FindNormal, FindExtended, FindRegex};
+
+// Windows FindOption structure (must match Windows version exactly)
+struct FindOption {
+    bool _isWholeWord = false;
+    bool _isMatchCase = false;
+    bool _isWrapAround = true;
+    bool _whichDirection = true;  // true = down, false = up
+    int _searchType = 0;  // 0 = normal, 1 = extended, 2 = regex
+};
+
+// Stub classes for Linux compatibility
+class FindInFinderDlg {};
+struct FindersInfo {};
+class DockingDlgInterface {};
+
 // Forward declarations
 class QLineEdit;
 class QComboBox;
@@ -66,6 +90,10 @@ struct FindOptions {
     bool dotMatchesNewline = false;
     bool doPurge = false;
     bool doMarkLine = false;
+
+    // Windows-compatible members
+    std::wstring _str2Search;
+    std::wstring _str4Replace;
 };
 
 // Find status
@@ -140,6 +168,17 @@ public:
     // Static search options (shared across instances)
     static FindOptions options;
     static FindOptions* env;
+    static FindOptions* _env;  // Alias for compatibility
+
+
+    // Windows-compatible interface methods
+    void doDialog(DIALOG_TYPE type, bool isRTL = false, bool isDelete = false);
+    void setSearchText(const wchar_t* text);
+    void markAll(const wchar_t* text, int styleID);
+    void gotoNextFoundResult(int direction) const;
+
+    // Windows-compatible processFindNext
+    bool processFindNext(const wchar_t* text, const FindOption* opt, ::FindStatus* status, FindNextType type = FINDNEXTTYPE_FINDNEXT);
 
 public slots:
     void onFindNextClicked();
@@ -167,6 +206,7 @@ protected:
     void setupUI() override;
     void connectSignals() override;
     void resizeEvent(QResizeEvent* event) override;
+    bool run_dlgProc(QEvent* event) override;
 
 private:
     // UI Components - Find tab
@@ -281,6 +321,9 @@ public:
 
     void init(FindReplaceDlg* pFRDlg, ScintillaEditView** ppEditView);
 
+    // Windows-compatible display method
+    void display(bool toShow = true);
+
     void setSearchText(const QString& text);
     void setFindStatus(FindStatus status, int count = -1);
 
@@ -296,6 +339,7 @@ public slots:
 protected:
     void setupUI() override;
     void connectSignals() override;
+    bool run_dlgProc(QEvent* event) override;
 
 private:
     QLineEdit* _searchEdit = nullptr;

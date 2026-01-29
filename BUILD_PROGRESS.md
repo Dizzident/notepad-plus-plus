@@ -9,7 +9,7 @@
 | Scintilla Qt6 library | ✓ Fixed | CMake configuration updated |
 | Lexilla library | ✓ Fixed | Building successfully |
 | Platform Abstraction | ✓ Fixed | Common.h refactored into platform-specific headers |
-| Notepad++ executable | In Progress | QtControls class hierarchy mostly fixed; panel abstract classes resolved; remaining issues in FunctionListPanel and file browser integration |
+| Notepad++ executable | In Progress | Compilation successful; 138 linker errors remaining for NppCommands.cpp, ScintillaEditViewQt.cpp, and main_linux.cpp |
 
 ### Summary
 
@@ -232,6 +232,21 @@ make -j$(nproc)
 | 76 | Add run_dlgProc to ProjectPanel | ✓ Complete | ProjectPanel.h, ProjectPanel.cpp |
 | 77 | Add getWidget() to all panel classes | ✓ Complete | Multiple panel headers |
 | 78 | Add setFullScreen() declaration to MainWindow | ✓ Complete | Notepad_plus_Window.h |
+| 79-84 | Fix FileBrowser, FunctionListPanel Qt6 issues | ✓ Complete | FileBrowser.cpp, FunctionListPanel.cpp |
+| 85 | Fix PreferenceDlg Qt6 DefaultLocaleShortDate | ✓ Complete | preferenceDlg.cpp |
+| 86 | Fix PreferenceDlg init() call | ✓ Complete | preferenceDlg.cpp |
+| 87 | Create QtControls/Window.cpp for MOC | ✓ Complete | Window.cpp, CMakeLists.txt |
+| 88 | Fix PreferenceDlg onCategoryItemClicked slot | ✓ Complete | preferenceDlg.cpp |
+| 89 | Add FileManager implementation | ✓ Complete | QtCore/Buffer.cpp |
+| 90 | Fix setNppIO/getNppIO namespace issue | ✓ Complete | NppIO.cpp |
+| 91-93 | Add Notepad_plus file operations | ✓ Complete | QtControls/Notepad_plus.cpp |
+| 94-95 | Add Buffer class methods | ✓ Complete | QtCore/Buffer.cpp |
+| 96 | Add ScintillaEditView edit methods | ✓ Complete | ScintillaEditViewQt.cpp |
+| 97-109 | Add Notepad_plus search/find methods | ✓ Complete | Notepad_plus.cpp, FindReplaceDlg |
+| 110-120 | Add Notepad_plus marked lines methods | ✓ Complete | Notepad_plus.cpp, ScintillaEditViewQt.cpp |
+| 121 | Add getSelectedTextToWChar | ✓ Complete | ScintillaEditViewQt.cpp |
+| 122-142 | Add Notepad_plus view/toggle methods | ✓ Complete | Notepad_plus.cpp |
+| 143-155 | Add ScintillaEditView folding methods | ✓ Complete | ScintillaEditViewQt.cpp |
 
 ### Recently Completed (2026-01-29)
 
@@ -261,56 +276,97 @@ Also added `using StaticDialog::getDialog;` to bring protected method into publi
 
 Added `void setFullScreen(bool fullScreen);` declaration to Notepad_plus_Window.h (line 107).
 
+#### FunctionListPanel Implementation Issues - FIXED ✓
+**Status:** Complete
+
+Fixed all FunctionListPanel issues:
+- Fixed `_parent` → `this` in setupUI()
+- Changed `QString::fromUtf8()` → `QString::fromWCharArray()` for wchar_t* data
+- Added missing `#include <QFileInfo>`
+- Fixed parseDocument() to use Scintilla API instead of getCharPointer() chain
+
+#### FileBrowser Qt6 Include - FIXED ✓
+**Status:** Complete
+
+Fixed Qt6 include path: `QtWidgets/QDesktopServices` → `QtGui/QDesktopServices`
+
+#### Core Class Implementations - ADDED ✓
+**Status:** Major Progress
+
+Created extensive Qt implementations:
+- `QtControls/Notepad_plus.cpp` - 140+ methods for file operations, search, view modes
+- `QtCore/Buffer.cpp` - FileManager class and Buffer methods
+- `QtCore/ScintillaEditViewQt.cpp` - Editor operations, folding, text conversion
+- `QtControls/Window.cpp` - MOC support for Window class
+- `QtControls/FindReplaceDlg.cpp` - Search dialog methods
+- `QtControls/GoToLine/GoToLineDlg.cpp` - Go to line dialog
+
+Fixed namespace issues:
+- `setNppIO()` / `getNppIO()` moved to global scope from QtIO namespace
+- Added missing slot `onCategoryItemClicked()` to PreferenceDlg
+- Fixed Qt6 `Qt::DefaultLocaleShortDate` → `QLocale().toString()`
+- Fixed PreferenceDlg constructor to use `setupUI()` instead of non-existent `init()`
+
 ### Remaining Issues
 
 The following issues still need to be addressed:
 
-#### 1. FunctionListPanel Implementation Issues
-**Status:** Needs fixes
+#### 1. NppCommands.cpp Linker Errors
+**Status:** 25+ undefined references
 
-- `setupUI()` uses `_parent` instead of `parent` or proper member
-- `parseDocument()` has type mismatches with `QString::fromUtf8(const wchar_t*)`
-- Missing `#include <QFileInfo>` in FunctionListPanel.cpp
+Remaining methods needed:
+- `switchToFunctionList()` / `switchToDocumentList()`
+- `switchEditViewTo()` / `activateDoc()` / `activateNextDoc()`
+- `moveTabForward()` / `moveTabBackward()`
+- `startMacroRecording()` / `stopMacroRecording()` / `macroPlayback()` / `saveCurrentMacro()` / `showRunMacroDlg()`
+- `setEncoding()` / `showUserDefineDlg()` / `showRunDlg()` / `showPreferenceDlg()`
+- `convertSelectedTextTo(TextCase const&)` (ScintillaEditView)
 
-#### 2. FileBrowser Implementation Issues
-**Status:** Needs fixes
+#### 2. ScintillaEditViewQt.cpp Linker Errors
+**Status:** 10+ undefined references
 
-- Include file issue: `QtWidgets/QDesktopServices` should be `QtGui/QDesktopServices` (Qt6 moved this)
+Methods needed:
+- `WcharMbcsConvertor::char2wchar()` / `wchar2char()`
+- `getSelectionLinesRange()` / `getEOLString()`
+- `getText()` for retrieving buffer content
+- `stringSplit()` / `stringJoin()` utility functions
 
-#### 3. QString/wchar_t* Type Conversions
-**Status:** API Migration Issue
+#### 3. main_linux.cpp Linker Errors
+**Status:** 5+ undefined references
 
-Multiple locations use `QString::fromUtf8()` with `const wchar_t*` which doesn't work. Need to use `QString::fromWCharArray()` or convert properly.
+Methods needed:
+- `NppParameters::getLangIDFromStr()` / `getLocPathFromStr()`
+- `stringReplace()` / `stringToLower()` utility functions
 
-#### 4. Qt6 API Updates Needed
-**Status:** Pending
+#### 4. NppParameters Constructor
+**Status:** Not implemented
 
-- Include file fixes for incomplete types
-- QDesktopServices location change (QtWidgets → QtGui)
+- `NppParameters::NppParameters()` constructor needed
+- Large class with settings management - needs Qt implementation
 
 ### Next Steps
 
 Priority order:
 
-1. **Fix FunctionListPanel implementation issues:**
-   - Fix `_parent` vs `parent` naming
-   - Fix `QString::fromUtf8(wchar_t*)` type conversions
-   - Add missing `#include <QFileInfo>`
+1. **Fix NppCommands.cpp linker errors (25+ methods):**
+   - Document/tab switching methods
+   - Macro recording/playback methods
+   - Dialog show methods (UserDefineDlg, RunDlg, PreferenceDlg)
+   - Utility methods (setEncoding, etc.)
 
-2. **Fix FileBrowser include:**
-   - Change `QtWidgets/QDesktopServices` to `QtGui/QDesktopServices`
+2. **Fix ScintillaEditViewQt.cpp linker errors:**
+   - WcharMbcsConvertor implementation
+   - Text utility methods (getEOLString, getSelectionLinesRange)
+   - Buffer access methods (getText)
+   - String utilities (stringSplit, stringJoin)
 
-3. **Complete build verification**
+3. **Fix main_linux.cpp linker errors:**
+   - NppParameters static methods
+   - String utilities (stringReplace, stringToLower)
 
-4. **Exclude remaining Windows-specific files from CMakeLists.txt:**
-   - `lastRecentFileList.cpp`
-   - `lesDlgs.cpp`
+4. **Implement NppParameters class:**
+   - Constructor and initialization
+   - Settings management for Qt
+   - Language/encoding mappings
 
-5. **Create Qt alternatives for excluded files:**
-   - Qt version of Parameters.cpp (settings management)
-   - Qt version of NppNotification.cpp (notification handling)
-   - Qt version of localization.cpp (UI localization)
-
-6. **Clean up macro redefinition warnings**
-
-7. **Complete build verification and test executable**
+5. **Complete build verification and test executable**

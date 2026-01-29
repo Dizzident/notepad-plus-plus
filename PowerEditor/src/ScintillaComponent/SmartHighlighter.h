@@ -19,7 +19,11 @@
 #include "Common.h"
 
 class ScintillaEditView;
+
+// On Linux, FindReplaceDlg is a typedef, so don't forward declare it
+#ifndef NPP_LINUX
 class FindReplaceDlg;
+#endif
 
 class SmartHighlighter {
 public:

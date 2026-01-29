@@ -9,6 +9,7 @@
 #pragma once
 
 #include "../StaticDialog/StaticDialog.h"
+#include "ScintillaEditView.h"
 
 // Forward declarations
 class QSpinBox;
@@ -28,21 +29,25 @@ public:
     GoToLineDlg(QWidget* parent = nullptr);
     ~GoToLineDlg() override;
 
-    // Initialize the dialog with current position info
-    void init(int currentLine, int totalLines, int currentPos);
+    // Initialize the dialog (matches Windows interface)
+    void init(HINSTANCE hInst, HWND hPere, ScintillaEditView **ppEditView);
 
-    // Show the dialog
-    void doDialog();
+    // Show the dialog (matches Windows interface)
+    void doDialog(bool isRTL = false);
+
+    // Display the dialog (Qt-specific interface)
+    void display(bool toShow = true, bool enhancedPositioningCheckWhenShowing = false);
+
+    // Update line numbers display (matches Windows interface)
+    void updateLinesNumbers() const;
 
     // Get the target line number (1-based)
-    int getLine() const;
-
-    // Check if in line mode (true) or offset mode (false)
-    bool isLineMode() const;
+    long long getLine() const;
 
 protected:
     void setupUI() override;
     void connectSignals() override;
+    bool run_dlgProc(QEvent* event) override;
 
 private slots:
     void onGoClicked();
@@ -58,12 +63,17 @@ private:
     QPushButton* _goButton = nullptr;
     QPushButton* _cancelButton = nullptr;
 
-    int _currentLine = 0;
-    int _totalLines = 0;
-    int _currentPos = 0;
+    // Mode enum matching Windows version
+    enum mode {go2line, go2offset};
+    mode _mode = go2line;
 
-    enum class Mode { GoToLine, GoToOffset };
-    Mode _mode = Mode::GoToLine;
+    // Store the edit view pointer (matches Windows interface)
+    ScintillaEditView **_ppEditView = nullptr;
+
+    // Cached values for display
+    mutable int _currentLine = 0;
+    mutable int _totalLines = 0;
+    mutable int _currentPos = 0;
 };
 
 } // namespace QtControls

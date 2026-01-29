@@ -27,11 +27,12 @@ GoToLineDlg::GoToLineDlg(QWidget* parent)
 
 GoToLineDlg::~GoToLineDlg() = default;
 
-void GoToLineDlg::init(int currentLine, int totalLines, int currentPos)
+void GoToLineDlg::init(HINSTANCE hInst, HWND hPere, ScintillaEditView **ppEditView)
 {
-    _currentLine = currentLine;
-    _totalLines = totalLines;
-    _currentPos = currentPos;
+    // Store the edit view pointer for later use
+    if (!ppEditView)
+        throw std::runtime_error("GoToLineDlg::init : ppEditView is null.");
+    _ppEditView = ppEditView;
 }
 
 void GoToLineDlg::setupUI()
@@ -110,17 +111,18 @@ void GoToLineDlg::connectSignals()
     connect(_offsetModeRadio, &QRadioButton::toggled, this, &GoToLineDlg::onModeChanged);
 }
 
-void GoToLineDlg::doDialog()
+void GoToLineDlg::doDialog(bool isRTL)
 {
+    Q_UNUSED(isRTL);
+
     if (!isCreated()) {
         create(tr("Go To"), false);
         setupUI();
         connectSignals();
     }
 
-    updateRangeLabel();
-    display(true, true);
-    goToCenter();
+    updateLinesNumbers();
+    display(true);
 
     // Set focus to the spin box and select all text
     if (_lineSpinBox) {
@@ -129,7 +131,54 @@ void GoToLineDlg::doDialog()
     }
 }
 
-int GoToLineDlg::getLine() const
+void GoToLineDlg::display(bool toShow, bool enhancedPositioningCheckWhenShowing)
+{
+    StaticDialog::display(toShow, enhancedPositioningCheckWhenShowing);
+}
+
+void GoToLineDlg::updateLinesNumbers() const
+{
+    // Get current line information from the edit view
+    if (_ppEditView && *_ppEditView) {
+        ScintillaEditView* view = *_ppEditView;
+        _currentLine = static_cast<int>(view->getCurrentLineNumber() + 1);
+        _totalLines = static_cast<int>(view->execute(SCI_GETLINECOUNT));
+        _currentPos = static_cast<int>(view->execute(SCI_GETCURRENTPOS));
+    }
+
+    // Update the range label
+    if (_rangeLabel) {
+        QString text;
+        if (_mode == go2line) {
+            text = tr("You are here: %1\nYou want to go to: %2")
+                       .arg(_currentLine)
+                       .arg(_totalLines > 0 ? _totalLines : 1);
+            if (_lineSpinBox) {
+                _lineSpinBox->setMaximum(_totalLines > 0 ? _totalLines : 1);
+                if (_lineSpinBox->value() > _totalLines && _totalLines > 0) {
+                    _lineSpinBox->setValue(_totalLines);
+                }
+            }
+        } else {
+            // Offset mode - show position info
+            int maxOffset = _totalLines > 0 ? _totalLines * 100 : 0; // Approximate
+            text = tr("You are here: %1\nYou want to go to: %2")
+                       .arg(_currentPos)
+                       .arg(maxOffset > 0 ? maxOffset : 1);
+            if (_lineSpinBox) {
+                _lineSpinBox->setMaximum(maxOffset > 0 ? maxOffset : 999999999);
+            }
+        }
+        _rangeLabel->setText(text);
+    }
+
+    // Update spin box value
+    if (_lineSpinBox) {
+        _lineSpinBox->setValue(_currentLine > 0 ? _currentLine : 1);
+    }
+}
+
+long long GoToLineDlg::getLine() const
 {
     if (_lineSpinBox) {
         return _lineSpinBox->value();
@@ -137,13 +186,17 @@ int GoToLineDlg::getLine() const
     return -1;
 }
 
-bool GoToLineDlg::isLineMode() const
-{
-    return _mode == Mode::GoToLine;
-}
-
 void GoToLineDlg::onGoClicked()
 {
+    // Navigate to the specified line
+    if (_ppEditView && *_ppEditView) {
+        ScintillaEditView* view = *_ppEditView;
+        long long line = getLine();
+        if (line > 0) {
+            // Convert to 0-based line number
+            view->execute(SCI_GOTOLINE, line - 1);
+        }
+    }
     display(false);
 }
 
@@ -155,39 +208,47 @@ void GoToLineDlg::onCancelClicked()
 void GoToLineDlg::onModeChanged()
 {
     if (_lineModeRadio && _lineModeRadio->isChecked()) {
-        _mode = Mode::GoToLine;
+        _mode = go2line;
     } else if (_offsetModeRadio && _offsetModeRadio->isChecked()) {
-        _mode = Mode::GoToOffset;
+        _mode = go2offset;
     }
     updateRangeLabel();
 }
 
+bool GoToLineDlg::run_dlgProc(QEvent* event)
+{
+    // Handle dialog events
+    Q_UNUSED(event);
+    return true;
+}
+
 void GoToLineDlg::updateRangeLabel()
 {
-    if (!_rangeLabel) return;
-
-    QString text;
-    if (_mode == Mode::GoToLine) {
-        text = tr("You are here: %1\nYou want to go to: %2")
-                   .arg(_currentLine)
-                   .arg(_totalLines > 0 ? _totalLines : 1);
-        if (_lineSpinBox) {
-            _lineSpinBox->setMaximum(_totalLines > 0 ? _totalLines : 1);
-            if (_lineSpinBox->value() > _totalLines && _totalLines > 0) {
-                _lineSpinBox->setValue(_totalLines);
+    // Non-const version for internal use
+    if (_rangeLabel) {
+        QString text;
+        if (_mode == go2line) {
+            text = tr("You are here: %1\nYou want to go to: %2")
+                       .arg(_currentLine)
+                       .arg(_totalLines > 0 ? _totalLines : 1);
+            if (_lineSpinBox) {
+                _lineSpinBox->setMaximum(_totalLines > 0 ? _totalLines : 1);
+                if (_lineSpinBox->value() > _totalLines && _totalLines > 0) {
+                    _lineSpinBox->setValue(_totalLines);
+                }
+            }
+        } else {
+            // Offset mode - show position info
+            int maxOffset = _totalLines > 0 ? _totalLines * 100 : 0; // Approximate
+            text = tr("You are here: %1\nYou want to go to: %2")
+                       .arg(_currentPos)
+                       .arg(maxOffset > 0 ? maxOffset : 1);
+            if (_lineSpinBox) {
+                _lineSpinBox->setMaximum(maxOffset > 0 ? maxOffset : 999999999);
             }
         }
-    } else {
-        // Offset mode - show position info
-        int maxOffset = _totalLines > 0 ? _totalLines * 100 : 0; // Approximate
-        text = tr("You are here: %1\nYou want to go to: %2")
-                   .arg(_currentPos)
-                   .arg(maxOffset > 0 ? maxOffset : 1);
-        if (_lineSpinBox) {
-            _lineSpinBox->setMaximum(maxOffset > 0 ? maxOffset : 999999999);
-        }
+        _rangeLabel->setText(text);
     }
-    _rangeLabel->setText(text);
 }
 
 } // namespace QtControls
