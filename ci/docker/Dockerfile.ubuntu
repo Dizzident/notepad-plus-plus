@@ -1,7 +1,7 @@
 # Dockerfile for Notepad++ Linux Build Environment (Ubuntu)
 # Usage: docker build -f ci/docker/Dockerfile.ubuntu -t notepad-plus-plus-build:ubuntu .
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
