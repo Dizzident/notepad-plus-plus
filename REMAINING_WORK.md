@@ -46,7 +46,7 @@ Location: `PowerEditor/src/QtCore/Buffer.cpp` (FileManager implementation)
 
 | Issue | Location | Description |
 |-------|----------|-------------|
-| `DocLangType` vs `LangType` | `Buffer.h:1684` | Comparison between different enum types |
+| ~~`DocLangType` vs `LangType`~~ | ~~`Buffer.h:1684`~~ | ~~Comparison between different enum types~~ **FIXED** |
 | `SavingStatus` enum | `Notepad_plus.cpp:1180` | Not defined in Qt version |
 
 **Fix Required:**
@@ -152,8 +152,9 @@ make -j4 2>&1 | head -50
 7. **Implement FileManager::deleteBufferBackup()**
    - For backup management
 
-8. **Fix DocLangType vs LangType comparison**
-   - Add proper type conversion
+8. ~~**Fix DocLangType vs LangType comparison**~~ **FIXED**
+   - ~~Add proper type conversion~~
+   - Changed `DocLangType` from a separate enum to a type alias (`using DocLangType = LangType;`)
 
 9. **Complete MainWindow integration**
    - Wire up all UI actions

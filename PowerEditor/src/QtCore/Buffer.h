@@ -44,26 +44,28 @@ enum class BufferStatus {
     ModifiedOutside // File modified externally
 };
 
-// Document language type enumeration (mirrors LangType from Notepad_plus_msgs.h)
-// Using regular enum (not enum class) for implicit conversion compatibility with LangType
-enum DocLangType {
-    L_TEXT, L_PHP, L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_GO, L_RC,
-    L_HTML, L_XML, L_MAKEFILE, L_PASCAL, L_BATCH, L_INI,
-    L_ASCII, L_USER, L_ASP, L_SQL, L_VB, L_JS_EMBEDDED, L_CSS,
-    L_PERL, L_PYTHON, L_LUA, L_TEX, L_FORTRAN, L_BASH, L_FLASH,
-    L_NSIS, L_TCL, L_LISP, L_SCHEME, L_ASM, L_DIFF, L_PROPS,
-    L_PS, L_RUBY, L_SMALLTALK, L_VHDL, L_KIX, L_AU3, L_CAML,
-    L_ADA, L_VERILOG, L_MATLAB, L_HASKELL, L_INNO, L_SEARCHRESULT,
-    L_CMAKE, L_YAML, L_COBOL, L_GUI4CLI, L_D, L_POWERSHELL, L_R,
-    L_JSP, L_COFFEESCRIPT, L_JSON, L_JAVASCRIPT, L_FORTRAN_77,
-    L_BAANC, L_SREC, L_IHEX, L_TEHEX, L_SWIFT, L_ASN1, L_AVS,
-    L_BLITZBASIC, L_PUREBASIC, L_FREEBASIC, L_CSOUND, L_ERLANG,
-    L_ESCRIPT, L_FORTH, L_LATEX, L_MMIXAL, L_NIM, L_NNCRONTAB,
-    L_OSCRIPT, L_REBOL, L_REGISTRY, L_RUST, L_SPICE, L_TXT2TAGS,
-    L_VISUALPROLOG, L_TYPESCRIPT, L_HOLLYWOOD, L_RAKU, L_TOML,
-    L_SAS, L_SML, L_MARKDOWN, L_GDSCRIPT, L_VBSCRIPT,
-    L_EXTERNAL
+// Saving status enumeration (mirrors SavingStatus from Windows Buffer.h)
+enum class SavingStatus {
+    SaveOK                      = 0,
+    SaveOpenFailed              = 1,
+    SaveWritingFailed           = 2,
+    NotEnoughRoom               = 3,
+    FullReadOnlySavingForbidden = 4
 };
+
+// DocFileStatus enumeration (mirrors DocFileStatus from Windows Buffer.h)
+enum DocFileStatus {
+    DOC_REGULAR      = 0x01, // should not be combined with anything
+    DOC_UNNAMED      = 0x02, // not saved (new ##)
+    DOC_DELETED      = 0x04, // doesn't exist in environment anymore, but not DOC_UNNAMED
+    DOC_MODIFIED     = 0x08, // File in environment has changed
+    DOC_NEEDRELOAD   = 0x10, // File is modified & needed to be reload (by log monitoring)
+    DOC_INACCESSIBLE = 0x20  // File is absent on its load; this status is temporary
+};
+
+// Document language type is an alias for LangType from Notepad_plus_msgs.h
+// This ensures type compatibility when comparing language types across the codebase
+using DocLangType = LangType;
 
 // Line ending types
 enum class LineEnding {
@@ -92,6 +94,9 @@ enum BufferStatusInfo {
 // Position structure is defined in Parameters.h
 // Use a typedef for QtCore::Position to refer to the global ::Position
 typedef ::Position Position;
+
+// Document type for Scintilla integration
+using Document = intptr_t;
 
 // Map position for document map
 struct MapPosition {
@@ -141,10 +146,23 @@ public:
 
     // File info
     QString getFilePath() const;
-    QString getFileName() const;
+    const wchar_t* getFileName() const;  // Returns wchar_t* for Windows API compatibility
+    QString getFileNameQString() const;  // Returns QString for Qt code
     void setFilePath(const QString& path);
+    void setFileName(const wchar_t* fileName);
     bool isUntitled() const;
     bool isNew() const;
+
+    // Full path name as wchar_t* (for compatibility with Windows API)
+    const wchar_t* getFullPathName() const;
+
+    // Sync status - indicates if buffer is synchronized with file on disk
+    bool isUnsync() const;
+    void setUnsync(bool unsync);
+
+    // Save point dirty status - indicates document is dirty after encoding conversion
+    bool isSavePointDirty() const;
+    void setSavePointDirty(bool dirty);
 
     // Content
     QByteArray getContent() const;
@@ -160,6 +178,9 @@ public:
     int getCurrentLine() const;
     int getCurrentColumn() const;
 
+    // Document length (for compatibility with Windows API)
+    size_t docLength() const;
+
     // Modification state
     bool isDirty() const;
     void setDirty(bool dirty);
@@ -172,6 +193,7 @@ public:
     bool isUserReadOnly() const;
     void setUserReadOnly(bool readOnly);
     bool isFileReadOnly() const;
+    bool getFileReadOnly() const { return isFileReadOnly(); }
     void setFileReadOnly(bool readOnly);
 
     // Encoding
@@ -215,6 +237,7 @@ public:
     bool createBackup();
     bool restoreFromBackup();
     void removeBackup();
+    void setBackupFilePath(const QString& path);
 
     // File monitoring
     void setFileMonitoringEnabled(bool enabled);
@@ -331,6 +354,8 @@ private:
     // Status
     BufferStatus _status = BufferStatus::Clean;
     bool _isDirty = false;
+    bool _isUnsync = false;  // Buffer is unsynchronized with file on disk
+    bool _isSavePointDirty = false;  // Document is dirty after encoding conversion
 
     // Read-only flags
     bool _isUserReadOnly = false;
@@ -397,6 +422,9 @@ private:
     QString detectEncodingFromBOM(const QByteArray& content);
 };
 
+// BufferID type definition - must be outside class but inside namespace
+typedef Buffer* BufferID;
+
 /**
  * @brief The BufferManager class manages all open buffers/documents.
  *
@@ -461,11 +489,33 @@ public:
     Buffer* getBufferByID(Buffer* id);
     Buffer* newEmptyDocument();
 
+    // File operations
+    BufferID loadFile(const wchar_t* filename, Document doc = static_cast<Document>(0), int encoding = -1, const wchar_t* backupFileName = nullptr, FILETIME fileNameTimestamp = {});
+    bool reloadBuffer(BufferID id);
+    BufferID getBufferFromName(const wchar_t* name);
+    bool deleteBufferBackup(BufferID id);
+
+    // Buffer management
+    void closeBuffer(BufferID id, const Scintilla::ScintillaEditView* identifier);
+    void addBufferReference(BufferID id, Scintilla::ScintillaEditView* identifier);
+
+    // Accessors
+    size_t getNbBuffers() const;
+    size_t getNbDirtyBuffers() const;
+    Buffer* getBufferByIndex(size_t index);
+    int getBufferIndexByID(BufferID id);
+
 private:
-    FileManager() = default;
-    ~FileManager() = default;
+    FileManager();
+    ~FileManager();
     FileManager(const FileManager&) = delete;
     FileManager& operator=(const FileManager&) = delete;
+
+    QList<Buffer*> _buffers;
+    BufferID _nextBufferID;
+    size_t _nbBufs = 0;
+
+    size_t nextUntitledNewNumber() const;
 };
 
 } // namespace QtCore

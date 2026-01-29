@@ -167,6 +167,7 @@ PowerEditor/src/MISC/md5/RCa06792
 *.opendb
 
 # CMake build directories
+build/
 PowerEditor/src/build/
 PowerEditor/src/build_test/
 PowerEditor/build/

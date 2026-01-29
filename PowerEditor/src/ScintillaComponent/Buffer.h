@@ -46,6 +46,7 @@ using QtCore::BufferChangeFilename;
 using QtCore::BufferChangeRecentTag;
 using QtCore::BufferChangeLexing;
 using QtCore::BufferChangeMask;
+using QtCore::SavingStatus;
 
 // MainFileManager is defined in QtCore/Buffer.h
 

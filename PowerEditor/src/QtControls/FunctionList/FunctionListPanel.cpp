@@ -607,9 +607,9 @@ void FunctionListPanel::parseDocument()
     if (!parser) {
         // Try by file extension
 #ifdef NPP_LINUX
-        QString fileName = (*_ppEditView)->getCurrentBuffer()->getFileName();
+        QString fileName = (*_ppEditView)->getCurrentBuffer()->getFileNameQString();
 #else
-        QString fileName = QString::fromWCharArray((*_ppEditView)->getCurrentBuffer()->getFileName());
+        QString fileName = QString::fromWCharArray((*_ppEditView)->getCurrentBuffer()->getFileNameQString());
 #endif
         QString ext = QFileInfo(fileName).suffix();
         parser = _parserMgr->getParserForExtension(ext);
@@ -643,9 +643,9 @@ void FunctionListPanel::rebuildTree()
     QString fileName;
     if (_ppEditView && *_ppEditView) {
 #ifdef NPP_LINUX
-        fileName = (*_ppEditView)->getCurrentBuffer()->getFileName();
+        fileName = (*_ppEditView)->getCurrentBuffer()->getFileNameQString();
 #else
-        fileName = QString::fromWCharArray((*_ppEditView)->getCurrentBuffer()->getFileName());
+        fileName = QString::fromWCharArray((*_ppEditView)->getCurrentBuffer()->getFileNameQString());
 #endif
     } else {
         fileName = tr("Functions");
@@ -825,9 +825,9 @@ QString FunctionListPanel::detectLanguage() const
     }
 
 #ifdef NPP_LINUX
-    QString fileName = (*_ppEditView)->getCurrentBuffer()->getFileName();
+    QString fileName = (*_ppEditView)->getCurrentBuffer()->getFileNameQString();
 #else
-    QString fileName = QString::fromWCharArray((*_ppEditView)->getCurrentBuffer()->getFileName());
+    QString fileName = QString::fromWCharArray((*_ppEditView)->getCurrentBuffer()->getFileNameQString());
 #endif
     QString ext = QFileInfo(fileName).suffix().toLower();
 

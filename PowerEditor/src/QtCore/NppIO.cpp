@@ -337,7 +337,7 @@ SaveFileResult NppIO::fileSaveAs(Buffer* buffer, const QString& newPath) {
     QString targetPath = newPath;
     if (targetPath.isEmpty()) {
         // Show save dialog
-        QString defaultName = IOUtils::wstringToQstring(buffer->getFileName());
+        QString defaultName = IOUtils::wstringToQstring(buffer->getFileNameQString());
         QString defaultDir = IOUtils::wstringToQstring(
             buffer->isUntitled() ? L"" : buffer->getFullPathName()
         );
@@ -1244,7 +1244,7 @@ bool NppIO::saveAllFiles(bool promptIfUnsaved) {
 
             emit progressUpdated(
                 static_cast<int>((i * 100) / bufferCount),
-                tr("Saving %1...").arg(IOUtils::wstringToQstring(buffer->getFileName()))
+                tr("Saving %1...").arg(IOUtils::wstringToQstring(buffer->getFileNameQString()))
             );
         }
     }

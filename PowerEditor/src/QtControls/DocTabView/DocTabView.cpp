@@ -108,7 +108,7 @@ void DocTabView::addBuffer(BufferID buffer)
         return; // No duplicates
 
     // Get the buffer title
-    QString title = buffer->getFileName();
+    QString title = buffer->getFileNameQString();
     if (title.isEmpty()) {
         title = QString("new %1").arg(getItemCount() + 1);
     }
@@ -385,7 +385,7 @@ void DocTabView::updateTabText(int index, Buffer* buffer)
     QTabWidget* tabWidget = getTabWidget();
     if (!tabWidget || !buffer) return;
 
-    QString title = buffer->getFileName();
+    QString title = buffer->getFileNameQString();
     if (title.isEmpty()) {
         title = QString("new %1").arg(index + 1);
     }

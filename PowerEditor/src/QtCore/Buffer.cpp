@@ -218,7 +218,7 @@ static DocLangType detectLanguageFromExtension(const QString& ext)
         { "conf", L_INI },
         { "sql", L_SQL },
         { "vb", L_VB },
-        { "vbs", L_VBSCRIPT },
+        { "vbs", L_VB },
         { "bas", L_VB },
         { "frm", L_VB },
         { "cls", L_VB },
@@ -261,8 +261,8 @@ static DocLangType detectLanguageFromExtension(const QString& ext)
         { "yaml", L_YAML },
         { "yml", L_YAML },
         { "cmake", L_CMAKE },
-        { "md", L_MARKDOWN },
-        { "markdown", L_MARKDOWN },
+        { "md", L_TEXT },
+        { "markdown", L_TEXT },
         { "rs", L_RUST },
         { "go", L_TEXT },  // Go not in original enum, map to text
         { "ts", L_TYPESCRIPT },
@@ -358,7 +358,7 @@ static QString getLanguageName(DocLangType type)
         { L_RUBY, QObject::tr("Ruby") },
         { L_YAML, QObject::tr("YAML") },
         { L_JSON, QObject::tr("JSON") },
-        { L_MARKDOWN, QObject::tr("Markdown") },
+        { L_TEXT, QObject::tr("Markdown") },
         { L_RUST, QObject::tr("Rust") },
         { L_TYPESCRIPT, QObject::tr("TypeScript") },
         { L_POWERSHELL, QObject::tr("PowerShell") },
@@ -553,7 +553,14 @@ QString Buffer::getFilePath() const
     return _filePath;
 }
 
-QString Buffer::getFileName() const
+const wchar_t* Buffer::getFileName() const
+{
+    QMutexLocker locker(&_mutex);
+    // Return the filename as wchar_t* for Windows API compatibility
+    return reinterpret_cast<const wchar_t*>(_fileName.utf16());
+}
+
+QString Buffer::getFileNameQString() const
 {
     QMutexLocker locker(&_mutex);
     return _fileName;
@@ -586,6 +593,13 @@ void Buffer::setFilePath(const QString& path)
     }
 
     emit filePathChanged(path);
+}
+
+void Buffer::setFileName(const wchar_t* fileName)
+{
+    if (fileName) {
+        setFilePath(QString::fromWCharArray(fileName));
+    }
 }
 
 bool Buffer::isUntitled() const
@@ -663,6 +677,17 @@ int Buffer::getCharCount() const
 
     if (_pView) {
         return _pView->getLength();
+    }
+
+    return 0;
+}
+
+size_t Buffer::docLength() const
+{
+    QMutexLocker locker(&_mutex);
+
+    if (_pView) {
+        return static_cast<size_t>(_pView->getLength());
     }
 
     return 0;
@@ -1339,7 +1364,7 @@ QString Buffer::getCommentLineSymbol() const
         case L_TYPESCRIPT:
         case L_RUST:
         case L_SWIFT:
-        case L_GO:
+        case L_GOLANG:
             return "//";
         case L_PYTHON:
         case L_RUBY:
@@ -1356,12 +1381,11 @@ QString Buffer::getCommentLineSymbol() const
             return ";";
         case L_HTML:
         case L_XML:
-        case L_MARKDOWN:
+        case L_TEXT:
             return "<!--";  // Block comment
         case L_BATCH:
             return "REM";
         case L_VB:
-        case L_VBSCRIPT:
             return "'";
         case L_PASCAL:
         case L_ADA:
@@ -1395,11 +1419,11 @@ QString Buffer::getCommentStart() const
         case L_TYPESCRIPT:
         case L_RUST:
         case L_SWIFT:
-        case L_GO:
+        case L_GOLANG:
             return "/*";
         case L_HTML:
         case L_XML:
-        case L_MARKDOWN:
+        case L_TEXT:
             return "<!--";
         case L_PASCAL:
         case L_ADA:
@@ -1425,11 +1449,11 @@ QString Buffer::getCommentEnd() const
         case L_TYPESCRIPT:
         case L_RUST:
         case L_SWIFT:
-        case L_GO:
+        case L_GOLANG:
             return "*/";
         case L_HTML:
         case L_XML:
-        case L_MARKDOWN:
+        case L_TEXT:
             return "-->";
         case L_PASCAL:
         case L_ADA:
@@ -1760,7 +1784,7 @@ QString BufferManager::getNextUntitledName() const
 
     for (Buffer* buffer : _buffers) {
         if (buffer->isUntitled()) {
-            QString fileName = buffer->getFileName();
+            QString fileName = buffer->getFileNameQString();
             // Parse "new X" format
             QRegularExpression re("new\\s+(\\d+)");
             QRegularExpressionMatch match = re.match(fileName);
@@ -1988,6 +2012,261 @@ void Buffer::setEncodingNumber(int encoding)
             _encoding = "UTF-8";
             break;
     }
+}
+
+// ============================================================================
+// Additional Buffer methods for FileManager compatibility
+// ============================================================================
+
+const wchar_t* Buffer::getFullPathName() const
+{
+    QMutexLocker locker(&_mutex);
+    // Return the file path as wchar_t*
+    // Note: This relies on Qt's implicit sharing - the data remains valid
+    // as long as the QString is not modified
+    return reinterpret_cast<const wchar_t*>(_filePath.utf16());
+}
+
+bool Buffer::isUnsync() const
+{
+    QMutexLocker locker(&_mutex);
+    return _isUnsync;
+}
+
+void Buffer::setUnsync(bool unsync)
+{
+    QMutexLocker locker(&_mutex);
+    _isUnsync = unsync;
+}
+
+bool Buffer::isSavePointDirty() const
+{
+    QMutexLocker locker(&_mutex);
+    return _isSavePointDirty;
+}
+
+void Buffer::setSavePointDirty(bool dirty)
+{
+    QMutexLocker locker(&_mutex);
+    _isSavePointDirty = dirty;
+}
+
+void Buffer::setBackupFilePath(const QString& path)
+{
+    QMutexLocker locker(&_mutex);
+    _backupFilePath = path;
+}
+
+// ============================================================================
+// FileManager method implementations
+// ============================================================================
+
+FileManager::FileManager()
+    : _nextBufferID(nullptr), _nbBufs(0)
+{
+}
+
+FileManager::~FileManager()
+{
+    // Clean up remaining buffers
+    for (Buffer* buf : _buffers) {
+        delete buf;
+    }
+    _buffers.clear();
+}
+
+BufferID FileManager::loadFile(const wchar_t* filename, Document doc, int encoding, const wchar_t* backupFileName, FILETIME fileNameTimestamp)
+{
+    Q_UNUSED(doc)
+    Q_UNUSED(fileNameTimestamp)
+
+    if (!filename) {
+        return nullptr;
+    }
+
+    // Convert wchar_t filename to QString
+    QString filePath = QString::fromWCharArray(filename);
+
+    // Check if file exists (or backup file)
+    QString loadPath = filePath;
+    if (!QFile::exists(loadPath) && backupFileName) {
+        loadPath = QString::fromWCharArray(backupFileName);
+    }
+
+    if (!QFile::exists(loadPath)) {
+        return nullptr;
+    }
+
+    // Create a new buffer
+    Buffer* newBuf = new Buffer();
+    newBuf->setFilePath(filePath);
+
+    // Load file content
+    if (!newBuf->loadFromFile(loadPath)) {
+        delete newBuf;
+        return nullptr;
+    }
+
+    // Handle backup file mode
+    if (backupFileName != nullptr) {
+        newBuf->setBackupFilePath(QString::fromWCharArray(backupFileName));
+    }
+
+    // Set encoding if specified
+    if (encoding != -1) {
+        newBuf->setEncodingNumber(encoding);
+    }
+
+    // Add to buffer list
+    BufferID id = newBuf;
+    _buffers.append(newBuf);
+    ++_nbBufs;
+
+    return id;
+}
+
+bool FileManager::reloadBuffer(BufferID id)
+{
+    if (!id) {
+        return false;
+    }
+
+    Buffer* buf = id;
+    QString filePath = buf->getFilePath();
+
+    if (filePath.isEmpty() || !QFile::exists(filePath)) {
+        return false;
+    }
+
+    // Reload the file
+    if (!buf->loadFromFile(filePath)) {
+        return false;
+    }
+
+    // Update sync status
+    buf->setUnsync(false);
+    buf->setSavePointDirty(false);
+
+    return true;
+}
+
+BufferID FileManager::getBufferFromName(const wchar_t* name)
+{
+    if (!name) {
+        return nullptr;
+    }
+
+    QString targetPath = QString::fromWCharArray(name);
+    QString canonicalTarget = QFileInfo(targetPath).canonicalFilePath();
+
+    for (Buffer* buf : _buffers) {
+        QString bufPath = buf->getFilePath();
+        if (QFileInfo(bufPath).canonicalFilePath() == canonicalTarget) {
+            return buf;
+        }
+    }
+
+    return nullptr;
+}
+
+bool FileManager::deleteBufferBackup(BufferID id)
+{
+    if (!id) {
+        return true;
+    }
+
+    Buffer* buffer = id;
+    QString backupPath = buffer->getBackupFilePath();
+
+    if (!backupPath.isEmpty() && QFile::exists(backupPath)) {
+        QFile::remove(backupPath);
+        buffer->removeBackup();
+    }
+
+    return true;
+}
+
+void FileManager::closeBuffer(BufferID id, const Scintilla::ScintillaEditView* identifier)
+{
+    Q_UNUSED(identifier)
+
+    if (!id) {
+        return;
+    }
+
+    int index = _buffers.indexOf(id);
+    if (index == -1) {
+        return;
+    }
+
+    Buffer* buf = _buffers.takeAt(index);
+    --_nbBufs;
+
+    delete buf;
+}
+
+void FileManager::addBufferReference(BufferID id, Scintilla::ScintillaEditView* identifier)
+{
+    Q_UNUSED(id)
+    Q_UNUSED(identifier)
+
+    // In the Qt implementation, buffer references are managed differently
+    // This is a compatibility stub
+}
+
+size_t FileManager::getNbBuffers() const
+{
+    return _nbBufs;
+}
+
+size_t FileManager::getNbDirtyBuffers() const
+{
+    size_t count = 0;
+    for (Buffer* buf : _buffers) {
+        if (buf->isDirty()) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+Buffer* FileManager::getBufferByIndex(size_t index)
+{
+    if (index >= static_cast<size_t>(_buffers.size())) {
+        return nullptr;
+    }
+    return _buffers.at(static_cast<int>(index));
+}
+
+int FileManager::getBufferIndexByID(BufferID id)
+{
+    if (!id) {
+        return -1;
+    }
+
+    return _buffers.indexOf(id);
+}
+
+size_t FileManager::nextUntitledNewNumber() const
+{
+    size_t maxNumber = 0;
+
+    for (Buffer* buf : _buffers) {
+        if (buf->isUntitled()) {
+            QString fileName = buf->getFileNameQString();
+            // Parse "new X" format
+            QRegularExpression re(R"(new\s+(\d+))");
+            QRegularExpressionMatch match = re.match(fileName);
+            if (match.hasMatch()) {
+                int num = match.captured(1).toInt();
+                if (static_cast<size_t>(num) > maxNumber) {
+                    maxNumber = num;
+                }
+            }
+        }
+    }
+
+    return maxNumber + 1;
 }
 
 } // namespace QtCore
@@ -2561,7 +2840,7 @@ size_t FileManager::nextUntitledNewNumber() const
     for (Buffer* buf : _buffers) {
         if (buf->isUntitled()) {
             // Parse number from "new X" format
-            const wchar_t* fileName = buf->getFileName();
+            const wchar_t* fileName = buf->getFileNameQString();
             if (fileName) {
                 // Simple parsing - look for digits after "new "
                 const wchar_t* numStart = wcsstr(fileName, L"new ");
