@@ -242,7 +242,7 @@ jobs:
             lcov
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: notepad-plus-plus-ubuntu-24.04-gcc-${{ matrix.build_type }}
           path: build-artifacts
