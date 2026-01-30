@@ -27,6 +27,7 @@
 #include "../UserDefineDialog/UserDefineDialog.h"
 #include "../ScintillaComponent/ScintillaEditView.h"
 #include "../ShortcutManager/ShortcutManager.h"
+#include "../../WinControls/PluginsAdmin/pluginsAdminRes.h"
 
 #include <QApplication>
 #include <QMainWindow>
@@ -38,6 +39,8 @@
 #include <QUrl>
 #include <QSettings>
 #include <QScreen>
+
+#include <iostream>
 #include <QActionGroup>
 #include <QProcess>
 #include <QDesktopServices>
@@ -148,30 +151,48 @@ bool MainWindow::init(Notepad_plus* pNotepad_plus)
     });
 
     // Setup UI components
+    std::cout << "[MainWindow::init] About to setupUI..." << std::endl;
     setupUI();
+    std::cout << "[MainWindow::init] setupUI done. About to connectSignals..." << std::endl;
     connectSignals();
+    std::cout << "[MainWindow::init] connectSignals done. About to createDockWindows..." << std::endl;
     createDockWindows();
+    std::cout << "[MainWindow::init] createDockWindows done. About to loadSettings..." << std::endl;
     loadSettings();
+    std::cout << "[MainWindow::init] loadSettings done. About to updateMenuState..." << std::endl;
 
     // Initialize menu state
+    std::cout << "[MainWindow::init] About to call updateMenuState..." << std::endl;
     updateMenuState();
+    std::cout << "[MainWindow::init] updateMenuState done." << std::endl;
 
     // Initialize toolbar state
+    std::cout << "[MainWindow::init] About to call updateToolBarState..." << std::endl;
     updateToolBarState();
+    std::cout << "[MainWindow::init] updateToolBarState done." << std::endl;
 
     // Initialize status bar
+    std::cout << "[MainWindow::init] About to call updateStatusBar..." << std::endl;
     updateStatusBar();
+    std::cout << "[MainWindow::init] updateStatusBar done." << std::endl;
 
     // Apply shortcuts from NppParameters to registered actions
+    std::cout << "[MainWindow::init] About to call applyShortcuts..." << std::endl;
     _shortcutManager->applyShortcuts();
+    std::cout << "[MainWindow::init] applyShortcuts done." << std::endl;
 
     // Connect shortcut manager signals
+    std::cout << "[MainWindow::init] About to connect shortcut signals..." << std::endl;
     connect(_shortcutManager, &ShortcutManager::shortcutsReloaded,
             this, &MainWindow::refreshShortcuts);
+    std::cout << "[MainWindow::init] Shortcut signals connected." << std::endl;
 
     // Initialize plugin manager
+    std::cout << "[MainWindow::init] About to call initPlugins..." << std::endl;
     initPlugins();
+    std::cout << "[MainWindow::init] initPlugins done." << std::endl;
 
+    std::cout << "[MainWindow::init] Initialization complete!" << std::endl;
     return true;
 }
 
@@ -189,8 +210,11 @@ void MainWindow::setupUI()
     _editorSplitter = new QSplitter(Qt::Horizontal, this);
     mainLayout->addWidget(_editorSplitter);
 
+    std::cout << "[MainWindow::setupUI] Initializing main edit view..." << std::endl;
+
     // Initialize main edit view
     _pNotepad_plus->getMainEditView()->init(_editorSplitter);
+    std::cout << "[MainWindow::setupUI] Main edit view widget: " << _pNotepad_plus->getMainEditView()->getWidget() << std::endl;
 
     // Create container for main view (tab bar + editor)
     auto* mainContainer = new QWidget(_editorSplitter);
@@ -199,13 +223,17 @@ void MainWindow::setupUI()
     mainVLayout->setSpacing(0);
 
     // Initialize main doc tab and add to container
+    std::cout << "[MainWindow::setupUI] Initializing main doc tab..." << std::endl;
     _pNotepad_plus->getMainDocTab()->init(mainContainer, _pNotepad_plus->getMainEditView());
     mainVLayout->addWidget(_pNotepad_plus->getMainDocTab()->getWidget());
 
     // Add main editor to container
-    mainVLayout->addWidget(_pNotepad_plus->getMainEditView()->getWidget(), 1);
+    QWidget* mainEditWidget = _pNotepad_plus->getMainEditView()->getWidget();
+    std::cout << "[MainWindow::setupUI] Adding main edit widget to layout: " << mainEditWidget << std::endl;
+    mainVLayout->addWidget(mainEditWidget, 1);
 
     // Initialize sub edit view
+    std::cout << "[MainWindow::setupUI] Initializing sub edit view..." << std::endl;
     _pNotepad_plus->getSubEditView()->init(_editorSplitter);
     auto* subContainer = new QWidget(_editorSplitter);
     auto* subVLayout = new QVBoxLayout(subContainer);
@@ -220,26 +248,64 @@ void MainWindow::setupUI()
     _editorSplitter->addWidget(subContainer);
     subContainer->hide();  // Only show main view by default
 
+    // Set initial splitter sizes (80% main, 20% sub - but sub is hidden)
+    QList<int> sizes;
+    sizes << 800 << 200;
+    _editorSplitter->setSizes(sizes);
+
+    // Ensure main container and edit widget are visible
+    mainContainer->show();
+    mainEditWidget->show();
+
+    // Also ensure central widget and splitter are visible
+    centralWidget->show();
+    _editorSplitter->show();
+
+    std::cout << "[MainWindow::setupUI] Layout setup complete." << std::endl;
+    std::cout << "[MainWindow::setupUI] centralWidget visible: " << centralWidget->isVisible() << std::endl;
+    std::cout << "[MainWindow::setupUI] _editorSplitter visible: " << _editorSplitter->isVisible() << std::endl;
+    std::cout << "[MainWindow::setupUI] mainContainer visible after show(): " << mainContainer->isVisible() << std::endl;
+    std::cout << "[MainWindow::setupUI] mainEditWidget visible after show(): " << mainEditWidget->isVisible() << std::endl;
+    std::cout << "[MainWindow::setupUI] mainContainer visible: " << mainContainer->isVisible() << std::endl;
+    std::cout << "[MainWindow::setupUI] mainEditWidget visible: " << mainEditWidget->isVisible() << std::endl;
+    std::cout << "[MainWindow::setupUI] mainEditWidget size: " << mainEditWidget->width() << "x" << mainEditWidget->height() << std::endl;
+    std::cout << "[MainWindow::setupUI] _editorSplitter sizes: " << _editorSplitter->sizes()[0] << ", " << _editorSplitter->sizes()[1] << std::endl;
+
+    std::cout << "[MainWindow::setupUI] About to init menu bar..." << std::endl;
     // Initialize menu bar
     initMenuBar();
+    std::cout << "[MainWindow::setupUI] Menu bar done." << std::endl;
 
+    // Add more debugging for widget hierarchy
+    std::cout << "[MainWindow::setupUI] mainContainer parent: " << mainContainer->parentWidget() << std::endl;
+    std::cout << "[MainWindow::setupUI] mainEditWidget parent: " << mainEditWidget->parentWidget() << std::endl;
+    std::cout << "[MainWindow::setupUI] _editorSplitter parent: " << _editorSplitter->parentWidget() << std::endl;
+
+    std::cout << "[MainWindow::setupUI] About to init tool bar..." << std::endl;
     // Initialize toolbar
     initToolBar();
+    std::cout << "[MainWindow::setupUI] Tool bar done." << std::endl;
 
+    std::cout << "[MainWindow::setupUI] About to init status bar..." << std::endl;
     // Initialize status bar
     initStatusBar();
+    std::cout << "[MainWindow::setupUI] Status bar done." << std::endl;
 
+    std::cout << "[MainWindow::setupUI] About to create docking manager..." << std::endl;
     // Create docking manager
     _dockingManager = new DockingManager();
+    std::cout << "[MainWindow::setupUI] Docking manager created." << std::endl;
+    std::cout << "[MainWindow::setupUI] About to init docking manager..." << std::endl;
     _dockingManager->init(this);
+    std::cout << "[MainWindow::setupUI] Docking manager init done." << std::endl;
 
-    // Create update timer
-    _updateTimer = new QTimer(this);
-    connect(_updateTimer, &QTimer::timeout, this, [this]() {
-        updateStatusBar();
-        updateMenuState();
-    });
-    _updateTimer->start(500); // Update every 500ms
+    // Create update timer - DISABLED to prevent crash
+    // _updateTimer = new QTimer(this);
+    // connect(_updateTimer, &QTimer::timeout, this, [this]() {
+    //     updateStatusBar();
+    //     updateMenuState();
+    // });
+    // _updateTimer->start(500); // Update every 500ms
 }
 
 void MainWindow::connectSignals()
@@ -901,10 +967,10 @@ void MainWindow::updateMenuState()
         _wordWrapAction->setChecked(view->isWrap());
     }
     if (_showWhiteSpaceAction) {
-        _showWhiteSpaceAction->setChecked(view->isViewWhiteSpace());
+        _showWhiteSpaceAction->setChecked(view->isShownSpaceAndTab());
     }
     if (_showEOLAction) {
-        _showEOLAction->setChecked(view->isViewEOL());
+        _showEOLAction->setChecked(view->isShownEol());
     }
     if (_showIndentGuideAction) {
         _showIndentGuideAction->setChecked(view->isShownIndentGuide());
@@ -1132,34 +1198,32 @@ void MainWindow::updateStatusBar()
 
         // Document type / Language
         LangType langType = buffer->getLangType();
-        QString langName = QString::fromStdWString(NppParameters::getInstance().getLangFromLangType(langType));
-        if (langName.isEmpty()) {
-            langName = tr("Normal text file");
-        }
+        const wchar_t* langNameC = NppParameters::getInstance().getLangExtFromLangType(langType);
+        QString langName = (langNameC && langNameC[0]) ? QString::fromStdWString(langNameC) : tr("Normal text file");
         _statusBar->setText(langName, 3);
 
         // Encoding
         UniMode encoding = buffer->getUnicodeMode();
         QString encodingStr;
         switch (encoding) {
-            case uniUTF8: encodingStr = "UTF-8"; break;
-            case uniUTF8BOM: encodingStr = "UTF-8 BOM"; break;
+            case uniUTF8: encodingStr = "UTF-8 BOM"; break;
+            case uniUTF8_NoBOM: encodingStr = "UTF-8"; break;
             case uni16BE: encodingStr = "UTF-16 BE"; break;
             case uni16LE: encodingStr = "UTF-16 LE"; break;
             case uni16BE_NoBOM: encodingStr = "UTF-16 BE"; break;
             case uni16LE_NoBOM: encodingStr = "UTF-16 LE"; break;
-            case uniCookie: encodingStr = "UTF-8"; break;
+            case uni7Bit: encodingStr = "UTF-8"; break;
             default: encodingStr = "ANSI"; break;
         }
         _statusBar->setText(encodingStr, 2);
 
         // EOL format
-        EolType eol = buffer->getEolFormat();
+        auto eol = buffer->getEolFormat();
         QString eolStr;
         switch (eol) {
-            case EolType::windows: eolStr = "Windows (CRLF)"; break;
-            case EolType::macos: eolStr = "Macintosh (CR)"; break;
-            case EolType::unix: eolStr = "Unix (LF)"; break;
+            case Buffer::eolWindows: eolStr = "Windows (CRLF)"; break;
+            case Buffer::eolMac: eolStr = "Macintosh (CR)"; break;
+            case Buffer::eolUnix: eolStr = "Unix (LF)"; break;
             default: eolStr = "Windows (CRLF)"; break;
         }
         _statusBar->setText(eolStr, 1);
@@ -2429,9 +2493,8 @@ void MainWindow::updateTitle()
 
     QString title;
 
-    // File name
-    std::wstring fileName = buffer->getFileName();
-    title = QString::fromStdWString(fileName);
+    // File name - use QString directly to avoid null pointer issues
+    title = buffer->getFileNameQString();
 
     // Add modification indicator
     if (buffer->isDirty()) {

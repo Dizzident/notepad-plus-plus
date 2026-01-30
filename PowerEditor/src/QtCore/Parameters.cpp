@@ -34,6 +34,8 @@
 #include <SciLexer.h>
 #include <Scintilla.h>
 
+#include <iostream>
+
 #include "Common.h"
 #include "ContextMenu.h"
 #include "Notepad_plus_Window.h"
@@ -68,7 +70,7 @@
 #include "Platform/Settings.h"
 
 // pathAppend is defined in Common.h for Linux
-extern void pathAppend(std::wstring& strDest, const std::wstring& str2append);
+extern std::wstring pathAppend(std::wstring& strDest, const std::wstring& str2append);
 
 static constexpr const wchar_t localConfFile[] = L"doLocalConf.xml";
 static constexpr const wchar_t notepadStyleFile[] = L"asNotepad.xml";
@@ -457,6 +459,8 @@ winVer NppParameters::getWindowsVersion()
 
 NppParameters::NppParameters()
 {
+    std::cout << "[NppParameters::NppParameters] Starting constructor..." << std::endl << std::flush;
+
     // Get "windows" version (always unknown on Linux)
     _winVersion = getWindowsVersion();
 
@@ -464,26 +468,38 @@ NppParameters::NppParameters()
     _currentSystemCodepage = CP_UTF8;
 
     // Prepare for default path - use executable location
-    wchar_t nppPath[MAX_PATH];
-    // Get executable path using Qt
-    QString appPath = QCoreApplication::applicationFilePath();
+    // Get executable path using Qt - but handle case where QApplication doesn't exist yet
+    QString appPath;
+    if (QCoreApplication::instance()) {
+        appPath = QCoreApplication::applicationFilePath();
+    } else {
+        // Fallback: use current working directory
+        appPath = QDir::currentPath() + "/notepad-plus-plus";
+    }
+
     std::wstring wAppPath = qstringToWstring(appPath);
-    wcsncpy(nppPath, wAppPath.c_str(), MAX_PATH);
 
     // Remove filename to get directory
-    wchar_t* lastSep = wcsrchr(nppPath, L'/');
-    if (lastSep)
-        *lastSep = L'\0';
-
-    _nppPath = nppPath;
+    int lastSepPos = appPath.lastIndexOf('/');
+    if (lastSepPos > 0) {
+        QString dirPath = appPath.left(lastSepPos);
+        _nppPath = qstringToWstring(dirPath);
+    } else {
+        _nppPath = L"/usr/bin";  // Fallback
+    }
 
     // Initialize current directory to startup directory
     QString currentDir = QDir::currentPath();
     _currentDirectory = qstringToWstring(currentDir);
 
     _appdataNppDir.clear();
-    std::wstring notepadStylePath(_nppPath);
-    pathAppend(notepadStylePath, notepadStyleFile);
+    std::wcout << L"[NppParameters::NppParameters] _nppPath: '" << _nppPath << L"' (length: " << _nppPath.length() << L")" << std::endl;
+    std::wstring notepadStylePath = _nppPath;
+    std::wcout << L"[NppParameters::NppParameters] notepadStylePath: '" << notepadStylePath << L"' (length: " << notepadStylePath.length() << L")" << std::endl;
+    std::wcout << L"[NppParameters::NppParameters] notepadStylePath created, about to append..." << std::endl;
+    std::wstring notepadFile = notepadStyleFile;  // Convert array to wstring explicitly
+    std::wcout << L"[NppParameters::NppParameters] notepadFile: " << notepadFile << std::endl;
+    pathAppend(notepadStylePath, notepadFile);
 
     _asNotepadStyle = doesFileExist(notepadStylePath.c_str());
 

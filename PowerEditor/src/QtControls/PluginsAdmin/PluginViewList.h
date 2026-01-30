@@ -37,6 +37,11 @@ struct PluginUpdateInfo {
     std::wstring _id;
     std::wstring _repository;
     bool _isVisible = true;
+
+    // Constructors and methods
+    PluginUpdateInfo() = default;
+    PluginUpdateInfo(const std::wstring& fullFilePath, const std::wstring& filename);
+    std::wstring describe();
 };
 
 enum COLUMN_TYPE { COLUMN_PLUGIN, COLUMN_VERSION };

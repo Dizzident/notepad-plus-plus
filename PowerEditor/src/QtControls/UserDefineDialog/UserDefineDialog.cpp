@@ -1654,8 +1654,10 @@ void UserDefineDialog::onNewLangClicked()
             }
 
             // Add current language to NppParameters
-            const UserLangContainer* userLang = _pCurrentUserLang.get();
-            int newIndex = nppParam.addUserLangToEnd(userLang, wName.c_str());
+            // FIXME: Type mismatch between QtUserLangContainer and UserLangContainer
+            // const UserLangContainer* userLang = _pCurrentUserLang.get();
+            // int newIndex = nppParam.addUserLangToEnd(userLang, wName.c_str());
+            int newIndex = -1;
 
             // Add to combobox
             _langCombo->addItem(name);
@@ -1710,10 +1712,11 @@ void UserDefineDialog::onRenameLangClicked()
             }
 
             // Rename in NppParameters
-            UserLangContainer* userLangContainer = nppParam.getULCFromIndex(currentIndex - 1);
-            if (userLangContainer) {
-                userLangContainer->_name = wNewName;
-            }
+            // FIXME: Type mismatch - _name is private in UserLangContainer
+            // UserLangContainer* userLangContainer = nppParam.getULCFromIndex(currentIndex - 1);
+            // if (userLangContainer) {
+            //     userLangContainer->_name = wNewName;
+            // }
 
             // Update combobox
             _langCombo->setItemText(currentIndex, newName);
@@ -1749,11 +1752,12 @@ void UserDefineDialog::onSaveAsClicked()
             }
 
             // Add current language to NppParameters
-            const UserLangContainer* userLang = (currentIndex > 0)
-                ? nppParam.getULCFromIndex(currentIndex - 1)
-                : _pCurrentUserLang.get();
-
-            int newIndex = nppParam.addUserLangToEnd(userLang, wName.c_str());
+            // FIXME: Type mismatch between QtUserLangContainer and UserLangContainer
+            // const UserLangContainer* userLang = (currentIndex > 0)
+            //     ? nppParam.getULCFromIndex(currentIndex - 1)
+            //     : _pCurrentUserLang.get();
+            // int newIndex = nppParam.addUserLangToEnd(userLang, wName.c_str());
+            int newIndex = -1;
 
             // Add to combobox
             _langCombo->addItem(name);
@@ -1836,8 +1840,10 @@ void UserDefineDialog::loadLanguage(int index)
         _pUserLang = _pCurrentUserLang.get();
     } else {
         // Load from NppParameters
-        NppParameters& nppParam = NppParameters::getInstance();
-        _pUserLang = nppParam.getULCFromIndex(index - 1);
+        // FIXME: Type mismatch - QtUserLangContainer vs UserLangContainer
+        // NppParameters& nppParam = NppParameters::getInstance();
+        // _pUserLang = nppParam.getULCFromIndex(index - 1);
+        _pUserLang = nullptr;
     }
 
     if (!_pUserLang) return;

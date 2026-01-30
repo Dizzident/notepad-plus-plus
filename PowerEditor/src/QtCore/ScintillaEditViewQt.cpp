@@ -38,6 +38,7 @@
 #include <vector>
 #include <string>
 #include <unordered_set>
+#include <iostream>
 #include <cctype>
 #include <cwctype>
 
@@ -2812,16 +2813,34 @@ void ScintillaEditView::init(HINSTANCE hInst, HWND hPere)
 
 void ScintillaEditView::init(QWidget* parent)
 {
+    // Flush immediately to ensure output is visible even if application crashes
+    std::cout << "[ScintillaEditView::init] Creating ScintillaEditBase widget..." << std::endl << std::flush;
+
     // Create the actual Scintilla Qt widget
     ScintillaEditBase* sciWidget = new ScintillaEditBase(parent);
     _widget = sciWidget;
+
+    std::cout << "[ScintillaEditView::init] Widget created: " << sciWidget << std::endl << std::flush;
 
     // Call the QtControls::Window base class init
     QtControls::Window::init(parent);
 
     // Get function pointers for fast Scintilla access
+    std::cout << "[ScintillaEditView::init] Getting function pointers..." << std::endl;
     _pScintillaFunc = reinterpret_cast<SCINTILLA_FUNC>(sciWidget->send(SCI_GETDIRECTFUNCTION, 0, 0));
     _pScintillaPtr = reinterpret_cast<SCINTILLA_PTR>(sciWidget->send(SCI_GETDIRECTPOINTER, 0, 0));
+
+    std::cout << "[ScintillaEditView::init] _pScintillaFunc: " << _pScintillaFunc << std::endl;
+    std::cout << "[ScintillaEditView::init] _pScintillaPtr: " << _pScintillaPtr << std::endl;
+
+    // Check if function pointers are valid
+    if (!_pScintillaFunc || !_pScintillaPtr) {
+        std::cerr << "[ScintillaEditView::init] CRITICAL ERROR: Function pointers are null!" << std::endl;
+        std::cerr << "[ScintillaEditView::init] _pScintillaFunc valid: " << (_pScintillaFunc ? "yes" : "no") << std::endl;
+        std::cerr << "[ScintillaEditView::init] _pScintillaPtr valid: " << (_pScintillaPtr ? "yes" : "no") << std::endl;
+    } else {
+        std::cout << "[ScintillaEditView::init] Function pointers valid: yes" << std::endl;
+    }
 
     // Then do our own initialization
     if (!_SciInit)
@@ -2829,8 +2848,53 @@ void ScintillaEditView::init(QWidget* parent)
         _SciInit = true;
     }
 
+    // Initialize visual settings
+    std::cout << "[ScintillaEditView::init] Initializing visual settings..." << std::endl;
+
+    // Set minimum size to ensure widget is visible
+    sciWidget->setMinimumSize(200, 100);
+
+    // Set default colors (white background, black text)
+    execute(SCI_STYLESETBACK, STYLE_DEFAULT, 0xFFFFFF);
+    execute(SCI_STYLESETFORE, STYLE_DEFAULT, 0x000000);
+    execute(SCI_STYLECLEARALL);
+
+    // Set margin widths
+    execute(SCI_SETMARGINWIDTHN, 0, 40);  // Line numbers
+    execute(SCI_SETMARGINWIDTHN, 1, 16);  // Bookmarks
+    execute(SCI_SETMARGINWIDTHN, 2, 16);  // Folding
+
+    // Show line numbers
+    execute(SCI_SETMARGINTYPEN, 0, SC_MARGIN_NUMBER);
+
+    // Set a default font
+    execute(SCI_STYLESETFONT, STYLE_DEFAULT, reinterpret_cast<sptr_t>("Consolas"));
+    execute(SCI_STYLESETSIZE, STYLE_DEFAULT, 10);
+
+    std::cout << "[ScintillaEditView::init] Calling attachDefaultDoc()..." << std::endl;
+
     // Get the startup document and make a buffer for it
-    attachDefaultDoc();
+    BufferID id = attachDefaultDoc();
+    std::cout << "[ScintillaEditView::init] Buffer ID: " << id << std::endl;
+
+    // Explicitly show the widget
+    std::cout << "[ScintillaEditView::init] Showing widget..." << std::endl;
+    sciWidget->setMinimumSize(400, 300);
+    sciWidget->resize(800, 600);
+
+    // Check parent before showing
+    QWidget* parentWidget = sciWidget->parentWidget();
+    std::cout << "[ScintillaEditView::init] Parent widget: " << parentWidget << std::endl;
+    if (parentWidget) {
+        std::cout << "[ScintillaEditView::init] Parent visible: " << parentWidget->isVisible() << std::endl;
+        std::cout << "[ScintillaEditView::init] Parent geometry: " << parentWidget->width() << "x" << parentWidget->height() << std::endl;
+    }
+
+    sciWidget->show();
+    sciWidget->raise();
+
+    std::cout << "[ScintillaEditView::init] Widget visible after show(): " << sciWidget->isVisible() << std::endl;
+    std::cout << "[ScintillaEditView::init] Initialization complete." << std::endl;
 }
 
 // ============================================================================

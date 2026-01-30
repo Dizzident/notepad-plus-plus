@@ -13,6 +13,8 @@
 #include <QFileInfo>
 #include <QDebug>
 
+#include <iostream>
+
 namespace QtControls {
 
 DocTabView::DocTabView()
@@ -27,6 +29,9 @@ DocTabView::~DocTabView()
 
 void DocTabView::init(QWidget* parent, ScintillaEditView* pView, unsigned char indexChoice, unsigned char buttonsStatus)
 {
+    std::cout << "[DocTabView::init] Initializing DocTabView..." << std::endl;
+    std::cout << "[DocTabView::init] Parent: " << parent << ", View: " << pView << std::endl;
+
     (void)buttonsStatus; // Not used in Qt version
 
     TabBarPlus::init(parent, false, false);
@@ -39,6 +44,8 @@ void DocTabView::init(QWidget* parent, ScintillaEditView* pView, unsigned char i
     } else {
         _iconListIndexChoice = 0;
     }
+
+    std::cout << "[DocTabView::init] Initialization complete. Widget: " << getWidget() << std::endl;
 }
 
 void DocTabView::createIconSets()

@@ -38,6 +38,7 @@
 #include <locale>
 #include <codecvt>
 #include <algorithm>
+#include <iostream>
 
 // NppDarkMode header for Linux stub implementation
 #include "NppDarkMode.h"
@@ -537,6 +538,8 @@ std::string wstring2string(const std::wstring& rwString, UINT codepage)
 
 std::wstring pathAppend(std::wstring& strDest, const std::wstring& str2append)
 {
+    std::cerr << "[pathAppend] Called with strDest length: " << strDest.length() << std::endl;
+
     if (strDest.empty() && str2append.empty()) // "" + ""
     {
         strDest = L"/";
@@ -550,8 +553,11 @@ std::wstring pathAppend(std::wstring& strDest, const std::wstring& str2append)
     }
 
     // Handle both forward slashes and backslashes for cross-platform compatibility
-    if (strDest[strDest.length() - 1] == L'/' || strDest[strDest.length() - 1] == L'\\')
+    wchar_t lastChar = strDest[strDest.length() - 1];
+    std::cerr << "[pathAppend] Last char check..." << std::endl;
+    if (lastChar == L'/' || lastChar == L'\\')
     {
+        std::cerr << "[pathAppend] Path ends with separator" << std::endl;
         if (!str2append.empty() && (str2append[0] == L'/' || str2append[0] == L'\\'))
         {
             // toto/ + /titi -> remove trailing slash from dest
@@ -560,6 +566,7 @@ std::wstring pathAppend(std::wstring& strDest, const std::wstring& str2append)
     }
     else
     {
+        std::cerr << "[pathAppend] Path does not end with separator" << std::endl;
         if (str2append.empty())
         {
             // toto + "" -> just return dest
@@ -572,7 +579,9 @@ std::wstring pathAppend(std::wstring& strDest, const std::wstring& str2append)
         }
     }
 
+    std::cerr << "[pathAppend] About to append..." << std::endl;
     strDest += str2append;
+    std::cerr << "[pathAppend] Done!" << std::endl;
     return strDest;
 }
 
@@ -621,6 +630,157 @@ int nbDigitsFromNbLines(size_t nbLines)
         nbLines /= 10;
     } while (nbLines != 0);
     return nbDigits;
+}
+
+// ============================================================================
+// Version Class Implementation for Linux
+// ============================================================================
+
+Version::Version(const std::wstring& versionStr)
+{
+    try {
+        // Simple tokenization by '.'
+        std::vector<std::wstring> tokens;
+        std::wstring current;
+        for (wchar_t c : versionStr) {
+            if (c == L'.') {
+                if (!current.empty()) {
+                    tokens.push_back(current);
+                    current.clear();
+                }
+            } else {
+                current += c;
+            }
+        }
+        if (!current.empty()) {
+            tokens.push_back(current);
+        }
+
+        if (tokens.size() > 4)
+        {
+            std::wstring msg(L"\"");
+            msg += versionStr;
+            msg += L"\"";
+            msg += L": Version parts are more than 4. The string to parse is not a valid version format.";
+            throw msg;
+        }
+
+        int i = 0;
+        std::vector<unsigned long*> v = {&_major, &_minor, &_patch, &_build};
+        for (const auto& s : tokens)
+        {
+            // Check if all characters are digits
+            bool allDigits = !s.empty() && std::all_of(s.begin(), s.end(), [](wchar_t c) {
+                return c >= L'0' && c <= L'9';
+            });
+
+            if (!allDigits)
+            {
+                std::wstring msg(L"\"");
+                msg += versionStr;
+                msg += L"\"";
+                msg += L": One of version character is not number. The string to parse is not a valid version format.";
+                throw msg;
+            }
+            *(v[i]) = std::stoul(s);
+
+            ++i;
+        }
+    }
+    catch (...)
+    {
+        _major = 0;
+        _minor = 0;
+        _patch = 0;
+        _build = 0;
+    }
+}
+
+void Version::setVersionFrom(const std::wstring& filePath)
+{
+    // Linux doesn't have Windows version resources
+    // This is a no-op for now - could parse version from filename or other metadata
+    (void)filePath;
+}
+
+std::wstring Version::toString() const
+{
+    if (_build == 0 && _patch == 0 && _minor == 0 && _major == 0)
+    {
+        return L"";
+    }
+    else if (_build == 0 && _patch == 0 && _minor == 0)
+    {
+        return std::to_wstring(_major);
+    }
+    else if (_build == 0 && _patch == 0)
+    {
+        std::wstring v = std::to_wstring(_major);
+        v += L".";
+        v += std::to_wstring(_minor);
+        return v;
+    }
+    else if (_build == 0)
+    {
+        std::wstring v = std::to_wstring(_major);
+        v += L".";
+        v += std::to_wstring(_minor);
+        v += L".";
+        v += std::to_wstring(_patch);
+        return v;
+    }
+
+    std::wstring ver = std::to_wstring(_major);
+    ver += L".";
+    ver += std::to_wstring(_minor);
+    ver += L".";
+    ver += std::to_wstring(_patch);
+    ver += L".";
+    ver += std::to_wstring(_build);
+
+    return ver;
+}
+
+int Version::compareTo(const Version& v2c) const
+{
+    if (_major > v2c._major)
+        return 1;
+    else if (_major < v2c._major)
+        return -1;
+    else
+    {
+        if (_minor > v2c._minor)
+            return 1;
+        else if (_minor < v2c._minor)
+            return -1;
+        else
+        {
+            if (_patch > v2c._patch)
+                return 1;
+            else if (_patch < v2c._patch)
+                return -1;
+            else
+            {
+                if (_build > v2c._build)
+                    return 1;
+                else if (_build < v2c._build)
+                    return -1;
+                else
+                    return 0;
+            }
+        }
+    }
+}
+
+bool Version::isCompatibleTo(const Version& from, const Version& to) const
+{
+    if (*this < from)
+        return false;
+
+    if (*this > to)
+        return false;
+
+    return true;
 }
 
 // ============================================================================
