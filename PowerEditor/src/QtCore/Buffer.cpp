@@ -407,7 +407,8 @@ bool Buffer::loadFromFile(const QString& filePath)
     }
 
     // Set file path (this will also update _fileName and _isUntitled)
-    setFilePath(filePath);
+    // Use internal version since we already hold the mutex
+    setFilePathInternal(filePath);
 
     // Set content in Scintilla view
     if (_pView) {
