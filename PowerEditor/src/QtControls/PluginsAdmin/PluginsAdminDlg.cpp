@@ -8,7 +8,7 @@
 
 #include "PluginsAdminDlg.h"
 #include "../../MISC/PluginsManager/PluginsManager.h"
-#include "../../WinControls/PluginsAdmin/pluginsAdmin.h"
+#include "../../WinControls/PluginsAdmin/pluginsAdminRes.h"
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QGridLayout>

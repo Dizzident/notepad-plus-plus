@@ -587,8 +587,8 @@ ELSEIF(UNIX AND NOT APPLE)
 
 	# MISC - Plugins and Process
 	# Note: PluginsManager.cpp is excluded from Linux build as it uses Windows-specific
-	# DLL loading (windows.h, LoadLibrary, GetProcAddress). A Linux-specific implementation
-	# using Qt plugins or shared libraries (dlopen/dlsym) will be needed.
+	# DLL loading (windows.h, LoadLibrary, GetProcAddress).
+	# PluginsManagerLinux.cpp provides the Linux implementation using dlopen/dlsym.
 	# Note: Processus.cpp is excluded from Linux build as it uses Windows-specific
 	# process APIs (ShellExecute, ShellExecuteEx, SHELLEXECUTEINFO, GetExitCodeProcess,
 	# GetLastError). Platform/Linux/Process.cpp provides the Linux implementation.
@@ -597,6 +597,7 @@ ELSEIF(UNIX AND NOT APPLE)
 	# RegDeleteValue, RegDeleteKey, RegCloseKey, HKEY_CLASSES_ROOT, KEY_ALL_ACCESS,
 	# REG_SZ). This file is for Windows file associations only.
 	list(APPEND src_files
+		./MISC/PluginsManager/PluginsManagerLinux.cpp
 	)
 
 	# MISC - Exception handling
@@ -701,6 +702,7 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/TreeView/TreeView.cpp
 		./QtControls/FindReplace/FindReplaceDlg.cpp
 		./QtControls/ShortcutMapper/ShortcutMapper.cpp
+		./QtControls/ShortcutManager/ShortcutManager.cpp
 		./QtControls/DockingManager/DockingManager.cpp
 		./QtControls/ListView/ListView.cpp
 		./QtControls/WordStyleDlg/WordStyleDlg.cpp
@@ -718,6 +720,9 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/HashDlgs/HashFromFilesDlg.cpp
 		./QtControls/HashDlgs/HashFromTextDlg.cpp
 		./QtControls/VerticalFileSwitcher/VerticalFileSwitcher.cpp
+		./QtControls/PluginsAdmin/PluginsAdminDlg.cpp
+		./QtControls/PluginsAdmin/PluginViewList.cpp
+		./QtControls/PluginsAdmin/PluginData.cpp
 		./QtControls/Notepad_plus.cpp
 	)
 
@@ -844,9 +849,13 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/HashDlgs
 		./QtControls/ToolBar
 		./QtControls/StatusBar
+		./QtControls/ShortcutManager
+		./QtControls/PluginsAdmin
 		./MISC
 		./MISC/Common
+		./MISC/PluginsManager
 		./WinControls
+		./WinControls/PluginsAdmin
 		./ScintillaComponent
 		${CMAKE_SOURCE_DIR}/../../scintilla/include
 	)

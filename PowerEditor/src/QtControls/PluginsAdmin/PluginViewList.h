@@ -12,13 +12,32 @@
 #include <QTableWidget>
 #include <QCheckBox>
 #include <QLineEdit>
+#include <QLabel>
 #include <QVBoxLayout>
 #include <QHeaderView>
 #include <vector>
 #include <memory>
+#include <utility>
 
-// Forward declaration - defined in WinControls/PluginsAdmin/pluginsAdmin.h
-struct PluginUpdateInfo;
+// Version is defined in Common.h - include it
+#include "../../MISC/Common/Common.h"
+
+// Platform-agnostic plugin update info structure (mirrors Windows version)
+struct PluginUpdateInfo {
+    std::wstring _fullFilePath;
+    std::wstring _folderName;
+    std::wstring _displayName;
+    Version _version;
+    std::pair<Version, Version> _nppCompatibleVersions;
+    std::pair<std::pair<Version, Version>, std::pair<Version, Version>> _oldVersionCompatibility;
+    std::wstring _homepage;
+    std::wstring _sourceUrl;
+    std::wstring _description;
+    std::wstring _author;
+    std::wstring _id;
+    std::wstring _repository;
+    bool _isVisible = true;
+};
 
 enum COLUMN_TYPE { COLUMN_PLUGIN, COLUMN_VERSION };
 enum SORT_TYPE { DISPLAY_NAME_ALPHABET_ENCREASE, DISPLAY_NAME_ALPHABET_DECREASE };

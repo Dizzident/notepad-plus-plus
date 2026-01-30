@@ -29,12 +29,15 @@ class QSpinBox;
 class QColorDialog;
 
 // UDL constants from SciLexer.h
+#ifndef SCE_UDL_VERSION_MAJOR
 #define SCE_UDL_VERSION_MAJOR       2
 #define SCE_UDL_VERSION_MINOR       1
 #define SCE_UDL_VERSION_BUILD       0
 #define SCE_UDL_VERSION_REVISION    12
+#endif
 
 // Keyword list indices
+#ifndef SCE_USER_KWLIST_COMMENTS
 #define SCE_USER_KWLIST_COMMENTS                    0
 #define SCE_USER_KWLIST_NUMBER_PREFIX1              1
 #define SCE_USER_KWLIST_NUMBER_PREFIX2              2
@@ -64,8 +67,10 @@ class QColorDialog;
 #define SCE_USER_KWLIST_KEYWORDS8                   26
 #define SCE_USER_KWLIST_DELIMITERS                  27
 #define SCE_USER_KWLIST_TOTAL                       28
+#endif
 
 // Style indices
+#ifndef SCE_USER_STYLE_DEFAULT
 #define SCE_USER_STYLE_DEFAULT              0
 #define SCE_USER_STYLE_COMMENT              1
 #define SCE_USER_STYLE_COMMENTLINE          2
@@ -92,6 +97,7 @@ class QColorDialog;
 #define SCE_USER_STYLE_DELIMITER8           23
 #define SCE_USER_STYLE_IDENTIFIER           24
 #define SCE_USER_STYLE_TOTAL_STYLES         SCE_USER_STYLE_IDENTIFIER
+#endif
 
 // Nesting masks
 #define SCE_USER_MASK_NESTING_NONE          0
@@ -123,26 +129,104 @@ class QColorDialog;
 #define SCE_USER_MASK_NESTING_NUMBERS       0x100000
 #endif
 
+// Dialog control IDs (for compatibility with Windows code)
+// Note: Most IDC_* constants are defined in UserDefineResource.h
+// Only define additional ones here that are not in the Windows resource file
+#ifndef IDC_LANGNAME_COMBO
+#define IDC_LANGNAME_COMBO                          7001
+#define IDC_EXT_EDIT                                7002
+#define IDC_LANGNAME_IGNORECASE_CHECK               7003
+#define IDC_REMOVELANG_BUTTON                       7004
+#define IDC_RENAME_BUTTON                           7005
+#define IDC_ADDNEW_BUTTON                           7006
+#define IDC_SAVEAS_BUTTON                           7007
+#define IDC_IMPORT_BUTTON                           7008
+#define IDC_EXPORT_BUTTON                           7009
+#define IDC_DOCK_BUTTON                             7010
+#define IDC_KEYWORD1_STYLER                         8001
+#define IDC_KEYWORD2_STYLER                         8002
+#define IDC_KEYWORD3_STYLER                         8003
+#define IDC_KEYWORD4_STYLER                         8004
+#define IDC_KEYWORD5_STYLER                         8005
+#define IDC_KEYWORD6_STYLER                         8006
+#define IDC_KEYWORD7_STYLER                         8007
+#define IDC_KEYWORD8_STYLER                         8008
+#define IDC_COMMENT_STYLER                          8009
+#define IDC_COMMENTLINE_STYLER                      8010
+#define IDC_NUMBER_STYLER                           8011
+#define IDC_OPERATOR_STYLER                         8012
+#define IDC_DELIMITER1_STYLER                       8013
+#define IDC_DELIMITER2_STYLER                       8014
+#define IDC_DELIMITER3_STYLER                       8015
+#define IDC_DELIMITER4_STYLER                       8016
+#define IDC_DELIMITER5_STYLER                       8017
+#define IDC_DELIMITER6_STYLER                       8018
+#define IDC_DELIMITER7_STYLER                       8019
+#define IDC_DELIMITER8_STYLER                       8020
+#define IDC_FOLDER_IN_CODE1_STYLER                  8021
+#define IDC_FOLDER_IN_CODE2_STYLER                  8022
+#define IDC_FOLDER_IN_COMMENT_STYLER                8023
+#define IDC_DEFAULT_STYLER                          8024
+#define IDC_STYLER_CHECK_FG_TRANSPARENT             9001
+#define IDC_STYLER_CHECK_BG_TRANSPARENT             9002
+#define IDC_STYLER_CHECK_BOLD                       9003
+#define IDC_STYLER_CHECK_ITALIC                     9004
+#define IDC_STYLER_CHECK_UNDERLINE                  9005
+#define IDC_STYLER_COMBO_FONT_SIZE                  9006
+#define IDC_STYLER_COMBO_FONT_NAME                  9007
+#define IDC_STYLER_FG_STATIC                        9008
+#define IDC_STYLER_BG_STATIC                        9009
+#define IDC_STYLER_CHECK_NESTING_DELIMITER1         9101
+#define IDC_STYLER_CHECK_NESTING_DELIMITER2         9102
+#define IDC_STYLER_CHECK_NESTING_DELIMITER3         9103
+#define IDC_STYLER_CHECK_NESTING_DELIMITER4         9104
+#define IDC_STYLER_CHECK_NESTING_DELIMITER5         9105
+#define IDC_STYLER_CHECK_NESTING_DELIMITER6         9106
+#define IDC_STYLER_CHECK_NESTING_DELIMITER7         9107
+#define IDC_STYLER_CHECK_NESTING_DELIMITER8         9108
+#define IDC_STYLER_CHECK_NESTING_COMMENT            9109
+#define IDC_STYLER_CHECK_NESTING_COMMENT_LINE       9110
+#define IDC_STYLER_CHECK_NESTING_KEYWORD1           9111
+#define IDC_STYLER_CHECK_NESTING_KEYWORD2           9112
+#define IDC_STYLER_CHECK_NESTING_KEYWORD3           9113
+#define IDC_STYLER_CHECK_NESTING_KEYWORD4           9114
+#define IDC_STYLER_CHECK_NESTING_KEYWORD5           9115
+#define IDC_STYLER_CHECK_NESTING_KEYWORD6           9116
+#define IDC_STYLER_CHECK_NESTING_KEYWORD7           9117
+#define IDC_STYLER_CHECK_NESTING_KEYWORD8           9118
+#define IDC_STYLER_CHECK_NESTING_OPERATORS1         9119
+#define IDC_STYLER_CHECK_NESTING_OPERATORS2         9120
+#define IDC_STYLER_CHECK_NESTING_NUMBERS            9121
+#endif
+
 // Font styles
+#ifndef FONTSTYLE_NONE
 #define FONTSTYLE_NONE      0
 #define FONTSTYLE_BOLD      1
 #define FONTSTYLE_ITALIC    2
 #define FONTSTYLE_UNDERLINE 4
+#endif
 
 // Color styles
+#ifndef COLORSTYLE_FOREGROUND
 #define COLORSTYLE_FOREGROUND   1
 #define COLORSTYLE_BACKGROUND   2
+#endif
 
 // Other constants
+#ifndef PURE_LC_NONE
 #define PURE_LC_NONE    0
 #define PURE_LC_BOL     1
 #define PURE_LC_WSP     2
 #define DECSEP_DOT      0
 #define DECSEP_COMMA    1
 #define DECSEP_BOTH     2
+#endif
 
 // Total keyword groups (8 keywords + operators + folders + delimiters + comments + numbers)
 #define SCE_USER_TOTAL_KEYWORD_GROUPS   8
+
+namespace QtControls {
 
 // Forward declarations
 class UserDefineDialog;
@@ -150,7 +234,7 @@ class UserDefineDialog;
 // ============================================================================
 // Style Dialog - For editing individual style properties
 // ============================================================================
-class StyleDialog : public QtControls::StaticDialog {
+class StyleDialog : public StaticDialog {
     Q_OBJECT
 
 public:
@@ -217,7 +301,7 @@ private:
 // ============================================================================
 // String Dialog - For entering language names
 // ============================================================================
-class StringDialog : public QtControls::StaticDialog {
+class StringDialog : public StaticDialog {
     Q_OBJECT
 
 public:
@@ -265,6 +349,10 @@ public:
     std::unordered_map<int, int> dialogMapper;
     std::unordered_map<int, std::string> setLexerMapper;
 
+    // Temporary storage for building mappings
+    std::unordered_map<std::wstring, int> temp;
+    std::unordered_map<std::wstring, int>::iterator iter;
+
     static GlobalMappers& instance();
 };
 
@@ -272,9 +360,6 @@ public:
 // UserLangContainer - Container for user defined language data
 // Qt version - wrapped in namespace to avoid conflict with Parameters.h version
 // ============================================================================
-namespace QtControls {
-
-// Qt-specific UserLangContainer to avoid conflict with Parameters.h version
 struct QtUserLangContainer {
     QtUserLangContainer();
     QtUserLangContainer(const QString& name, const QString& ext, bool isDarkModeTheme, const QString& udlVer);
@@ -314,12 +399,10 @@ struct QtUserLangContainer {
     const Style* getStyler(int styleID) const;
 };
 
-} // namespace QtControls
-
 // ============================================================================
 // UserDefineDialog - Main UDL dialog
 // ============================================================================
-class UserDefineDialog : public QtControls::StaticDialog {
+class UserDefineDialog : public StaticDialog {
     Q_OBJECT
 
 public:
@@ -479,3 +562,5 @@ private:
     // Style buttons array for easy access
     std::vector<QPushButton*> _styleButtons;
 };
+
+} // namespace QtControls

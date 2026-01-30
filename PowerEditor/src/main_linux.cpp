@@ -620,11 +620,10 @@ private:
         NppGUI& nppGUI = nppParams.getNppGUI();
 
         // Load last session if enabled
-        // DISABLED: Session loading causes crash - needs proper implementation
-        // if (nppGUI._rememberLastSession && !nppGUI._isCmdlineNosessionActivated)
-        // {
-        //     _notepad_plus_plus_core.loadLastSession();
-        // }
+        if (nppGUI._rememberLastSession && !nppGUI._isCmdlineNosessionActivated)
+        {
+            _notepad_plus_plus_core.loadLastSession();
+        }
 
         // Scan for localization files
         // TODO: Use public methods or move to friend class

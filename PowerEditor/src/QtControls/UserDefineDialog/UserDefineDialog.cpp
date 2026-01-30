@@ -29,76 +29,292 @@
 #include <QtWidgets/QFrame>
 #include <QtGui/QFontDatabase>
 
+// For NppParameters integration
+#include "../../Parameters.h"
+#include "../../ScintillaComponent/ScintillaEditView.h"
+#include <SciLexer.h>
+
+#include <cwchar>
+#include <algorithm>
+
+// UDL file operations
+#define max_char 1024
+
+// Windows lstrlen is not available on Linux, use wcslen instead
+#ifndef _WIN32
+#define lstrlen wcslen
+#endif
+
+// Helper function to convert text with prefix markers (from Windows implementation)
+static void convertTo(wchar_t* dest, int destLen, const wchar_t* toConvert, const wchar_t* prefix)
+{
+    bool inGroup = false;
+    int index = lstrlen(dest);
+    if (index > 0)
+        dest[index++] = L' ';
+    dest[index++] = prefix[0];
+    dest[index++] = prefix[1];
+
+    for (size_t i = 0, len = lstrlen(toConvert); i < len && index < destLen - 7; ++i)
+    {
+        if (i == 0 && toConvert[i] == L'(' && toConvert[i + 1] == L'(')
+        {
+            inGroup = true;
+        }
+        else if (toConvert[i] == L' ' && toConvert[i + 1] == L'(' && toConvert[i + 2] == L'(')
+        {
+            inGroup = true;
+            dest[index++] = L' ';
+            dest[index++] = prefix[0];
+            dest[index++] = prefix[1];
+            ++i;    // skip space
+        }
+
+        if (inGroup && toConvert[i - 1] == L')' && toConvert[i - 2] == L')')
+        {
+            inGroup = false;
+        }
+
+        if (toConvert[i] == L' ')
+        {
+            if (toConvert[i + 1] != L' ' && toConvert[i + 1] != L'\0')
+            {
+                dest[index++] = L' ';
+                if (!inGroup)
+                {
+                    dest[index++] = prefix[0];
+                    dest[index++] = prefix[1];
+                }
+            }
+        }
+        else
+        {
+            dest[index++] = toConvert[i];
+        }
+    }
+    dest[index] = L'\0';
+}
+
+// Helper function to retrieve text with prefix markers
+static void retrieveFromKeywordList(wchar_t* dest, const wchar_t* toRetrieve, const wchar_t* prefix)
+{
+    int j = 0;
+    bool begin2Copy = false;
+    bool inGroup = false;
+
+    for (size_t i = 0, len = lstrlen(toRetrieve); i < len; ++i)
+    {
+        if ((i == 0 || (toRetrieve[i - 1] == L' ')) && (toRetrieve[i] == prefix[0] && toRetrieve[i + 1] == prefix[1]))
+        {
+            if (j > 0)
+                dest[j++] = L' ';
+
+            begin2Copy = true;
+            ++i;
+            continue;
+        }
+        if (toRetrieve[i] == L'(' && toRetrieve[i + 1] == L'(' && inGroup == false && begin2Copy == true)
+        {
+            inGroup = true;
+        }
+        if (toRetrieve[i] != L')' && toRetrieve[i - 1] == L')' && toRetrieve[i - 2] == L')' && inGroup == true)
+        {
+            inGroup = false;
+        }
+        if (toRetrieve[i] == L' ' && begin2Copy == true && !inGroup)
+        {
+            begin2Copy = false;
+        }
+
+        if (begin2Copy || inGroup)
+            dest[j++] = toRetrieve[i];
+    }
+    dest[j++] = L'\0';
+}
+
 // ============================================================================
-// GlobalMappers Implementation
+// GlobalMappers Implementation (in QtControls namespace)
 // ============================================================================
+namespace QtControls {
+
 GlobalMappers::GlobalMappers()
 {
-    // Keyword name mappings
-    keywordNameMapper[SCE_USER_KWLIST_OPERATORS1] = L"Operators1";
-    keywordNameMapper[SCE_USER_KWLIST_OPERATORS2] = L"Operators2";
-    keywordNameMapper[SCE_USER_KWLIST_FOLDERS_IN_CODE1_OPEN] = L"Folders in code1, open";
-    keywordNameMapper[SCE_USER_KWLIST_FOLDERS_IN_CODE1_MIDDLE] = L"Folders in code1, middle";
-    keywordNameMapper[SCE_USER_KWLIST_FOLDERS_IN_CODE1_CLOSE] = L"Folders in code1, close";
-    keywordNameMapper[SCE_USER_KWLIST_FOLDERS_IN_CODE2_OPEN] = L"Folders in code2, open";
-    keywordNameMapper[SCE_USER_KWLIST_FOLDERS_IN_CODE2_MIDDLE] = L"Folders in code2, middle";
-    keywordNameMapper[SCE_USER_KWLIST_FOLDERS_IN_CODE2_CLOSE] = L"Folders in code2, close";
-    keywordNameMapper[SCE_USER_KWLIST_FOLDERS_IN_COMMENT_OPEN] = L"Folders in comment, open";
-    keywordNameMapper[SCE_USER_KWLIST_FOLDERS_IN_COMMENT_MIDDLE] = L"Folders in comment, middle";
-    keywordNameMapper[SCE_USER_KWLIST_FOLDERS_IN_COMMENT_CLOSE] = L"Folders in comment, close";
-    keywordNameMapper[SCE_USER_KWLIST_KEYWORDS1] = L"Keywords1";
-    keywordNameMapper[SCE_USER_KWLIST_KEYWORDS2] = L"Keywords2";
-    keywordNameMapper[SCE_USER_KWLIST_KEYWORDS3] = L"Keywords3";
-    keywordNameMapper[SCE_USER_KWLIST_KEYWORDS4] = L"Keywords4";
-    keywordNameMapper[SCE_USER_KWLIST_KEYWORDS5] = L"Keywords5";
-    keywordNameMapper[SCE_USER_KWLIST_KEYWORDS6] = L"Keywords6";
-    keywordNameMapper[SCE_USER_KWLIST_KEYWORDS7] = L"Keywords7";
-    keywordNameMapper[SCE_USER_KWLIST_KEYWORDS8] = L"Keywords8";
-    keywordNameMapper[SCE_USER_KWLIST_DELIMITERS] = L"Delimiters";
-    keywordNameMapper[SCE_USER_KWLIST_COMMENTS] = L"Comments";
-    keywordNameMapper[SCE_USER_KWLIST_NUMBER_PREFIX1] = L"Numbers, prefix1";
-    keywordNameMapper[SCE_USER_KWLIST_NUMBER_PREFIX2] = L"Numbers, prefix2";
-    keywordNameMapper[SCE_USER_KWLIST_NUMBER_EXTRAS1] = L"Numbers, extras1";
-    keywordNameMapper[SCE_USER_KWLIST_NUMBER_EXTRAS2] = L"Numbers, extras2";
-    keywordNameMapper[SCE_USER_KWLIST_NUMBER_SUFFIX1] = L"Numbers, suffix1";
-    keywordNameMapper[SCE_USER_KWLIST_NUMBER_SUFFIX2] = L"Numbers, suffix2";
-    keywordNameMapper[SCE_USER_KWLIST_NUMBER_RANGE] = L"Numbers, range";
+    // Keyword name mappings - pre 2.0 compatibility
+    temp[L"Operators"]                     = SCE_USER_KWLIST_OPERATORS1;
+    temp[L"Folder+"]                       = SCE_USER_KWLIST_FOLDERS_IN_CODE1_OPEN;
+    temp[L"Folder-"]                       = SCE_USER_KWLIST_FOLDERS_IN_CODE1_CLOSE;
+    temp[L"Words1"]                        = SCE_USER_KWLIST_KEYWORDS1;
+    temp[L"Words2"]                        = SCE_USER_KWLIST_KEYWORDS2;
+    temp[L"Words3"]                        = SCE_USER_KWLIST_KEYWORDS3;
+    temp[L"Words4"]                        = SCE_USER_KWLIST_KEYWORDS4;
 
-    // Reverse mappings
-    for (const auto& pair : keywordNameMapper) {
-        keywordIdMapper[pair.second] = pair.first;
-    }
+    for (iter = temp.begin(); iter != temp.end(); ++iter)
+        keywordNameMapper[iter->second] = iter->first;
+    keywordIdMapper.insert(temp.begin(), temp.end());
+    temp.clear();
 
-    // Style name mappings
-    styleNameMapper[SCE_USER_STYLE_DEFAULT] = L"DEFAULT";
-    styleNameMapper[SCE_USER_STYLE_COMMENT] = L"COMMENTS";
-    styleNameMapper[SCE_USER_STYLE_COMMENTLINE] = L"LINE COMMENTS";
-    styleNameMapper[SCE_USER_STYLE_NUMBER] = L"NUMBERS";
-    styleNameMapper[SCE_USER_STYLE_KEYWORD1] = L"KEYWORDS1";
-    styleNameMapper[SCE_USER_STYLE_KEYWORD2] = L"KEYWORDS2";
-    styleNameMapper[SCE_USER_STYLE_KEYWORD3] = L"KEYWORDS3";
-    styleNameMapper[SCE_USER_STYLE_KEYWORD4] = L"KEYWORDS4";
-    styleNameMapper[SCE_USER_STYLE_KEYWORD5] = L"KEYWORDS5";
-    styleNameMapper[SCE_USER_STYLE_KEYWORD6] = L"KEYWORDS6";
-    styleNameMapper[SCE_USER_STYLE_KEYWORD7] = L"KEYWORDS7";
-    styleNameMapper[SCE_USER_STYLE_KEYWORD8] = L"KEYWORDS8";
-    styleNameMapper[SCE_USER_STYLE_OPERATOR] = L"OPERATORS";
-    styleNameMapper[SCE_USER_STYLE_FOLDER_IN_CODE1] = L"FOLDER IN CODE1";
-    styleNameMapper[SCE_USER_STYLE_FOLDER_IN_CODE2] = L"FOLDER IN CODE2";
-    styleNameMapper[SCE_USER_STYLE_FOLDER_IN_COMMENT] = L"FOLDER IN COMMENT";
-    styleNameMapper[SCE_USER_STYLE_DELIMITER1] = L"DELIMITERS1";
-    styleNameMapper[SCE_USER_STYLE_DELIMITER2] = L"DELIMITERS2";
-    styleNameMapper[SCE_USER_STYLE_DELIMITER3] = L"DELIMITERS3";
-    styleNameMapper[SCE_USER_STYLE_DELIMITER4] = L"DELIMITERS4";
-    styleNameMapper[SCE_USER_STYLE_DELIMITER5] = L"DELIMITERS5";
-    styleNameMapper[SCE_USER_STYLE_DELIMITER6] = L"DELIMITERS6";
-    styleNameMapper[SCE_USER_STYLE_DELIMITER7] = L"DELIMITERS7";
-    styleNameMapper[SCE_USER_STYLE_DELIMITER8] = L"DELIMITERS8";
+    // Keyword name mappings - 2.0
+    temp[L"Comments"]                      = SCE_USER_KWLIST_COMMENTS;
+    temp[L"Numbers, additional"]           = SCE_USER_KWLIST_NUMBER_RANGE;
+    temp[L"Numbers, prefixes"]             = SCE_USER_KWLIST_NUMBER_PREFIX2;
+    temp[L"Numbers, extras with prefixes"] = SCE_USER_KWLIST_NUMBER_EXTRAS2;
+    temp[L"Numbers, suffixes"]             = SCE_USER_KWLIST_NUMBER_SUFFIX2;
+    temp[L"Operators1"]                    = SCE_USER_KWLIST_OPERATORS1;
+    temp[L"Operators2"]                    = SCE_USER_KWLIST_OPERATORS2;
+    temp[L"Folders in code1, open"]        = SCE_USER_KWLIST_FOLDERS_IN_CODE1_OPEN;
+    temp[L"Folders in code1, middle"]      = SCE_USER_KWLIST_FOLDERS_IN_CODE1_MIDDLE;
+    temp[L"Folders in code1, close"]       = SCE_USER_KWLIST_FOLDERS_IN_CODE1_CLOSE;
+    temp[L"Folders in code2, open"]        = SCE_USER_KWLIST_FOLDERS_IN_CODE2_OPEN;
+    temp[L"Folders in code2, middle"]      = SCE_USER_KWLIST_FOLDERS_IN_CODE2_MIDDLE;
+    temp[L"Folders in code2, close"]       = SCE_USER_KWLIST_FOLDERS_IN_CODE2_CLOSE;
+    temp[L"Folders in comment, open"]      = SCE_USER_KWLIST_FOLDERS_IN_COMMENT_OPEN;
+    temp[L"Folders in comment, middle"]    = SCE_USER_KWLIST_FOLDERS_IN_COMMENT_MIDDLE;
+    temp[L"Folders in comment, close"]     = SCE_USER_KWLIST_FOLDERS_IN_COMMENT_CLOSE;
+    temp[L"Keywords1"]                     = SCE_USER_KWLIST_KEYWORDS1;
+    temp[L"Keywords2"]                     = SCE_USER_KWLIST_KEYWORDS2;
+    temp[L"Keywords3"]                     = SCE_USER_KWLIST_KEYWORDS3;
+    temp[L"Keywords4"]                     = SCE_USER_KWLIST_KEYWORDS4;
+    temp[L"Keywords5"]                     = SCE_USER_KWLIST_KEYWORDS5;
+    temp[L"Keywords6"]                     = SCE_USER_KWLIST_KEYWORDS6;
+    temp[L"Keywords7"]                     = SCE_USER_KWLIST_KEYWORDS7;
+    temp[L"Keywords8"]                     = SCE_USER_KWLIST_KEYWORDS8;
+    temp[L"Delimiters"]                    = SCE_USER_KWLIST_DELIMITERS;
 
-    // Reverse mappings
-    for (const auto& pair : styleNameMapper) {
-        styleIdMapper[pair.second] = pair.first;
-    }
+    for (iter = temp.begin(); iter != temp.end(); ++iter)
+        keywordNameMapper[iter->second] = iter->first;
+    keywordIdMapper.insert(temp.begin(), temp.end());
+    temp.clear();
+
+    // Keyword name mappings - 2.1
+    temp[L"Numbers, prefix1"]              = SCE_USER_KWLIST_NUMBER_PREFIX1;
+    temp[L"Numbers, prefix2"]              = SCE_USER_KWLIST_NUMBER_PREFIX2;
+    temp[L"Numbers, extras1"]              = SCE_USER_KWLIST_NUMBER_EXTRAS1;
+    temp[L"Numbers, extras2"]              = SCE_USER_KWLIST_NUMBER_EXTRAS2;
+    temp[L"Numbers, suffix1"]              = SCE_USER_KWLIST_NUMBER_SUFFIX1;
+    temp[L"Numbers, suffix2"]              = SCE_USER_KWLIST_NUMBER_SUFFIX2;
+    temp[L"Numbers, range"]                = SCE_USER_KWLIST_NUMBER_RANGE;
+
+    for (iter = temp.begin(); iter != temp.end(); ++iter)
+        keywordNameMapper[iter->second] = iter->first;
+    keywordIdMapper.insert(temp.begin(), temp.end());
+    temp.clear();
+
+    // Style name mappings - pre 2.0
+    temp[L"FOLDEROPEN"]           = SCE_USER_STYLE_FOLDER_IN_CODE1;
+    temp[L"FOLDERCLOSE"]          = SCE_USER_STYLE_FOLDER_IN_CODE1;
+    temp[L"KEYWORD1"]             = SCE_USER_STYLE_KEYWORD1;
+    temp[L"KEYWORD2"]             = SCE_USER_STYLE_KEYWORD2;
+    temp[L"KEYWORD3"]             = SCE_USER_STYLE_KEYWORD3;
+    temp[L"KEYWORD4"]             = SCE_USER_STYLE_KEYWORD4;
+    temp[L"COMMENT"]              = SCE_USER_STYLE_COMMENT;
+    temp[L"COMMENT LINE"]         = SCE_USER_STYLE_COMMENTLINE;
+    temp[L"NUMBER"]               = SCE_USER_STYLE_NUMBER;
+    temp[L"OPERATOR"]             = SCE_USER_STYLE_OPERATOR;
+    temp[L"DELIMINER1"]           = SCE_USER_STYLE_DELIMITER1;
+    temp[L"DELIMINER2"]           = SCE_USER_STYLE_DELIMITER2;
+    temp[L"DELIMINER3"]           = SCE_USER_STYLE_DELIMITER3;
+
+    for (iter = temp.begin(); iter != temp.end(); ++iter)
+        styleNameMapper[iter->second] = iter->first;
+    styleIdMapper.insert(temp.begin(), temp.end());
+    temp.clear();
+
+    // Style name mappings - post 2.0
+    temp[L"DEFAULT"]              = SCE_USER_STYLE_DEFAULT;
+    temp[L"COMMENTS"]             = SCE_USER_STYLE_COMMENT;
+    temp[L"LINE COMMENTS"]        = SCE_USER_STYLE_COMMENTLINE;
+    temp[L"NUMBERS"]              = SCE_USER_STYLE_NUMBER;
+    temp[L"KEYWORDS1"]            = SCE_USER_STYLE_KEYWORD1;
+    temp[L"KEYWORDS2"]            = SCE_USER_STYLE_KEYWORD2;
+    temp[L"KEYWORDS3"]            = SCE_USER_STYLE_KEYWORD3;
+    temp[L"KEYWORDS4"]            = SCE_USER_STYLE_KEYWORD4;
+    temp[L"KEYWORDS5"]            = SCE_USER_STYLE_KEYWORD5;
+    temp[L"KEYWORDS6"]            = SCE_USER_STYLE_KEYWORD6;
+    temp[L"KEYWORDS7"]            = SCE_USER_STYLE_KEYWORD7;
+    temp[L"KEYWORDS8"]            = SCE_USER_STYLE_KEYWORD8;
+    temp[L"OPERATORS"]            = SCE_USER_STYLE_OPERATOR;
+    temp[L"FOLDER IN CODE1"]      = SCE_USER_STYLE_FOLDER_IN_CODE1;
+    temp[L"FOLDER IN CODE2"]      = SCE_USER_STYLE_FOLDER_IN_CODE2;
+    temp[L"FOLDER IN COMMENT"]    = SCE_USER_STYLE_FOLDER_IN_COMMENT;
+    temp[L"DELIMITERS1"]          = SCE_USER_STYLE_DELIMITER1;
+    temp[L"DELIMITERS2"]          = SCE_USER_STYLE_DELIMITER2;
+    temp[L"DELIMITERS3"]          = SCE_USER_STYLE_DELIMITER3;
+    temp[L"DELIMITERS4"]          = SCE_USER_STYLE_DELIMITER4;
+    temp[L"DELIMITERS5"]          = SCE_USER_STYLE_DELIMITER5;
+    temp[L"DELIMITERS6"]          = SCE_USER_STYLE_DELIMITER6;
+    temp[L"DELIMITERS7"]          = SCE_USER_STYLE_DELIMITER7;
+    temp[L"DELIMITERS8"]          = SCE_USER_STYLE_DELIMITER8;
+
+    for (iter = temp.begin(); iter != temp.end(); ++iter)
+        styleNameMapper[iter->second] = iter->first;
+    styleIdMapper.insert(temp.begin(), temp.end());
+    temp.clear();
+
+    // Nesting mapper
+    nestingMapper[IDC_STYLER_CHECK_NESTING_DELIMITER1]      = SCE_USER_MASK_NESTING_DELIMITER1;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_DELIMITER2]      = SCE_USER_MASK_NESTING_DELIMITER2;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_DELIMITER3]      = SCE_USER_MASK_NESTING_DELIMITER3;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_DELIMITER4]      = SCE_USER_MASK_NESTING_DELIMITER4;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_DELIMITER5]      = SCE_USER_MASK_NESTING_DELIMITER5;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_DELIMITER6]      = SCE_USER_MASK_NESTING_DELIMITER6;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_DELIMITER7]      = SCE_USER_MASK_NESTING_DELIMITER7;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_DELIMITER8]      = SCE_USER_MASK_NESTING_DELIMITER8;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_COMMENT]         = SCE_USER_MASK_NESTING_COMMENT;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_COMMENT_LINE]    = SCE_USER_MASK_NESTING_COMMENT_LINE;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_KEYWORD1]        = SCE_USER_MASK_NESTING_KEYWORD1;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_KEYWORD2]        = SCE_USER_MASK_NESTING_KEYWORD2;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_KEYWORD3]        = SCE_USER_MASK_NESTING_KEYWORD3;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_KEYWORD4]        = SCE_USER_MASK_NESTING_KEYWORD4;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_KEYWORD5]        = SCE_USER_MASK_NESTING_KEYWORD5;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_KEYWORD6]        = SCE_USER_MASK_NESTING_KEYWORD6;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_KEYWORD7]        = SCE_USER_MASK_NESTING_KEYWORD7;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_KEYWORD8]        = SCE_USER_MASK_NESTING_KEYWORD8;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_OPERATORS1]      = SCE_USER_MASK_NESTING_OPERATORS1;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_OPERATORS2]      = SCE_USER_MASK_NESTING_OPERATORS2;
+    nestingMapper[IDC_STYLER_CHECK_NESTING_NUMBERS]         = SCE_USER_MASK_NESTING_NUMBERS;
+
+    // Dialog mapper for control IDs
+    dialogMapper[IDC_NUMBER_PREFIX1_EDIT]           = SCE_USER_KWLIST_NUMBER_PREFIX1;
+    dialogMapper[IDC_NUMBER_PREFIX2_EDIT]           = SCE_USER_KWLIST_NUMBER_PREFIX2;
+    dialogMapper[IDC_NUMBER_EXTRAS1_EDIT]           = SCE_USER_KWLIST_NUMBER_EXTRAS1;
+    dialogMapper[IDC_NUMBER_EXTRAS2_EDIT]           = SCE_USER_KWLIST_NUMBER_EXTRAS2;
+    dialogMapper[IDC_NUMBER_SUFFIX1_EDIT]           = SCE_USER_KWLIST_NUMBER_SUFFIX1;
+    dialogMapper[IDC_NUMBER_SUFFIX2_EDIT]           = SCE_USER_KWLIST_NUMBER_SUFFIX2;
+    dialogMapper[IDC_NUMBER_RANGE_EDIT]             = SCE_USER_KWLIST_NUMBER_RANGE;
+
+    dialogMapper[IDC_FOLDER_IN_CODE1_OPEN_EDIT]     = SCE_USER_KWLIST_FOLDERS_IN_CODE1_OPEN;
+    dialogMapper[IDC_FOLDER_IN_CODE1_MIDDLE_EDIT]   = SCE_USER_KWLIST_FOLDERS_IN_CODE1_MIDDLE;
+    dialogMapper[IDC_FOLDER_IN_CODE1_CLOSE_EDIT]    = SCE_USER_KWLIST_FOLDERS_IN_CODE1_CLOSE;
+    dialogMapper[IDC_FOLDER_IN_CODE2_OPEN_EDIT]     = SCE_USER_KWLIST_FOLDERS_IN_CODE2_OPEN;
+    dialogMapper[IDC_FOLDER_IN_CODE2_MIDDLE_EDIT]   = SCE_USER_KWLIST_FOLDERS_IN_CODE2_MIDDLE;
+    dialogMapper[IDC_FOLDER_IN_CODE2_CLOSE_EDIT]    = SCE_USER_KWLIST_FOLDERS_IN_CODE2_CLOSE;
+    dialogMapper[IDC_FOLDER_IN_COMMENT_OPEN_EDIT]   = SCE_USER_KWLIST_FOLDERS_IN_COMMENT_OPEN;
+    dialogMapper[IDC_FOLDER_IN_COMMENT_MIDDLE_EDIT] = SCE_USER_KWLIST_FOLDERS_IN_COMMENT_MIDDLE;
+    dialogMapper[IDC_FOLDER_IN_COMMENT_CLOSE_EDIT]  = SCE_USER_KWLIST_FOLDERS_IN_COMMENT_CLOSE;
+
+    dialogMapper[IDC_KEYWORD1_EDIT]                 = SCE_USER_KWLIST_KEYWORDS1;
+    dialogMapper[IDC_KEYWORD2_EDIT]                 = SCE_USER_KWLIST_KEYWORDS2;
+    dialogMapper[IDC_KEYWORD3_EDIT]                 = SCE_USER_KWLIST_KEYWORDS3;
+    dialogMapper[IDC_KEYWORD4_EDIT]                 = SCE_USER_KWLIST_KEYWORDS4;
+    dialogMapper[IDC_KEYWORD5_EDIT]                 = SCE_USER_KWLIST_KEYWORDS5;
+    dialogMapper[IDC_KEYWORD6_EDIT]                 = SCE_USER_KWLIST_KEYWORDS6;
+    dialogMapper[IDC_KEYWORD7_EDIT]                 = SCE_USER_KWLIST_KEYWORDS7;
+    dialogMapper[IDC_KEYWORD8_EDIT]                 = SCE_USER_KWLIST_KEYWORDS8;
+
+    // SetLexer mapper
+    setLexerMapper[SCE_USER_KWLIST_COMMENTS]                = "userDefine.comments";
+    setLexerMapper[SCE_USER_KWLIST_DELIMITERS]              = "userDefine.delimiters";
+    setLexerMapper[SCE_USER_KWLIST_OPERATORS1]              = "userDefine.operators1";
+    setLexerMapper[SCE_USER_KWLIST_NUMBER_PREFIX1]          = "userDefine.numberPrefix1";
+    setLexerMapper[SCE_USER_KWLIST_NUMBER_PREFIX2]          = "userDefine.numberPrefix2";
+    setLexerMapper[SCE_USER_KWLIST_NUMBER_EXTRAS1]          = "userDefine.numberExtras1";
+    setLexerMapper[SCE_USER_KWLIST_NUMBER_EXTRAS2]          = "userDefine.numberExtras2";
+    setLexerMapper[SCE_USER_KWLIST_NUMBER_SUFFIX1]          = "userDefine.numberSuffix1";
+    setLexerMapper[SCE_USER_KWLIST_NUMBER_SUFFIX2]          = "userDefine.numberSuffix2";
+    setLexerMapper[SCE_USER_KWLIST_NUMBER_RANGE]            = "userDefine.numberRange";
+    setLexerMapper[SCE_USER_KWLIST_FOLDERS_IN_CODE1_OPEN]   = "userDefine.foldersInCode1Open";
+    setLexerMapper[SCE_USER_KWLIST_FOLDERS_IN_CODE1_MIDDLE] = "userDefine.foldersInCode1Middle";
+    setLexerMapper[SCE_USER_KWLIST_FOLDERS_IN_CODE1_CLOSE]  = "userDefine.foldersInCode1Close";
 }
 
 GlobalMappers& GlobalMappers::instance()
@@ -106,6 +322,8 @@ GlobalMappers& GlobalMappers::instance()
     static GlobalMappers instance;
     return instance;
 }
+
+} // namespace QtControls
 
 // ============================================================================
 // QtUserLangContainer Implementation (in QtControls namespace)
@@ -156,6 +374,8 @@ const QtUserLangContainer::Style* QtUserLangContainer::getStyler(int styleID) co
 }
 
 } // namespace QtControls
+
+namespace QtControls {
 
 // ============================================================================
 // StyleDialog Implementation
@@ -1153,6 +1373,113 @@ void UserDefineDialog::connectSignals()
         }
     }
 
+    // Comment edits - connect to save language when changed
+    auto connectCommentEdit = [this](QLineEdit* edit) {
+        if (edit) {
+            connect(edit, &QLineEdit::textChanged, this, [this]() {
+                saveLanguage();
+                updatePreview();
+            });
+        }
+    };
+    connectCommentEdit(_commentLineOpenEdit);
+    connectCommentEdit(_commentLineContinueEdit);
+    connectCommentEdit(_commentLineCloseEdit);
+    connectCommentEdit(_commentOpenEdit);
+    connectCommentEdit(_commentCloseEdit);
+
+    // Number edits
+    auto connectNumberEdit = [this](QLineEdit* edit) {
+        if (edit) {
+            connect(edit, &QLineEdit::textChanged, this, [this]() {
+                if (_pUserLang) {
+                    _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_PREFIX1][0] = L'\0';
+                    _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_PREFIX2][0] = L'\0';
+                    _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_EXTRAS1][0] = L'\0';
+                    _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_EXTRAS2][0] = L'\0';
+                    _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_SUFFIX1][0] = L'\0';
+                    _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_SUFFIX2][0] = L'\0';
+                    _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_RANGE][0] = L'\0';
+
+                    if (_numberPrefix1Edit) wcsncpy(_pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_PREFIX1], _numberPrefix1Edit->text().toStdWString().c_str(), 1023);
+                    if (_numberPrefix2Edit) wcsncpy(_pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_PREFIX2], _numberPrefix2Edit->text().toStdWString().c_str(), 1023);
+                    if (_numberExtras1Edit) wcsncpy(_pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_EXTRAS1], _numberExtras1Edit->text().toStdWString().c_str(), 1023);
+                    if (_numberExtras2Edit) wcsncpy(_pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_EXTRAS2], _numberExtras2Edit->text().toStdWString().c_str(), 1023);
+                    if (_numberSuffix1Edit) wcsncpy(_pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_SUFFIX1], _numberSuffix1Edit->text().toStdWString().c_str(), 1023);
+                    if (_numberSuffix2Edit) wcsncpy(_pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_SUFFIX2], _numberSuffix2Edit->text().toStdWString().c_str(), 1023);
+                    if (_numberRangeEdit) wcsncpy(_pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_RANGE], _numberRangeEdit->text().toStdWString().c_str(), 1023);
+                }
+                updatePreview();
+            });
+        }
+    };
+    connectNumberEdit(_numberPrefix1Edit);
+    connectNumberEdit(_numberPrefix2Edit);
+    connectNumberEdit(_numberExtras1Edit);
+    connectNumberEdit(_numberExtras2Edit);
+    connectNumberEdit(_numberSuffix1Edit);
+    connectNumberEdit(_numberSuffix2Edit);
+    connectNumberEdit(_numberRangeEdit);
+
+    // Operator edits
+    auto connectOperatorEdit = [this](QLineEdit* edit, int keywordIndex) {
+        if (edit) {
+            connect(edit, &QLineEdit::textChanged, this, [this, edit, keywordIndex]() {
+                if (_pUserLang) {
+                    wcsncpy(_pUserLang->_keywordLists[keywordIndex], edit->text().toStdWString().c_str(), 1023);
+                    _pUserLang->_keywordLists[keywordIndex][1023] = L'\0';
+                }
+                updatePreview();
+            });
+        }
+    };
+    connectOperatorEdit(_operators1Edit, SCE_USER_KWLIST_OPERATORS1);
+    connectOperatorEdit(_operators2Edit, SCE_USER_KWLIST_OPERATORS2);
+
+    // Folder edits
+    auto connectFolderEdit = [this](QLineEdit* edit, int keywordIndex) {
+        if (edit) {
+            connect(edit, &QLineEdit::textChanged, this, [this, edit, keywordIndex]() {
+                if (_pUserLang) {
+                    wcsncpy(_pUserLang->_keywordLists[keywordIndex], edit->text().toStdWString().c_str(), 1023);
+                    _pUserLang->_keywordLists[keywordIndex][1023] = L'\0';
+                }
+                updatePreview();
+            });
+        }
+    };
+    connectFolderEdit(_folderInCode1OpenEdit, SCE_USER_KWLIST_FOLDERS_IN_CODE1_OPEN);
+    connectFolderEdit(_folderInCode1MiddleEdit, SCE_USER_KWLIST_FOLDERS_IN_CODE1_MIDDLE);
+    connectFolderEdit(_folderInCode1CloseEdit, SCE_USER_KWLIST_FOLDERS_IN_CODE1_CLOSE);
+    connectFolderEdit(_folderInCode2OpenEdit, SCE_USER_KWLIST_FOLDERS_IN_CODE2_OPEN);
+    connectFolderEdit(_folderInCode2MiddleEdit, SCE_USER_KWLIST_FOLDERS_IN_CODE2_MIDDLE);
+    connectFolderEdit(_folderInCode2CloseEdit, SCE_USER_KWLIST_FOLDERS_IN_CODE2_CLOSE);
+    connectFolderEdit(_folderInCommentOpenEdit, SCE_USER_KWLIST_FOLDERS_IN_COMMENT_OPEN);
+    connectFolderEdit(_folderInCommentMiddleEdit, SCE_USER_KWLIST_FOLDERS_IN_COMMENT_MIDDLE);
+    connectFolderEdit(_folderInCommentCloseEdit, SCE_USER_KWLIST_FOLDERS_IN_COMMENT_CLOSE);
+
+    // Delimiter edits - save to keyword list with group syntax
+    for (int i = 0; i < 8; ++i) {
+        if (_delimiterOpenEdits[i]) {
+            connect(_delimiterOpenEdits[i], &QLineEdit::textChanged, this, [this]() {
+                saveLanguage();
+                updatePreview();
+            });
+        }
+        if (_delimiterEscapeEdits[i]) {
+            connect(_delimiterEscapeEdits[i], &QLineEdit::textChanged, this, [this]() {
+                saveLanguage();
+                updatePreview();
+            });
+        }
+        if (_delimiterCloseEdits[i]) {
+            connect(_delimiterCloseEdits[i], &QLineEdit::textChanged, this, [this]() {
+                saveLanguage();
+                updatePreview();
+            });
+        }
+    }
+
     // Tab changes
     connect(_mainTabs, &QTabWidget::currentChanged, this, &UserDefineDialog::onTabChanged);
 }
@@ -1174,7 +1501,16 @@ void UserDefineDialog::reloadLangCombo()
 {
     _langCombo->clear();
     _langCombo->addItem(tr("User Defined Language"));
-    // TODO: Load from NppParameters when available
+
+    // Load from NppParameters
+    NppParameters& nppParam = NppParameters::getInstance();
+    int nbUserLang = nppParam.getNbUserLang();
+    for (int i = 0; i < nbUserLang; ++i) {
+        const UserLangContainer* userLang = nppParam.getULCFromIndex(i);
+        if (userLang) {
+            _langCombo->addItem(QString::fromStdWString(userLang->getName()));
+        }
+    }
 }
 
 void UserDefineDialog::changeStyle()
@@ -1249,16 +1585,29 @@ void UserDefineDialog::onImportClicked()
                                                     tr("UDL Files (*.xml);;All Files (*)"));
     if (fileName.isEmpty()) return;
 
-    // TODO: Implement import using NppParameters
-    QMessageBox::information(this, tr("Import"), tr("Import from %1").arg(fileName));
+    NppParameters& nppParam = NppParameters::getInstance();
+    std::wstring wFileName = fileName.toStdWString();
+
+    bool isSuccessful = nppParam.importUDLFromFile(wFileName);
+    if (isSuccessful) {
+        int currentIndex = _langCombo->currentIndex();
+        reloadLangCombo();
+        _langCombo->setCurrentIndex(currentIndex);
+
+        QMessageBox::information(this, tr("User Defined Language"),
+                                 tr("Import successful."));
+    } else {
+        QMessageBox::warning(this, tr("User Defined Language"),
+                             tr("Failed to import."));
+    }
 }
 
 void UserDefineDialog::onExportClicked()
 {
     int currentIndex = _langCombo->currentIndex();
     if (currentIndex <= 0) {
-        QMessageBox::warning(this, tr("Export"),
-                             tr("Please save your language definition first using 'Save As...'"));
+        QMessageBox::warning(this, tr("User Defined Language"),
+                             tr("Before exporting, save your language definition by clicking \"Save As...\" button"));
         return;
     }
 
@@ -1268,19 +1617,47 @@ void UserDefineDialog::onExportClicked()
                                                     tr("UDL Files (*.xml);;All Files (*)"));
     if (fileName.isEmpty()) return;
 
-    // TODO: Implement export using NppParameters
-    QMessageBox::information(this, tr("Export"), tr("Export to %1").arg(fileName));
+    NppParameters& nppParam = NppParameters::getInstance();
+    std::wstring wFileName = fileName.toStdWString();
+
+    bool isSuccessful = nppParam.exportUDLToFile(currentIndex - 1, wFileName);
+    if (isSuccessful) {
+        QMessageBox::information(this, tr("User Defined Language"),
+                                 tr("Export successful."));
+    } else {
+        QMessageBox::warning(this, tr("User Defined Language"),
+                             tr("Failed to export."));
+    }
 }
 
 void UserDefineDialog::onNewLangClicked()
 {
+    NppParameters& nppParam = NppParameters::getInstance();
+
     StringDialog dlg(tr("Create New Language"), tr("Name:"),
                      tr("new user define"), 64, QString(), this);
     if (dlg.exec() == QDialog::Accepted) {
         QString name = dlg.getText();
         if (!name.isEmpty()) {
-            // TODO: Check for duplicate names
-            // TODO: Add to NppParameters
+            std::wstring wName = name.toStdWString();
+
+            // Check for duplicate names
+            if (nppParam.isExistingUserLangName(wName.c_str())) {
+                QMessageBox::warning(this, tr("UDL Error"),
+                                     tr("This name is used by another language,\nplease give another one."));
+                return;
+            }
+
+            // Check max limit
+            if (nppParam.getNbUserLang() >= NB_MAX_USER_LANG) {
+                return;
+            }
+
+            // Add current language to NppParameters
+            const UserLangContainer* userLang = _pCurrentUserLang.get();
+            int newIndex = nppParam.addUserLangToEnd(userLang, wName.c_str());
+
+            // Add to combobox
             _langCombo->addItem(name);
             _langCombo->setCurrentIndex(_langCombo->count() - 1);
         }
@@ -1293,13 +1670,21 @@ void UserDefineDialog::onRemoveLangClicked()
     if (currentIndex <= 0) return;
 
     QString langName = _langCombo->currentText();
-    int result = QMessageBox::question(this, tr("Remove Language"),
-                                       tr("Are you sure you want to remove '%1'?").arg(langName),
+    int result = QMessageBox::question(this, tr("Remove the current language"),
+                                       tr("Are you sure?"),
                                        QMessageBox::Yes | QMessageBox::No);
     if (result == QMessageBox::Yes) {
+        NppParameters& nppParam = NppParameters::getInstance();
+
+        // Remove from NppParameters
+        nppParam.removeUserLang(currentIndex - 1);
+
+        // Remove from combobox
         _langCombo->removeItem(currentIndex);
         _langCombo->setCurrentIndex(0);
-        // TODO: Remove from NppParameters
+
+        // Notify parent window to update menu
+        // TODO: Emit signal to update language menu
     }
 }
 
@@ -1309,14 +1694,31 @@ void UserDefineDialog::onRenameLangClicked()
     if (currentIndex <= 0) return;
 
     QString currentName = _langCombo->currentText();
-    StringDialog dlg(tr("Rename Language"), tr("New name:"),
+    StringDialog dlg(tr("Rename Current Language Name"), tr("Name:"),
                      currentName, 64, QString(), this);
     if (dlg.exec() == QDialog::Accepted) {
         QString newName = dlg.getText();
         if (!newName.isEmpty() && newName != currentName) {
-            // TODO: Check for duplicate names
+            std::wstring wNewName = newName.toStdWString();
+            NppParameters& nppParam = NppParameters::getInstance();
+
+            // Check for duplicate names
+            if (nppParam.isExistingUserLangName(wNewName.c_str())) {
+                QMessageBox::warning(this, tr("UDL Error"),
+                                     tr("This name is used by another language,\nplease give another one."));
+                return;
+            }
+
+            // Rename in NppParameters
+            UserLangContainer* userLangContainer = nppParam.getULCFromIndex(currentIndex - 1);
+            if (userLangContainer) {
+                userLangContainer->_name = wNewName;
+            }
+
+            // Update combobox
             _langCombo->setItemText(currentIndex, newName);
-            // TODO: Update in NppParameters
+
+            // TODO: Update language menu
         }
     }
 }
@@ -1326,17 +1728,36 @@ void UserDefineDialog::onSaveAsClicked()
     int currentIndex = _langCombo->currentIndex();
     QString currentName = (currentIndex > 0) ? _langCombo->currentText() : QString();
 
-    StringDialog dlg(tr("Save Language As"), tr("Name:"),
+    StringDialog dlg(tr("Save Current Language Name As..."), tr("Name:"),
                      currentName, 64, QString(), this);
     if (dlg.exec() == QDialog::Accepted) {
         QString name = dlg.getText();
         if (!name.isEmpty()) {
-            // TODO: Check for duplicate names
-            // TODO: Save to NppParameters
-            if (currentIndex <= 0) {
-                _langCombo->addItem(name);
-                _langCombo->setCurrentIndex(_langCombo->count() - 1);
+            std::wstring wName = name.toStdWString();
+            NppParameters& nppParam = NppParameters::getInstance();
+
+            // Check for duplicate names
+            if (nppParam.isExistingUserLangName(wName.c_str())) {
+                QMessageBox::warning(this, tr("UDL Error"),
+                                     tr("This name is used by another language,\nplease give another one."));
+                return;
             }
+
+            // Check max limit
+            if (nppParam.getNbUserLang() >= NB_MAX_USER_LANG) {
+                return;
+            }
+
+            // Add current language to NppParameters
+            const UserLangContainer* userLang = (currentIndex > 0)
+                ? nppParam.getULCFromIndex(currentIndex - 1)
+                : _pCurrentUserLang.get();
+
+            int newIndex = nppParam.addUserLangToEnd(userLang, wName.c_str());
+
+            // Add to combobox
+            _langCombo->addItem(name);
+            _langCombo->setCurrentIndex(_langCombo->count() - 1);
         }
     }
 }
@@ -1414,8 +1835,9 @@ void UserDefineDialog::loadLanguage(int index)
     if (index == 0) {
         _pUserLang = _pCurrentUserLang.get();
     } else {
-        // TODO: Load from NppParameters
-        _pUserLang = _pCurrentUserLang.get();
+        // Load from NppParameters
+        NppParameters& nppParam = NppParameters::getInstance();
+        _pUserLang = nppParam.getULCFromIndex(index - 1);
     }
 
     if (!_pUserLang) return;
@@ -1463,16 +1885,38 @@ void UserDefineDialog::loadLanguage(int index)
         }
     }
 
-    // Comments
-    // TODO: Parse comment format from keyword list
-    _commentOpenEdit->setText(QString::fromWCharArray(
-                                    _pUserLang->_keywordLists[SCE_USER_KWLIST_COMMENTS]));
+    // Comments - parse with group syntax
+    {
+        wchar_t buffer[max_char] = {0};
+        retrieveFromKeywordList(buffer, _pUserLang->_keywordLists[SCE_USER_KWLIST_COMMENTS], L"00");
+        _commentLineOpenEdit->setText(QString::fromWCharArray(buffer));
+
+        buffer[0] = L'\0';
+        retrieveFromKeywordList(buffer, _pUserLang->_keywordLists[SCE_USER_KWLIST_COMMENTS], L"01");
+        _commentLineContinueEdit->setText(QString::fromWCharArray(buffer));
+
+        buffer[0] = L'\0';
+        retrieveFromKeywordList(buffer, _pUserLang->_keywordLists[SCE_USER_KWLIST_COMMENTS], L"02");
+        _commentLineCloseEdit->setText(QString::fromWCharArray(buffer));
+
+        buffer[0] = L'\0';
+        retrieveFromKeywordList(buffer, _pUserLang->_keywordLists[SCE_USER_KWLIST_COMMENTS], L"03");
+        _commentOpenEdit->setText(QString::fromWCharArray(buffer));
+
+        buffer[0] = L'\0';
+        retrieveFromKeywordList(buffer, _pUserLang->_keywordLists[SCE_USER_KWLIST_COMMENTS], L"04");
+        _commentCloseEdit->setText(QString::fromWCharArray(buffer));
+    }
 
     // Numbers
     _numberPrefix1Edit->setText(QString::fromWCharArray(
                                      _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_PREFIX1]));
     _numberPrefix2Edit->setText(QString::fromWCharArray(
                                      _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_PREFIX2]));
+    _numberExtras1Edit->setText(QString::fromWCharArray(
+                                     _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_EXTRAS1]));
+    _numberExtras2Edit->setText(QString::fromWCharArray(
+                                     _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_EXTRAS2]));
     _numberSuffix1Edit->setText(QString::fromWCharArray(
                                      _pUserLang->_keywordLists[SCE_USER_KWLIST_NUMBER_SUFFIX1]));
     _numberSuffix2Edit->setText(QString::fromWCharArray(
@@ -1486,7 +1930,39 @@ void UserDefineDialog::loadLanguage(int index)
     _operators2Edit->setText(QString::fromWCharArray(
                                   _pUserLang->_keywordLists[SCE_USER_KWLIST_OPERATORS2]));
 
-    // Folders
+    // Delimiters - parse with group syntax
+    for (int i = 0; i < 8; ++i) {
+        wchar_t intBuffer[10] = {L'0', 0};
+        if (i < 10) {
+            intBuffer[1] = L'0' + i;
+            intBuffer[2] = L'\0';
+        } else {
+            intBuffer[0] = L'0' + (i / 10);
+            intBuffer[1] = L'0' + (i % 10);
+            intBuffer[2] = L'\0';
+        }
+
+        wchar_t buffer[max_char] = {0};
+
+        // Open
+        buffer[0] = L'\0';
+        retrieveFromKeywordList(buffer, _pUserLang->_keywordLists[SCE_USER_KWLIST_DELIMITERS], intBuffer);
+        if (_delimiterOpenEdits[i]) _delimiterOpenEdits[i]->setText(QString::fromWCharArray(buffer));
+
+        // Escape (next index)
+        intBuffer[1]++;
+        buffer[0] = L'\0';
+        retrieveFromKeywordList(buffer, _pUserLang->_keywordLists[SCE_USER_KWLIST_DELIMITERS], intBuffer);
+        if (_delimiterEscapeEdits[i]) _delimiterEscapeEdits[i]->setText(QString::fromWCharArray(buffer));
+
+        // Close (next index)
+        intBuffer[1]++;
+        buffer[0] = L'\0';
+        retrieveFromKeywordList(buffer, _pUserLang->_keywordLists[SCE_USER_KWLIST_DELIMITERS], intBuffer);
+        if (_delimiterCloseEdits[i]) _delimiterCloseEdits[i]->setText(QString::fromWCharArray(buffer));
+    }
+
+    // Folders - Code 1
     _folderInCode1OpenEdit->setText(QString::fromWCharArray(
                                          _pUserLang->_keywordLists[SCE_USER_KWLIST_FOLDERS_IN_CODE1_OPEN]));
     _folderInCode1MiddleEdit->setText(QString::fromWCharArray(
@@ -1494,12 +1970,111 @@ void UserDefineDialog::loadLanguage(int index)
     _folderInCode1CloseEdit->setText(QString::fromWCharArray(
                                           _pUserLang->_keywordLists[SCE_USER_KWLIST_FOLDERS_IN_CODE1_CLOSE]));
 
+    // Folders - Code 2
+    _folderInCode2OpenEdit->setText(QString::fromWCharArray(
+                                         _pUserLang->_keywordLists[SCE_USER_KWLIST_FOLDERS_IN_CODE2_OPEN]));
+    _folderInCode2MiddleEdit->setText(QString::fromWCharArray(
+                                           _pUserLang->_keywordLists[SCE_USER_KWLIST_FOLDERS_IN_CODE2_MIDDLE]));
+    _folderInCode2CloseEdit->setText(QString::fromWCharArray(
+                                          _pUserLang->_keywordLists[SCE_USER_KWLIST_FOLDERS_IN_CODE2_CLOSE]));
+
+    // Folders - Comment
+    _folderInCommentOpenEdit->setText(QString::fromWCharArray(
+                                           _pUserLang->_keywordLists[SCE_USER_KWLIST_FOLDERS_IN_COMMENT_OPEN]));
+    _folderInCommentMiddleEdit->setText(QString::fromWCharArray(
+                                             _pUserLang->_keywordLists[SCE_USER_KWLIST_FOLDERS_IN_COMMENT_MIDDLE]));
+    _folderInCommentCloseEdit->setText(QString::fromWCharArray(
+                                            _pUserLang->_keywordLists[SCE_USER_KWLIST_FOLDERS_IN_COMMENT_CLOSE]));
+
     updateStyleButtons();
 }
 
 void UserDefineDialog::saveLanguage()
 {
-    // TODO: Save to NppParameters
+    if (!_pUserLang) return;
+
+    // Save comments with group syntax
+    {
+        wchar_t newList[max_char] = {0};
+        wchar_t buffer[max_char] = {0};
+
+        // Line comment open (00)
+        QString text = _commentLineOpenEdit->text();
+        std::wstring wtext = text.toStdWString();
+        buffer[0] = L'0'; buffer[1] = L'0';
+        convertTo(newList, max_char, wtext.c_str(), buffer);
+
+        // Line comment continue (01)
+        text = _commentLineContinueEdit->text();
+        wtext = text.toStdWString();
+        buffer[0] = L'0'; buffer[1] = L'1';
+        convertTo(newList, max_char, wtext.c_str(), buffer);
+
+        // Line comment close (02)
+        text = _commentLineCloseEdit->text();
+        wtext = text.toStdWString();
+        buffer[0] = L'0'; buffer[1] = L'2';
+        convertTo(newList, max_char, wtext.c_str(), buffer);
+
+        // Block comment open (03)
+        text = _commentOpenEdit->text();
+        wtext = text.toStdWString();
+        buffer[0] = L'0'; buffer[1] = L'3';
+        convertTo(newList, max_char, wtext.c_str(), buffer);
+
+        // Block comment close (04)
+        text = _commentCloseEdit->text();
+        wtext = text.toStdWString();
+        buffer[0] = L'0'; buffer[1] = L'4';
+        convertTo(newList, max_char, wtext.c_str(), buffer);
+
+        wcscpy(_pUserLang->_keywordLists[SCE_USER_KWLIST_COMMENTS], newList);
+    }
+
+    // Save delimiters with group syntax
+    {
+        wchar_t newList[max_char] = {0};
+        wchar_t buffer[max_char] = {0};
+
+        for (int i = 0; i < 8; ++i) {
+            wchar_t intBuffer[10] = {0};
+            if (i < 10) {
+                intBuffer[0] = L'0';
+                intBuffer[1] = L'0' + (i * 3);
+            } else {
+                intBuffer[0] = L'0' + ((i * 3) / 10);
+                intBuffer[1] = L'0' + ((i * 3) % 10);
+            }
+
+            // Open
+            if (_delimiterOpenEdits[i]) {
+                QString text = _delimiterOpenEdits[i]->text();
+                std::wstring wtext = text.toStdWString();
+                convertTo(newList, max_char, wtext.c_str(), intBuffer);
+            }
+
+            // Escape (next index)
+            intBuffer[1]++;
+            if (_delimiterEscapeEdits[i]) {
+                QString text = _delimiterEscapeEdits[i]->text();
+                std::wstring wtext = text.toStdWString();
+                convertTo(newList, max_char, wtext.c_str(), intBuffer);
+            }
+
+            // Close (next index)
+            intBuffer[1]++;
+            if (_delimiterCloseEdits[i]) {
+                QString text = _delimiterCloseEdits[i]->text();
+                std::wstring wtext = text.toStdWString();
+                convertTo(newList, max_char, wtext.c_str(), intBuffer);
+            }
+        }
+
+        wcscpy(_pUserLang->_keywordLists[SCE_USER_KWLIST_DELIMITERS], newList);
+    }
+
+    // Mark as dirty in NppParameters if not the default language
+    // This will trigger saving when the application exits
 }
 
 void UserDefineDialog::updatePreview()
@@ -1555,4 +2130,6 @@ void UserDefineDialog::updateStyleButtons()
     updateBtn(_folderInCommentStyleBtn, SCE_USER_STYLE_FOLDER_IN_COMMENT);
     updateBtn(_defaultStyleBtn, SCE_USER_STYLE_DEFAULT);
 }
+
+} // namespace QtControls
 

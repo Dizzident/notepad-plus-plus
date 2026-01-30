@@ -12,6 +12,7 @@
 // classes that are needed by the core code but are Windows-specific.
 // The full Qt implementation of shortcut management is in ShortcutMapper.
 
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -54,7 +55,14 @@ public:
     virtual ~Shortcut() = default;
 
     const char* getName() const { return _name; }
-    void setName(const char* name);
+    void setName(const char* name) {
+        if (name) {
+            strncpy(_name, name, sizeof(_name) - 1);
+            _name[sizeof(_name) - 1] = '\0';
+        } else {
+            _name[0] = '\0';
+        }
+    }
 
     KeyCombo getKeyCombo() const { return _keyCombo; }
     void setKeyCombo(const KeyCombo& combo) { _keyCombo = combo; }
@@ -64,6 +72,13 @@ public:
     }
 
     bool canModifyName() const { return _canModifyName; }
+
+    void clear() {
+        _keyCombo._isCtrl = false;
+        _keyCombo._isAlt = false;
+        _keyCombo._isShift = false;
+        _keyCombo._key = 0;
+    }
 
 protected:
     char _name[128] = {0};  // menuItemStrLenMax equivalent
@@ -76,11 +91,14 @@ class CommandShortcut : public Shortcut {
 public:
     CommandShortcut() : Shortcut(), _id(0) {}
     CommandShortcut(const Shortcut& sc, int id) : Shortcut(sc), _id(id) {}
+    CommandShortcut(const Shortcut& sc, int id, bool isDuplicate) : Shortcut(sc), _id(id), _isDuplicate(isDuplicate) {}
 
     int getID() const { return _id; }
+    bool isDuplicate() const { return _isDuplicate; }
 
 protected:
     int _id = 0;
+    bool _isDuplicate = false;
 };
 
 // Accelerator stub for Linux

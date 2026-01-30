@@ -1540,9 +1540,170 @@ TiXmlNode* NppParameters::getChildElementByAttribute(TiXmlNode* pere, const wcha
 // Static session loading
 bool NppParameters::getSessionFromXmlTree(const NppXml::Document& pSessionDoc, Session& session)
 {
-    (void)pSessionDoc;
-    (void)session;
-    return false;
+    if (!pSessionDoc)
+        return false;
+
+    NppXml::Element root = NppXml::firstChildElement(pSessionDoc, "NotepadPlus");
+    if (!root)
+        return false;
+
+    NppXml::Element sessionRoot = NppXml::firstChildElement(root, "Session");
+    if (!sessionRoot)
+        return false;
+
+    const int index = NppXml::intAttribute(sessionRoot, "activeView", -1);
+    if (index >= 0)
+    {
+        session._activeView = index;
+    }
+
+    static constexpr size_t nbView = 2;
+    NppXml::Element viewRoots[nbView]{
+        NppXml::firstChildElement(sessionRoot, "mainView"),
+        NppXml::firstChildElement(sessionRoot, "subView")
+    };
+
+    for (size_t k = 0; k < nbView; ++k)
+    {
+        if (viewRoots[k])
+        {
+            const int index2 = NppXml::intAttribute(viewRoots[k], "activeIndex", -1);
+            if (index2 >= 0)
+            {
+                if (k == 0)
+                    session._activeMainIndex = index2;
+                else // k == 1
+                    session._activeSubIndex = index2;
+            }
+            for (NppXml::Element childNode = NppXml::firstChildElement(viewRoots[k], "File");
+                childNode;
+                childNode = NppXml::nextSiblingElement(childNode, "File"))
+            {
+                const char* fileName = NppXml::attribute(childNode, "filename");
+                if (fileName)
+                {
+                    Position position{
+                        ._firstVisibleLine = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "firstVisibleLine", 0)),
+                        ._startPos = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "startPos", 0)),
+                        ._endPos = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "endPos", 0)),
+                        ._xOffset = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "xOffset", 0)),
+                        ._selMode = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "selMode", 0)),
+                        ._scrollWidth = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "scrollWidth", 1)),
+                        ._offset = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "offset", 0)),
+                        ._wrapCount = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "wrapCount", 0))
+                    };
+
+                    MapPosition mapPosition{
+                        ._firstVisibleDisplayLine = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "mapFirstVisibleDisplayLine", -1)),
+                        ._firstVisibleDocLine = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "mapFirstVisibleDocLine", -1)),
+                        ._lastVisibleDocLine = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "mapLastVisibleDocLine", -1)),
+                        ._nbLine = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "mapNbLine", -1)),
+                        ._higherPos = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "mapHigherPos", -1)),
+                        ._width = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "mapWidth", -1)),
+                        ._height = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "mapHeight", -1)),
+                        ._wrapIndentMode = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "mapWrapIndentMode", -1)),
+                        ._KByteInDoc = static_cast<intptr_t>(NppXml::int64Attribute(childNode, "mapKByteInDoc", MapPosition::getMaxPeekLenInKB())),
+                        ._isWrap = getBoolAttribute(childNode, "mapIsWrap")
+                    };
+
+                    const char* langName = NppXml::attribute(childNode, "lang");
+
+                    std::wstring wstrFileName = string2wstring(fileName, CP_UTF8);
+                    std::wstring wstrLangName = langName ? string2wstring(langName, CP_UTF8) : L"";
+
+                    const char* backupFilePathAttr = NppXml::attribute(childNode, "backupFilePath");
+                    std::wstring backupFilePath;
+                    if (backupFilePathAttr)
+                    {
+                        backupFilePath = string2wstring(backupFilePathAttr, CP_UTF8);
+                        // Validate backup file path - ensure it's in the user's backup directory
+                        std::wstring currentBackupFilePath = NppParameters::getInstance().getUserPath();
+                        pathAppend(currentBackupFilePath, L"backup");
+                        if (backupFilePath.find(currentBackupFilePath) != 0)
+                        {
+                            // Reconstruct backup file path to use correct location
+                            size_t lastSlash = backupFilePath.find_last_of(L"/\\");
+                            if (lastSlash != std::wstring::npos)
+                            {
+                                std::wstring fileNameOnly = backupFilePath.substr(lastSlash + 1);
+                                backupFilePath = currentBackupFilePath;
+                                pathAppend(backupFilePath, fileNameOnly);
+                            }
+                        }
+                    }
+
+                    FILETIME fileModifiedTimestamp{
+                        .dwLowDateTime = static_cast<DWORD>(NppXml::uint64Attribute(childNode, "originalFileLastModifTimestamp", 0)),
+                        .dwHighDateTime = static_cast<DWORD>(NppXml::uint64Attribute(childNode, "originalFileLastModifTimestampHigh", 0))
+                    };
+
+                    const int encoding = NppXml::intAttribute(childNode, "encoding", -1);
+
+                    const bool isUserReadOnly = getBoolAttribute(childNode, "userReadOnly");
+                    const bool isPinned = getBoolAttribute(childNode, "tabPinned");
+                    const bool isUntitleTabRenamed = getBoolAttribute(childNode, "untitleTabRenamed");
+
+                    sessionFileInfo sfi(wstrFileName.c_str(), wstrLangName.c_str(), encoding,
+                        isUserReadOnly, isPinned, isUntitleTabRenamed,
+                        position, backupFilePath.empty() ? nullptr : backupFilePath.c_str(),
+                        fileModifiedTimestamp, mapPosition);
+
+                    sfi._individualTabColour = NppXml::intAttribute(childNode, "tabColourId", -1);
+                    sfi._isRTL = getBoolAttribute(childNode, "RTL");
+
+                    for (NppXml::Element markNode = NppXml::firstChildElement(childNode, "Mark");
+                        markNode;
+                        markNode = NppXml::nextSiblingElement(markNode, "Mark"))
+                    {
+                        const auto lineNumber = static_cast<intptr_t>(NppXml::int64Attribute(markNode, "line", -1));
+                        if (lineNumber > -1)
+                        {
+                            sfi._marks.push_back(static_cast<size_t>(lineNumber));
+                        }
+                    }
+
+                    for (NppXml::Element foldNode = NppXml::firstChildElement(childNode, "Fold");
+                        foldNode;
+                        foldNode = NppXml::nextSiblingElement(foldNode, "Fold"))
+                    {
+                        const auto lineNumber = static_cast<intptr_t>(NppXml::int64Attribute(foldNode, "line", -1));
+                        if (lineNumber > -1)
+                        {
+                            sfi._foldStates.push_back(static_cast<size_t>(lineNumber));
+                        }
+                    }
+                    if (k == 0)
+                        session._mainViewFiles.push_back(sfi);
+                    else // k == 1
+                        session._subViewFiles.push_back(sfi);
+                }
+            }
+        }
+    }
+
+    // Node structure and naming corresponds to config.xml
+    NppXml::Element fileBrowserRoot = NppXml::firstChildElement(sessionRoot, "FileBrowser");
+    if (fileBrowserRoot)
+    {
+        const char* selectedItemPath = NppXml::attribute(fileBrowserRoot, "latestSelectedItem");
+        if (selectedItemPath)
+        {
+            session._fileBrowserSelectedItem = string2wstring(selectedItemPath, CP_UTF8);
+        }
+
+        for (NppXml::Element childNode = NppXml::firstChildElement(fileBrowserRoot, "root");
+            childNode;
+            childNode = NppXml::nextSiblingElement(childNode, "root"))
+        {
+            const char* fileName = NppXml::attribute(childNode, "foldername");
+            if (fileName)
+            {
+                session._fileBrowserRoots.push_back(string2wstring(fileName, CP_UTF8));
+            }
+        }
+    }
+
+    return true;
 }
 
 // Shortcut modification tracking

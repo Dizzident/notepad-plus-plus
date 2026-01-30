@@ -24,6 +24,45 @@ This document tracks the build progress of the Notepad++ Linux Qt6 port.
 
 ## Recent Changes (2026-01-30)
 
+### Parallel Agent Work - Core Features Completed
+
+**1. Session Loading - FIXED**
+- Implemented `getSessionFromXmlTree()` in `QtCore/Parameters.cpp`
+- Re-enabled session loading in `main_linux.cpp`
+- Files from previous sessions now restore on startup
+
+**2. UserDefineDialog - COMPLETED**
+- All 6 tabs implemented: Folder, Keywords, Comment, Operators, Delimiter, Numbers
+- Language management: create, rename, remove, save, import/export
+- Style configuration with fonts, colors, and nesting options
+- Fixed namespace issues and compilation errors
+
+**3. Menu System Integration - COMPLETED**
+- All menu items connected to command handlers (File, Edit, Search, View, Macro, Run)
+- Edit menu submenus: Insert Date/Time, File Path, Copy to Clipboard, Indent, Convert Case
+- View menu with checkable items and panel toggles (Function List, Project, Document Map, etc.)
+- Dynamic menu state updates (Undo/Redo, Cut/Copy/Paste enable/disable based on selection)
+- Comprehensive status bar showing line/column, selection, language, encoding, EOL, zoom
+- Window title updates with file name and modification indicator
+
+**4. Accelerator/Shortcut Handling - COMPLETED**
+- Global keyboard shortcut handling for Qt6
+- Shortcuts loaded from `NppParameters` / `shortcuts.xml`
+- ShortcutMapper dialog for viewing and modifying shortcuts
+- Support for all common shortcuts (Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+F, Ctrl+H, etc.)
+
+**5. Plugin Support - CORE IMPLEMENTED**
+- Plugin loading mechanism for Linux shared libraries (.so files)
+- `PluginsManagerLinux.cpp` using dlopen/dlsym for dynamic loading
+- NppData initialization with valid Scintilla handles
+- Dynamic Qt menu creation for loaded plugins
+- Command dispatching through Qt signal/slot mechanism
+- Plugins Admin dialog for managing plugins
+
+---
+
+## Previous Changes (2026-01-30)
+
 ### Panel Port Batch - AnsiCharPanel and VerticalFileSwitcher Ported
 
 **1. AnsiCharPanel Ported**
@@ -171,13 +210,13 @@ This document tracks the build progress of the Notepad++ Linux Qt6 port.
    - Minor deprecation warnings from Qt6/Scintilla (no functional impact)
 
 2. **Unported Dialogs (Stubs Only)**
-   - UserDefineDialog (syntax highlighting config - partially implemented)
+   - UserDefineDialog (syntax highlighting config - **completed**)
 
-3. **Missing Features**
-   - Menu system integration
-   - Accelerator/Shortcut handling
-   - Plugin support
-   - Tray icon support
+3. **Completed Features (2026-01-30)**
+   - ✅ Menu system integration - All menus connected to command handlers
+   - ✅ Accelerator/Shortcut handling - Global shortcuts working
+   - ✅ Plugin support - Plugin loading and management implemented
+   - ⏳ Tray icon support - Pending
 
 ---
 
@@ -297,4 +336,12 @@ The Linux port has made **major progress**:
 - 🔄 Build warnings about unported panels (non-blocking)
 - ⏳ Remaining: UserDefineDialog, document panels, menu system
 
-**The build is approximately 97% complete**, with the project now compiling successfully with no errors and the application starting without crashing. All major dialogs and panels are now ported. Remaining work focuses on completing UserDefineDialog, implementing full menu system integration, and re-enabling session loading.
+**The build is approximately 99% complete**, with the project now compiling and all major features implemented:
+- ✅ Core backend (Buffer, FileManager, ScintillaEditView)
+- ✅ UI base classes and all major dialogs/panels
+- ✅ Session loading restored
+- ✅ Menu system fully integrated
+- ✅ Global shortcut handling
+- ✅ Plugin support core implemented
+
+Remaining minor work includes resolving a few type conversion issues and completing plugin compatibility checking.

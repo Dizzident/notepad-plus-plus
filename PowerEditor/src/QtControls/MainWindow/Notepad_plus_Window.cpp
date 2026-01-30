@@ -9,6 +9,24 @@
 #include "Notepad_plus_Window.h"
 
 #include "../../menuCmdID.h"
+#include "../../resource.h"
+#include "../../Notepad_plus.h"
+#include "../../Parameters.h"
+
+// Dialog includes
+#include "../FindReplace/FindReplaceDlg.h"
+#include "../GoToLine/GoToLineDlg.h"
+#include "../Preference/preferenceDlg.h"
+#include "../WordStyleDlg/WordStyleDlg.h"
+#include "../ShortcutMapper/ShortcutMapper.h"
+#include "../RunDlg/RunDlg.h"
+#include "../RunMacroDlg/RunMacroDlg.h"
+#include "../AboutDlg/AboutDlg.h"
+#include "../AboutDlg/CmdLineArgsDlg.h"
+#include "../AboutDlg/DebugInfoDlg.h"
+#include "../UserDefineDialog/UserDefineDialog.h"
+#include "../ScintillaComponent/ScintillaEditView.h"
+#include "../ShortcutManager/ShortcutManager.h"
 
 #include <QApplication>
 #include <QVBoxLayout>
@@ -20,6 +38,11 @@
 #include <QSettings>
 #include <QScreen>
 #include <QActionGroup>
+#include <QProcess>
+#include <QDesktopServices>
+#include <QDebug>
+#include <QDateTime>
+#include <QClipboard>
 
 namespace QtControls {
 
@@ -54,6 +77,75 @@ bool MainWindow::init(Notepad_plus* pNotepad_plus)
 
     _pNotepad_plus = pNotepad_plus;
 
+    // Initialize shortcut manager first (before UI setup)
+    _shortcutManager = ShortcutManager::getInstance();
+    _shortcutManager->setParent(this);
+
+    // Set up command callback for shortcut manager
+    _shortcutManager->setCommandCallback([this](int commandId) {
+        // Route commands to Notepad_plus core
+        if (_pNotepad_plus) {
+            // Use the core's command handling via WM_COMMAND-like mechanism
+            // This allows shortcuts to trigger the same handlers as menu items
+            switch (commandId) {
+                // File commands
+                case IDM_FILE_NEW: onFileNew(); break;
+                case IDM_FILE_OPEN: onFileOpen(); break;
+                case IDM_FILE_SAVE: onFileSave(); break;
+                case IDM_FILE_SAVEAS: onFileSaveAs(); break;
+                case IDM_FILE_SAVEALL: onFileSaveAll(); break;
+                case IDM_FILE_CLOSE: onFileClose(); break;
+                case IDM_FILE_CLOSEALL: onFileCloseAll(); break;
+                case IDM_FILE_EXIT: onFileExit(); break;
+
+                // Edit commands
+                case IDM_EDIT_UNDO: onEditUndo(); break;
+                case IDM_EDIT_REDO: onEditRedo(); break;
+                case IDM_EDIT_CUT: onEditCut(); break;
+                case IDM_EDIT_COPY: onEditCopy(); break;
+                case IDM_EDIT_PASTE: onEditPaste(); break;
+                case IDM_EDIT_DELETE: onEditDelete(); break;
+                case IDM_EDIT_SELECTALL: onEditSelectAll(); break;
+
+                // Search commands
+                case IDM_SEARCH_FIND: onSearchFind(); break;
+                case IDM_SEARCH_REPLACE: onSearchReplace(); break;
+                case IDM_SEARCH_FINDNEXT: onSearchFindNext(); break;
+                case IDM_SEARCH_FINDPREV: onSearchFindPrev(); break;
+                case IDM_SEARCH_GOTOLINE: onSearchGoToLine(); break;
+
+                // View commands
+                case IDM_VIEW_FULLSCREENTOGGLE: onViewFullScreen(); break;
+                case IDM_VIEW_POSTIT: onViewPostIt(); break;
+                case IDM_VIEW_ALWAYSONTOP: onViewAlwaysOnTop(); break;
+                case IDM_VIEW_WRAP: onViewWordWrap(); break;
+                case IDM_VIEW_TAB_SPACE: onViewShowWhiteSpace(); break;
+                case IDM_VIEW_EOL: onViewShowEOL(); break;
+                case IDM_VIEW_INDENT_GUIDE: onViewShowIndentGuide(); break;
+                case IDM_VIEW_FUNC_LIST: onViewFunctionList(); break;
+                case IDM_VIEW_PROJECT_PANEL_1: onViewProjectPanel(); break;
+                case IDM_VIEW_DOC_MAP: onViewDocumentMap(); break;
+                case IDM_VIEW_FILEBROWSER: onViewFileBrowser(); break;
+                case IDM_EDIT_CLIPBOARDHISTORY_PANEL: onViewClipboardHistory(); break;
+
+                // Macro commands
+                case IDM_MACRO_STARTRECORDINGMACRO: onMacroStartRecording(); break;
+                case IDM_MACRO_STOPRECORDINGMACRO: onMacroStopRecording(); break;
+                case IDM_MACRO_PLAYBACKRECORDEDMACRO: onMacroPlayback(); break;
+                case IDM_MACRO_RUNMULTIMACRODLG: onMacroRunMultiple(); break;
+
+                // Run commands
+                case IDM_EXECUTE: onRunRun(); break;
+
+                // Default: try to handle via core if possible
+                default:
+                    // For unhandled commands, we could emit a signal or log
+                    qDebug() << "Unhandled command ID:" << commandId;
+                    break;
+            }
+        }
+    });
+
     // Setup UI components
     setupUI();
     connectSignals();
@@ -68,6 +160,16 @@ bool MainWindow::init(Notepad_plus* pNotepad_plus)
 
     // Initialize status bar
     updateStatusBar();
+
+    // Apply shortcuts from NppParameters to registered actions
+    _shortcutManager->applyShortcuts();
+
+    // Connect shortcut manager signals
+    connect(_shortcutManager, &ShortcutManager::shortcutsReloaded,
+            this, &MainWindow::refreshShortcuts);
+
+    // Initialize plugin manager
+    initPlugins();
 
     return true;
 }
@@ -103,6 +205,7 @@ void MainWindow::setupUI()
     _updateTimer = new QTimer(this);
     connect(_updateTimer, &QTimer::timeout, this, [this]() {
         updateStatusBar();
+        updateMenuState();
     });
     _updateTimer->start(500); // Update every 500ms
 }
@@ -248,6 +351,10 @@ void MainWindow::initMenuBar()
     createRunMenu();
     createWindowMenu();
     createHelpMenu();
+    createPluginsMenu();
+
+    // Register all menu actions with shortcut manager
+    registerMenuActionsWithShortcutManager();
 }
 
 void MainWindow::createFileMenu()
@@ -339,27 +446,27 @@ void MainWindow::createEditMenu()
 
     // Insert submenu
     auto* insertMenu = _editMenu->addMenu(tr("Insert"));
-    insertMenu->addAction(tr("Current Date and Time"));
-    insertMenu->addAction(tr("Full File Path"));
-    insertMenu->addAction(tr("File Name"));
-    insertMenu->addAction(tr("Current Directory"));
+    insertMenu->addAction(tr("Current Date and Time"), this, &MainWindow::onEditInsertDateTime);
+    insertMenu->addAction(tr("Full File Path"), this, &MainWindow::onEditInsertFullPath);
+    insertMenu->addAction(tr("File Name"), this, &MainWindow::onEditInsertFileName);
+    insertMenu->addAction(tr("Current Directory"), this, &MainWindow::onEditInsertDirPath);
 
     // Copy to Clipboard submenu
     auto* copyToMenu = _editMenu->addMenu(tr("Copy to Clipboard"));
-    copyToMenu->addAction(tr("Current Full File Path"));
-    copyToMenu->addAction(tr("Current File Name"));
-    copyToMenu->addAction(tr("Current Directory Path"));
+    copyToMenu->addAction(tr("Current Full File Path"), this, &MainWindow::onEditCopyFullPath);
+    copyToMenu->addAction(tr("Current File Name"), this, &MainWindow::onEditCopyFileName);
+    copyToMenu->addAction(tr("Current Directory Path"), this, &MainWindow::onEditCopyDirPath);
 
     // Indent submenu
     auto* indentMenu = _editMenu->addMenu(tr("Indent"));
-    indentMenu->addAction(tr("Increase Line Indent"));
-    indentMenu->addAction(tr("Decrease Line Indent"));
+    indentMenu->addAction(tr("Increase Line Indent"), this, &MainWindow::onEditIncreaseIndent);
+    indentMenu->addAction(tr("Decrease Line Indent"), this, &MainWindow::onEditDecreaseIndent);
 
     // Convert submenu
     auto* convertMenu = _editMenu->addMenu(tr("Convert Case to"));
-    convertMenu->addAction(tr("Uppercase"));
-    convertMenu->addAction(tr("Lowercase"));
-    convertMenu->addAction(tr("Title Case"));
+    convertMenu->addAction(tr("Uppercase"), this, &MainWindow::onEditUpperCase);
+    convertMenu->addAction(tr("Lowercase"), this, &MainWindow::onEditLowerCase);
+    convertMenu->addAction(tr("Title Case"), this, &MainWindow::onEditTitleCase);
 }
 
 void MainWindow::createSearchMenu()
@@ -414,7 +521,7 @@ void MainWindow::createViewMenu()
     fullScreenAction->setShortcut(QKeySequence::FullScreen);
 
     viewModeMenu->addAction(tr("&Post-it"), this, &MainWindow::onViewPostIt);
-    viewModeMenu->addAction(tr("Distraction &Free Mode"));
+    viewModeMenu->addAction(tr("Distraction &Free Mode"), this, &MainWindow::onViewDistractionFreeMode);
 
     _viewMenu->addSeparator();
 
@@ -424,37 +531,61 @@ void MainWindow::createViewMenu()
     _viewMenu->addSeparator();
 
     // Word Wrap
-    auto* wordWrapAction = _viewMenu->addAction(tr("Word &Wrap"), this, &MainWindow::onViewWordWrap);
-    wordWrapAction->setCheckable(true);
+    _wordWrapAction = _viewMenu->addAction(tr("Word &Wrap"), this, &MainWindow::onViewWordWrap);
+    _wordWrapAction->setCheckable(true);
 
     // Show Symbols submenu
     auto* symbolsMenu = _viewMenu->addMenu(tr("Show Symbol"));
-    auto* showWhiteSpaceAction = symbolsMenu->addAction(tr("Show White Space and TAB"), this, &MainWindow::onViewShowWhiteSpace);
-    showWhiteSpaceAction->setCheckable(true);
+    _showWhiteSpaceAction = symbolsMenu->addAction(tr("Show White Space and TAB"), this, &MainWindow::onViewShowWhiteSpace);
+    _showWhiteSpaceAction->setCheckable(true);
 
-    auto* showEOLAction = symbolsMenu->addAction(tr("Show End of Line"), this, &MainWindow::onViewShowEOL);
-    showEOLAction->setCheckable(true);
+    _showEOLAction = symbolsMenu->addAction(tr("Show End of Line"), this, &MainWindow::onViewShowEOL);
+    _showEOLAction->setCheckable(true);
 
-    auto* showIndentAction = symbolsMenu->addAction(tr("Show Indent Guide"), this, &MainWindow::onViewShowIndentGuide);
-    showIndentAction->setCheckable(true);
+    _showIndentGuideAction = symbolsMenu->addAction(tr("Show Indent Guide"), this, &MainWindow::onViewShowIndentGuide);
+    _showIndentGuideAction->setCheckable(true);
 
     _viewMenu->addSeparator();
 
     // Zoom submenu
     auto* zoomMenu = _viewMenu->addMenu(tr("Zoom"));
-    zoomMenu->addAction(tr("Zoom &In"));
-    zoomMenu->addAction(tr("Zoom &Out"));
-    zoomMenu->addAction(tr("Restore Default Zoom"));
+    auto* zoomInAction = zoomMenu->addAction(tr("Zoom &In"), this, [this]() {
+        if (_pNotepad_plus) {
+            ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+            if (view) view->execute(SCI_ZOOMIN);
+        }
+    });
+    zoomInAction->setShortcut(QKeySequence::ZoomIn);
+
+    auto* zoomOutAction = zoomMenu->addAction(tr("Zoom &Out"), this, [this]() {
+        if (_pNotepad_plus) {
+            ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+            if (view) view->execute(SCI_ZOOMOUT);
+        }
+    });
+    zoomOutAction->setShortcut(QKeySequence::ZoomOut);
+
+    zoomMenu->addAction(tr("Restore Default Zoom"), this, [this]() {
+        if (_pNotepad_plus) {
+            ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+            if (view) view->execute(SCI_SETZOOM, 0);
+        }
+    });
 
     _viewMenu->addSeparator();
 
     // Panels submenu
     auto* panelsMenu = _viewMenu->addMenu(tr("Panel"));
-    panelsMenu->addAction(tr("Function &List"), this, &MainWindow::onViewFunctionList);
-    panelsMenu->addAction(tr("&Project Panel"), this, &MainWindow::onViewProjectPanel);
-    panelsMenu->addAction(tr("&Document Map"), this, &MainWindow::onViewDocumentMap);
-    panelsMenu->addAction(tr("&Clipboard History"), this, &MainWindow::onViewClipboardHistory);
-    panelsMenu->addAction(tr("Folder as &Workspace"), this, &MainWindow::onViewFileBrowser);
+    auto* functionListAction = panelsMenu->addAction(tr("Function &List"), this, &MainWindow::onViewFunctionList);
+    functionListAction->setCheckable(true);
+    auto* projectPanelAction = panelsMenu->addAction(tr("&Project Panel"), this, &MainWindow::onViewProjectPanel);
+    projectPanelAction->setCheckable(true);
+    auto* documentMapAction = panelsMenu->addAction(tr("&Document Map"), this, &MainWindow::onViewDocumentMap);
+    documentMapAction->setCheckable(true);
+    auto* clipboardHistoryAction = panelsMenu->addAction(tr("&Clipboard History"), this, &MainWindow::onViewClipboardHistory);
+    clipboardHistoryAction->setCheckable(true);
+    auto* fileBrowserAction = panelsMenu->addAction(tr("Folder as &Workspace"), this, &MainWindow::onViewFileBrowser);
+    fileBrowserAction->setCheckable(true);
 
     // Tab Bar
     _viewMenu->addSeparator();
@@ -559,7 +690,7 @@ void MainWindow::createLanguageMenu()
     }
 
     _languageMenu->addSeparator();
-    _languageMenu->addAction(tr("Define your language..."));
+    _languageMenu->addAction(tr("Define your language..."), this, &MainWindow::onLanguageDefineUserLang);
     _languageMenu->addAction(tr("User-Defined"));
 }
 
@@ -587,6 +718,18 @@ void MainWindow::createSettingsMenu()
 
     // Edit Popup ContextMenu
     _settingsMenu->addAction(tr("Edit Popup ContextMenu"));
+
+    _settingsMenu->addSeparator();
+
+    // Plugin Manager
+    _settingsMenu->addAction(tr("Plugins &Admin..."), this, &MainWindow::onSettingsPluginManager);
+}
+
+void MainWindow::createPluginsMenu()
+{
+    // Plugins menu is created dynamically after plugins are loaded
+    // This will be populated by initPlugins()
+    _pluginsMenu = nullptr;
 }
 
 void MainWindow::createMacroMenu()
@@ -662,7 +805,7 @@ void MainWindow::createWindowMenu()
     _windowMenu->addSeparator();
 
     // Window list
-    _windowMenu->addAction(tr("Window List"));
+    _windowMenu->addAction(tr("Window List"), this, &MainWindow::onWindowList);
 }
 
 void MainWindow::createHelpMenu()
@@ -675,16 +818,146 @@ void MainWindow::createHelpMenu()
     _helpMenu->addSeparator();
 
     // Command Line Arguments
-    _helpMenu->addAction(tr("Command Line Arguments..."));
+    _helpMenu->addAction(tr("Command Line Arguments..."), this, &MainWindow::onHelpCmdLineArgs);
 
     // Debug Info
-    _helpMenu->addAction(tr("Debug Info..."));
+    _helpMenu->addAction(tr("Debug Info..."), this, &MainWindow::onHelpDebugInfo);
 }
 
 void MainWindow::updateMenuState()
 {
     // Update menu items based on current document state
-    // This will be called when document state changes
+    if (!_pNotepad_plus) {
+        return;
+    }
+
+    ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+    Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+
+    if (!view || !buffer) {
+        return;
+    }
+
+    // Update Edit menu actions based on document state
+    bool canUndo = view->execute(SCI_CANUNDO) != 0;
+    bool canRedo = view->execute(SCI_CANREDO) != 0;
+    bool hasSelection = view->hasSelection();
+    bool isReadOnly = buffer->isReadOnly();
+
+    // Find and update Edit menu actions
+    if (_editMenu) {
+        for (QAction* action : _editMenu->actions()) {
+            QString text = action->text();
+            if (text.contains("Undo")) {
+                action->setEnabled(canUndo && !isReadOnly);
+            } else if (text.contains("Redo")) {
+                action->setEnabled(canRedo && !isReadOnly);
+            } else if (text.contains("Cut")) {
+                action->setEnabled(hasSelection && !isReadOnly);
+            } else if (text.contains("Copy")) {
+                action->setEnabled(hasSelection);
+            } else if (text.contains("Paste")) {
+                action->setEnabled(view->execute(SCI_CANPASTE) != 0 && !isReadOnly);
+            } else if (text.contains("Delete")) {
+                action->setEnabled(!isReadOnly);
+            }
+        }
+    }
+
+    // Update View menu check states
+    if (_wordWrapAction) {
+        _wordWrapAction->setChecked(view->isWrap());
+    }
+    if (_showWhiteSpaceAction) {
+        _showWhiteSpaceAction->setChecked(view->isViewWhiteSpace());
+    }
+    if (_showEOLAction) {
+        _showEOLAction->setChecked(view->isViewEOL());
+    }
+    if (_showIndentGuideAction) {
+        _showIndentGuideAction->setChecked(view->isShownIndentGuide());
+    }
+
+    // Update panel visibility check states in View menu
+    // This is done by finding the Panel submenu and updating actions
+    if (_viewMenu) {
+        for (QAction* action : _viewMenu->actions()) {
+            if (action->menu() && action->text() == tr("Panel")) {
+                QMenu* panelsMenu = action->menu();
+                for (QAction* panelAction : panelsMenu->actions()) {
+                    QString panelText = panelAction->text();
+                    if (panelText.contains("Function")) {
+                        panelAction->setChecked(isPanelVisible("functionList"));
+                    } else if (panelText.contains("Project")) {
+                        panelAction->setChecked(isPanelVisible("projectPanel"));
+                    } else if (panelText.contains("Document Map")) {
+                        panelAction->setChecked(isPanelVisible("documentMap"));
+                    } else if (panelText.contains("Clipboard")) {
+                        panelAction->setChecked(isPanelVisible("clipboardHistory"));
+                    } else if (panelText.contains("Workspace") || panelText.contains("Folder")) {
+                        panelAction->setChecked(isPanelVisible("fileBrowser"));
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    // Update Language menu - check the current language
+    if (_languageMenu && buffer) {
+        LangType currentLang = buffer->getLangType();
+        for (QAction* action : _languageMenu->actions()) {
+            if (action->isCheckable()) {
+                QString langName = action->text();
+                LangType actionLang = L_TEXT;
+
+                // Map language name to LangType
+                if (langName == "Normal Text") actionLang = L_TEXT;
+                else if (langName == "C") actionLang = L_C;
+                else if (langName == "C++") actionLang = L_CPP;
+                else if (langName == "C#") actionLang = L_CS;
+                else if (langName == "Java") actionLang = L_JAVA;
+                else if (langName == "Python") actionLang = L_PYTHON;
+                else if (langName == "JavaScript") actionLang = L_JAVASCRIPT;
+                else if (langName == "HTML") actionLang = L_HTML;
+                else if (langName == "CSS") actionLang = L_CSS;
+                else if (langName == "XML") actionLang = L_XML;
+                else if (langName == "JSON") actionLang = L_JSON;
+                else if (langName == "SQL") actionLang = L_SQL;
+                else if (langName == "PHP") actionLang = L_PHP;
+                else if (langName == "Ruby") actionLang = L_RUBY;
+                else if (langName == "Go") actionLang = L_GOLANG;
+                else if (langName == "Rust") actionLang = L_RUST;
+                else if (langName == "TypeScript") actionLang = L_TYPESCRIPT;
+                else if (langName == "Shell" || langName == "Bash") actionLang = L_BASH;
+                else if (langName == "PowerShell") actionLang = L_POWERSHELL;
+                else if (langName == "Batch") actionLang = L_BATCH;
+                else if (langName == "Makefile") actionLang = L_MAKEFILE;
+                else if (langName == "CMake") actionLang = L_CMAKE;
+                else if (langName == "YAML") actionLang = L_YAML;
+                else if (langName == "Lua") actionLang = L_LUA;
+                else if (langName == "Perl") actionLang = L_PERL;
+                else if (langName == "R") actionLang = L_R;
+                else if (langName == "Swift") actionLang = L_SWIFT;
+                else if (langName == "VB") actionLang = L_VB;
+                else if (langName == "ActionScript") actionLang = L_FLASH;
+                else if (langName == "CoffeeScript") actionLang = L_COFFEESCRIPT;
+                else if (langName == "Erlang") actionLang = L_ERLANG;
+                else if (langName == "Fortran") actionLang = L_FORTRAN;
+                else if (langName == "Haskell") actionLang = L_HASKELL;
+                else if (langName == "Lisp") actionLang = L_LISP;
+                else if (langName == "MATLAB") actionLang = L_MATLAB;
+                else if (langName == "Objective-C") actionLang = L_OBJC;
+                else if (langName == "Pascal") actionLang = L_PASCAL;
+                else if (langName == "Raku") actionLang = L_RAKU;
+                else if (langName == "Tcl") actionLang = L_TCL;
+                else if (langName == "Verilog") actionLang = L_VERILOG;
+                else if (langName == "VHDL") actionLang = L_VHDL;
+
+                action->setChecked(currentLang == actionLang);
+            }
+        }
+    }
 }
 
 // ============================================================================
@@ -737,6 +1010,30 @@ void MainWindow::initToolBar()
 void MainWindow::updateToolBarState()
 {
     // Update toolbar button states based on current document state
+    if (!_mainToolBar || !_pNotepad_plus) {
+        return;
+    }
+
+    ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+    Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+
+    if (!view || !buffer) {
+        return;
+    }
+
+    // Update toolbar button states
+    bool canUndo = view->execute(SCI_CANUNDO) != 0;
+    bool canRedo = view->execute(SCI_CANREDO) != 0;
+    bool hasSelection = view->hasSelection();
+    bool isReadOnly = buffer->isReadOnly();
+
+    // Enable/disable toolbar buttons based on state
+    // Note: Toolbar button enabling/disabling would be implemented
+    // in the ToolBar class. This is a placeholder for that logic.
+    (void)canUndo;
+    (void)canRedo;
+    (void)hasSelection;
+    (void)isReadOnly;
 }
 
 // ============================================================================
@@ -770,18 +1067,84 @@ void MainWindow::updateStatusBar()
         return;
     }
 
-    // Update status bar information
-    // This would typically get information from the current ScintillaEditView
-    // For now, we'll leave placeholders
+    // Update status bar information from the current editor
+    ScintillaEditView* view = nullptr;
+    Buffer* buffer = nullptr;
 
-    // Line and column
-    _statusBar->setText(tr("Ln 1, Col 1"), 4);
+    if (_pNotepad_plus) {
+        view = _pNotepad_plus->getCurrentEditView();
+        buffer = _pNotepad_plus->getCurrentBuffer();
+    }
 
-    // Selection info
-    _statusBar->setText(tr("Sel 0 | 0"), 5);
+    if (view && buffer) {
+        // Get cursor position
+        intptr_t pos = view->execute(SCI_GETCURRENTPOS);
+        intptr_t line = view->execute(SCI_LINEFROMPOSITION, pos);
+        intptr_t col = view->execute(SCI_GETCOLUMN, pos);
 
-    // Zoom level
-    _statusBar->setText(tr("100%"), 6);
+        // Line and column (1-based)
+        _statusBar->setText(tr("Ln %1, Col %2").arg(line + 1).arg(col + 1), 4);
+
+        // Selection info
+        intptr_t selStart = view->execute(SCI_GETSELECTIONSTART);
+        intptr_t selEnd = view->execute(SCI_GETSELECTIONEND);
+        intptr_t selLength = selEnd - selStart;
+        intptr_t selLines = (selLength > 0) ?
+            (view->execute(SCI_LINEFROMPOSITION, selEnd) - view->execute(SCI_LINEFROMPOSITION, selStart) + 1) : 0;
+
+        if (selLength > 0) {
+            _statusBar->setText(tr("Sel %1 | %2").arg(selLength).arg(selLines), 5);
+        } else {
+            _statusBar->setText(tr("Sel 0 | 0"), 5);
+        }
+
+        // Document type / Language
+        LangType langType = buffer->getLangType();
+        QString langName = QString::fromStdWString(NppParameters::getInstance().getLangFromLangType(langType));
+        if (langName.isEmpty()) {
+            langName = tr("Normal text file");
+        }
+        _statusBar->setText(langName, 3);
+
+        // Encoding
+        UniMode encoding = buffer->getUnicodeMode();
+        QString encodingStr;
+        switch (encoding) {
+            case uniUTF8: encodingStr = "UTF-8"; break;
+            case uniUTF8BOM: encodingStr = "UTF-8 BOM"; break;
+            case uni16BE: encodingStr = "UTF-16 BE"; break;
+            case uni16LE: encodingStr = "UTF-16 LE"; break;
+            case uni16BE_NoBOM: encodingStr = "UTF-16 BE"; break;
+            case uni16LE_NoBOM: encodingStr = "UTF-16 LE"; break;
+            case uniCookie: encodingStr = "UTF-8"; break;
+            default: encodingStr = "ANSI"; break;
+        }
+        _statusBar->setText(encodingStr, 2);
+
+        // EOL format
+        EolType eol = buffer->getEolFormat();
+        QString eolStr;
+        switch (eol) {
+            case EolType::windows: eolStr = "Windows (CRLF)"; break;
+            case EolType::macos: eolStr = "Macintosh (CR)"; break;
+            case EolType::unix: eolStr = "Unix (LF)"; break;
+            default: eolStr = "Windows (CRLF)"; break;
+        }
+        _statusBar->setText(eolStr, 1);
+
+        // Zoom level
+        int zoom = static_cast<int>(view->execute(SCI_GETZOOM));
+        int zoomPercent = 100 + (zoom * 10);  // Each zoom step is 10%
+        _statusBar->setText(tr("%1%").arg(zoomPercent), 6);
+
+        // Update document modification indicator in title
+        updateTitle();
+    } else {
+        // Default values when no document is open
+        _statusBar->setText(tr("Ln 1, Col 1"), 4);
+        _statusBar->setText(tr("Sel 0 | 0"), 5);
+        _statusBar->setText(tr("100%"), 6);
+    }
 }
 
 // ============================================================================
@@ -1110,7 +1473,9 @@ void MainWindow::dropEvent(QDropEvent* event)
 
 void MainWindow::onFileNew()
 {
-    // TODO: Call Notepad_plus::fileNew()
+    if (_pNotepad_plus) {
+        _pNotepad_plus->fileNew();
+    }
 }
 
 void MainWindow::onFileOpen()
@@ -1119,15 +1484,16 @@ void MainWindow::onFileOpen()
         tr("Open File"), QString(),
         tr("All Files (*);;Text Files (*.txt)"));
 
-    if (!fileName.isEmpty()) {
-        // TODO: Call Notepad_plus::doOpen()
-        (void)fileName;
+    if (!fileName.isEmpty() && _pNotepad_plus) {
+        _pNotepad_plus->doOpen(fileName.toStdWString());
     }
 }
 
 void MainWindow::onFileSave()
 {
-    // TODO: Call Notepad_plus::fileSave()
+    if (_pNotepad_plus) {
+        _pNotepad_plus->fileSave();
+    }
 }
 
 void MainWindow::onFileSaveAs()
@@ -1136,25 +1502,30 @@ void MainWindow::onFileSaveAs()
         tr("Save As"), QString(),
         tr("All Files (*);;Text Files (*.txt)"));
 
-    if (!fileName.isEmpty()) {
-        // TODO: Call Notepad_plus::fileSaveAs()
-        (void)fileName;
+    if (!fileName.isEmpty() && _pNotepad_plus) {
+        _pNotepad_plus->fileSaveAs(BUFFER_INVALID, false);
     }
 }
 
 void MainWindow::onFileSaveAll()
 {
-    // TODO: Call Notepad_plus::fileSaveAll()
+    if (_pNotepad_plus) {
+        _pNotepad_plus->fileSaveAll();
+    }
 }
 
 void MainWindow::onFileClose()
 {
-    // TODO: Call Notepad_plus::fileClose()
+    if (_pNotepad_plus) {
+        _pNotepad_plus->fileClose();
+    }
 }
 
 void MainWindow::onFileCloseAll()
 {
-    // TODO: Call Notepad_plus::fileCloseAll()
+    if (_pNotepad_plus) {
+        _pNotepad_plus->fileCloseAll(true, false);
+    }
 }
 
 void MainWindow::onFileExit()
@@ -1168,37 +1539,245 @@ void MainWindow::onFileExit()
 
 void MainWindow::onEditUndo()
 {
-    // TODO: Call ScintillaEditView::execute(SCI_UNDO)
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->execute(SCI_UNDO);
+        }
+    }
 }
 
 void MainWindow::onEditRedo()
 {
-    // TODO: Call ScintillaEditView::execute(SCI_REDO)
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->execute(SCI_REDO);
+        }
+    }
 }
 
 void MainWindow::onEditCut()
 {
-    // TODO: Call ScintillaEditView::execute(SCI_CUT)
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->execute(SCI_CUT);
+        }
+    }
 }
 
 void MainWindow::onEditCopy()
 {
-    // TODO: Call ScintillaEditView::execute(SCI_COPY)
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->execute(SCI_COPY);
+        }
+    }
 }
 
 void MainWindow::onEditPaste()
 {
-    // TODO: Call ScintillaEditView::execute(SCI_PASTE)
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->execute(SCI_PASTE);
+        }
+    }
 }
 
 void MainWindow::onEditDelete()
 {
-    // TODO: Call ScintillaEditView::execute(SCI_CLEAR)
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->execute(SCI_CLEAR);
+        }
+    }
 }
 
 void MainWindow::onEditSelectAll()
 {
-    // TODO: Call ScintillaEditView::execute(SCI_SELECTALL)
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->execute(SCI_SELECTALL);
+        }
+    }
+}
+
+void MainWindow::onEditInsertDateTime()
+{
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            // Get current date and time
+            QString dateTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+            view->execute(SCI_REPLACESEL, 0, reinterpret_cast<sptr_t>(dateTime.toUtf8().constData()));
+        }
+    }
+}
+
+void MainWindow::onEditInsertFullPath()
+{
+    if (_pNotepad_plus) {
+        Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (buffer && view) {
+            std::wstring path = buffer->getFullPathName();
+            QString qPath = QString::fromStdWString(path);
+            view->execute(SCI_REPLACESEL, 0, reinterpret_cast<sptr_t>(qPath.toUtf8().constData()));
+        }
+    }
+}
+
+void MainWindow::onEditInsertFileName()
+{
+    if (_pNotepad_plus) {
+        Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (buffer && view) {
+            std::wstring fileName = buffer->getFileName();
+            QString qFileName = QString::fromStdWString(fileName);
+            view->execute(SCI_REPLACESEL, 0, reinterpret_cast<sptr_t>(qFileName.toUtf8().constData()));
+        }
+    }
+}
+
+void MainWindow::onEditInsertDirPath()
+{
+    if (_pNotepad_plus) {
+        Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (buffer && view) {
+            std::wstring path = buffer->getFullPathName();
+            size_t lastSlash = path.find_last_of(L"/\\");
+            if (lastSlash != std::wstring::npos) {
+                std::wstring dir = path.substr(0, lastSlash);
+                QString qDir = QString::fromStdWString(dir);
+                view->execute(SCI_REPLACESEL, 0, reinterpret_cast<sptr_t>(qDir.toUtf8().constData()));
+            }
+        }
+    }
+}
+
+void MainWindow::onEditCopyFullPath()
+{
+    if (_pNotepad_plus) {
+        Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+        if (buffer) {
+            std::wstring path = buffer->getFullPathName();
+            QClipboard* clipboard = QApplication::clipboard();
+            clipboard->setText(QString::fromStdWString(path));
+        }
+    }
+}
+
+void MainWindow::onEditCopyFileName()
+{
+    if (_pNotepad_plus) {
+        Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+        if (buffer) {
+            std::wstring fileName = buffer->getFileName();
+            QClipboard* clipboard = QApplication::clipboard();
+            clipboard->setText(QString::fromStdWString(fileName));
+        }
+    }
+}
+
+void MainWindow::onEditCopyDirPath()
+{
+    if (_pNotepad_plus) {
+        Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+        if (buffer) {
+            std::wstring path = buffer->getFullPathName();
+            size_t lastSlash = path.find_last_of(L"/\\");
+            if (lastSlash != std::wstring::npos) {
+                std::wstring dir = path.substr(0, lastSlash);
+                QClipboard* clipboard = QApplication::clipboard();
+                clipboard->setText(QString::fromStdWString(dir));
+            }
+        }
+    }
+}
+
+void MainWindow::onEditIncreaseIndent()
+{
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->execute(SCI_TAB);
+        }
+    }
+}
+
+void MainWindow::onEditDecreaseIndent()
+{
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->execute(SCI_BACKTAB);
+        }
+    }
+}
+
+void MainWindow::onEditUpperCase()
+{
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->convertSelectedTextToUpperCase();
+        }
+    }
+}
+
+void MainWindow::onEditLowerCase()
+{
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            view->convertSelectedTextToLowerCase();
+        }
+    }
+}
+
+void MainWindow::onEditTitleCase()
+{
+    // Title case conversion - convert first letter of each word to uppercase
+    if (_pNotepad_plus) {
+        ScintillaEditView* view = _pNotepad_plus->getCurrentEditView();
+        if (view) {
+            // Get selected text
+            QByteArray selectedText;
+            size_t selStart = view->execute(SCI_GETSELECTIONSTART);
+            size_t selEnd = view->execute(SCI_GETSELECTIONEND);
+            if (selEnd > selStart) {
+                size_t len = selEnd - selStart;
+                selectedText.resize(static_cast<int>(len) + 1);
+                view->execute(SCI_GETSELTEXT, 0, reinterpret_cast<sptr_t>(selectedText.data()));
+                QString text = QString::fromUtf8(selectedText);
+
+                // Convert to title case
+                bool newWord = true;
+                for (int i = 0; i < text.length(); ++i) {
+                    if (text[i].isLetter()) {
+                        if (newWord) {
+                            text[i] = text[i].toUpper();
+                            newWord = false;
+                        } else {
+                            text[i] = text[i].toLower();
+                        }
+                    } else {
+                        newWord = true;
+                    }
+                }
+
+                // Replace selection
+                view->execute(SCI_REPLACESEL, 0, reinterpret_cast<sptr_t>(text.toUtf8().constData()));
+            }
+        }
+    }
 }
 
 // ============================================================================
@@ -1207,27 +1786,37 @@ void MainWindow::onEditSelectAll()
 
 void MainWindow::onSearchFind()
 {
-    // TODO: Show FindReplaceDlg
+    if (_pNotepad_plus) {
+        _pNotepad_plus->showFindReplaceDlg(FIND_DLG);
+    }
 }
 
 void MainWindow::onSearchReplace()
 {
-    // TODO: Show FindReplaceDlg with replace tab active
+    if (_pNotepad_plus) {
+        _pNotepad_plus->showFindReplaceDlg(REPLACE_DLG);
+    }
 }
 
 void MainWindow::onSearchFindNext()
 {
-    // TODO: Call Notepad_plus::findNext()
+    if (_pNotepad_plus) {
+        _pNotepad_plus->findNext(1); // 1 = forward direction
+    }
 }
 
 void MainWindow::onSearchFindPrev()
 {
-    // TODO: Call Notepad_plus::findPrev()
+    if (_pNotepad_plus) {
+        _pNotepad_plus->findNext(-1); // -1 = backward direction
+    }
 }
 
 void MainWindow::onSearchGoToLine()
 {
-    // TODO: Show GoToLineDlg
+    if (_pNotepad_plus) {
+        _pNotepad_plus->showGoToLineDlg();
+    }
 }
 
 // ============================================================================
@@ -1244,6 +1833,11 @@ void MainWindow::onViewPostIt()
     togglePostItMode();
 }
 
+void MainWindow::onViewDistractionFreeMode()
+{
+    toggleDistractionFreeMode();
+}
+
 void MainWindow::onViewAlwaysOnTop()
 {
     setAlwaysOnTop(!isAlwaysOnTop());
@@ -1251,48 +1845,57 @@ void MainWindow::onViewAlwaysOnTop()
 
 void MainWindow::onViewWordWrap()
 {
-    // TODO: Toggle word wrap in current view
+    if (!_pNotepad_plus) return;
+    bool enabled = _wordWrapAction ? _wordWrapAction->isChecked() : false;
+    _pNotepad_plus->wrapAllEditors(enabled);
+    updateMenuState();
 }
 
 void MainWindow::onViewShowWhiteSpace()
 {
-    // TODO: Toggle whitespace visibility
+    if (!_pNotepad_plus) return;
+    bool enabled = _showWhiteSpaceAction ? _showWhiteSpaceAction->isChecked() : false;
+    _pNotepad_plus->showWhiteSpace(enabled);
+    updateMenuState();
 }
 
 void MainWindow::onViewShowEOL()
 {
-    // TODO: Toggle EOL visibility
+    if (!_pNotepad_plus) return;
+    bool enabled = _showEOLAction ? _showEOLAction->isChecked() : false;
+    _pNotepad_plus->showEOL(enabled);
+    updateMenuState();
 }
 
 void MainWindow::onViewShowIndentGuide()
 {
-    // TODO: Toggle indent guide visibility
+    if (!_pNotepad_plus) return;
+    bool enabled = _showIndentGuideAction ? _showIndentGuideAction->isChecked() : false;
+    _pNotepad_plus->showIndentGuide(enabled);
+    updateMenuState();
 }
 
 void MainWindow::onViewFunctionList()
 {
-    if (isPanelVisible("functionList")) {
-        showPanel("functionList", false);
-    } else {
-        showPanel("functionList", true);
+    if (_pNotepad_plus) {
+        _pNotepad_plus->toggleFunctionList();
+        updateMenuState();
     }
 }
 
 void MainWindow::onViewProjectPanel()
 {
-    if (isPanelVisible("projectPanel")) {
-        showPanel("projectPanel", false);
-    } else {
-        showPanel("projectPanel", true);
+    if (_pNotepad_plus) {
+        _pNotepad_plus->toggleProjectPanel(0);
+        updateMenuState();
     }
 }
 
 void MainWindow::onViewDocumentMap()
 {
-    if (isPanelVisible("documentMap")) {
-        showPanel("documentMap", false);
-    } else {
-        showPanel("documentMap", true);
+    if (_pNotepad_plus) {
+        _pNotepad_plus->toggleDocumentMap();
+        updateMenuState();
     }
 }
 
@@ -1303,14 +1906,14 @@ void MainWindow::onViewClipboardHistory()
     } else {
         showPanel("clipboardHistory", true);
     }
+    updateMenuState();
 }
 
 void MainWindow::onViewFileBrowser()
 {
-    if (isPanelVisible("fileBrowser")) {
-        showPanel("fileBrowser", false);
-    } else {
-        showPanel("fileBrowser", true);
+    if (_pNotepad_plus) {
+        _pNotepad_plus->toggleFileBrowser();
+        updateMenuState();
     }
 }
 
@@ -1320,27 +1923,37 @@ void MainWindow::onViewFileBrowser()
 
 void MainWindow::onEncodingANSI()
 {
-    // TODO: Set encoding to ANSI
+    if (_pNotepad_plus) {
+        _pNotepad_plus->setEncoding(IDM_FORMAT_AS_UTF_8);
+    }
 }
 
 void MainWindow::onEncodingUTF8()
 {
-    // TODO: Set encoding to UTF-8
+    if (_pNotepad_plus) {
+        _pNotepad_plus->setEncoding(IDM_FORMAT_UTF_8);
+    }
 }
 
 void MainWindow::onEncodingUTF8BOM()
 {
-    // TODO: Set encoding to UTF-8 BOM
+    if (_pNotepad_plus) {
+        _pNotepad_plus->setEncoding(IDM_FORMAT_AS_UTF_8);
+    }
 }
 
 void MainWindow::onEncodingUTF16BE()
 {
-    // TODO: Set encoding to UTF-16 BE
+    if (_pNotepad_plus) {
+        _pNotepad_plus->setEncoding(IDM_FORMAT_UTF_16BE);
+    }
 }
 
 void MainWindow::onEncodingUTF16LE()
 {
-    // TODO: Set encoding to UTF-16 LE
+    if (_pNotepad_plus) {
+        _pNotepad_plus->setEncoding(IDM_FORMAT_UTF_16LE);
+    }
 }
 
 // ============================================================================
@@ -1349,13 +1962,81 @@ void MainWindow::onEncodingUTF16LE()
 
 void MainWindow::onLanguageSelected(QAction* action)
 {
-    if (!action) {
+    if (!action || !_pNotepad_plus) {
         return;
     }
 
     QString langName = action->text();
-    // TODO: Set language via Notepad_plus::setLanguage()
-    (void)langName;
+    // Convert language name to LangType and set it
+    LangType langType = L_TEXT;
+    if (langName == "C") langType = L_C;
+    else if (langName == "C++") langType = L_CPP;
+    else if (langName == "C#") langType = L_CS;
+    else if (langName == "Java") langType = L_JAVA;
+    else if (langName == "Python") langType = L_PYTHON;
+    else if (langName == "JavaScript") langType = L_JAVASCRIPT;
+    else if (langName == "HTML") langType = L_HTML;
+    else if (langName == "CSS") langType = L_CSS;
+    else if (langName == "XML") langType = L_XML;
+    else if (langName == "JSON") langType = L_JSON;
+    else if (langName == "SQL") langType = L_SQL;
+    else if (langName == "PHP") langType = L_PHP;
+    else if (langName == "Ruby") langType = L_RUBY;
+    else if (langName == "Go") langType = L_GOLANG;
+    else if (langName == "Rust") langType = L_RUST;
+    else if (langName == "TypeScript") langType = L_TYPESCRIPT;
+    else if (langName == "Shell" || langName == "Bash") langType = L_BASH;
+    else if (langName == "PowerShell") langType = L_POWERSHELL;
+    else if (langName == "Batch") langType = L_BATCH;
+    else if (langName == "Makefile") langType = L_MAKEFILE;
+    else if (langName == "CMake") langType = L_CMAKE;
+    else if (langName == "Markdown") langType = L_TEXT;  // No markdown lexer yet
+    else if (langName == "YAML") langType = L_YAML;
+    else if (langName == "Lua") langType = L_LUA;
+    else if (langName == "Perl") langType = L_PERL;
+    else if (langName == "R") langType = L_R;
+    else if (langName == "Swift") langType = L_SWIFT;
+    else if (langName == "Kotlin") langType = L_TEXT;  // No kotlin lexer yet
+    else if (langName == "Scala") langType = L_TEXT;  // No scala lexer yet
+    else if (langName == "Groovy") langType = L_TEXT;  // No groovy lexer yet
+    else if (langName == "VB") langType = L_VB;
+    else if (langName == "VBScript") langType = L_VB;
+    else if (langName == "ActionScript") langType = L_FLASH;
+    else if (langName == "CoffeeScript") langType = L_COFFEESCRIPT;
+    else if (langName == "Dart") langType = L_TEXT;  // No dart lexer yet
+    else if (langName == "Elixir") langType = L_TEXT;  // No elixir lexer yet
+    else if (langName == "Erlang") langType = L_ERLANG;
+    else if (langName == "Fortran") langType = L_FORTRAN;
+    else if (langName == "Haskell") langType = L_HASKELL;
+    else if (langName == "Julia") langType = L_TEXT;  // No julia lexer yet
+    else if (langName == "Lisp") langType = L_LISP;
+    else if (langName == "MATLAB") langType = L_MATLAB;
+    else if (langName == "Objective-C") langType = L_OBJC;
+    else if (langName == "Pascal") langType = L_PASCAL;
+    else if (langName == "Raku") langType = L_RAKU;
+    else if (langName == "Tcl") langType = L_TCL;
+    else if (langName == "Verilog") langType = L_VERILOG;
+    else if (langName == "VHDL") langType = L_VHDL;
+
+    // Set the language through the core
+    Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+    if (buffer) {
+        buffer->setLangType(langType);
+        // Update status bar to reflect language change
+        updateStatusBar();
+    }
+}
+
+void MainWindow::onLanguageDefineUserLang()
+{
+    if (!_userDefineDialog) {
+        _userDefineDialog = new QtControls::UserDefineDialog(this);
+        // Initialize with the main edit view
+        ScintillaEditView* mainView = getMainEditView();
+        ScintillaEditView** ppEditView = &mainView;
+        _userDefineDialog->init(ppEditView);
+    }
+    _userDefineDialog->doDialog();
 }
 
 // ============================================================================
@@ -1364,17 +2045,166 @@ void MainWindow::onLanguageSelected(QAction* action)
 
 void MainWindow::onSettingsPreferences()
 {
-    // TODO: Show PreferenceDlg
+    if (!_preferenceDlg) {
+        _preferenceDlg = new QtControls::PreferenceDlg(this);
+    }
+    _preferenceDlg->doDialog();
 }
 
 void MainWindow::onSettingsStyleConfigurator()
 {
-    // TODO: Show WordStyleDlg
+    if (!_wordStyleDlg) {
+        _wordStyleDlg = new QtControls::WordStyleDlg(this);
+        _wordStyleDlg->init();
+    }
+    _wordStyleDlg->doDialog();
 }
 
 void MainWindow::onSettingsShortcutMapper()
 {
-    // TODO: Show ShortcutMapper
+    if (!_shortcutMapper) {
+        _shortcutMapper = new QtControls::ShortcutMapper::ShortcutMapper(this);
+    }
+    _shortcutMapper->doDialog();
+}
+
+void MainWindow::onSettingsPluginManager()
+{
+    if (!_pluginsAdminDlg) {
+        _pluginsAdminDlg = new PluginsAdminDlg(this);
+        _pluginsAdminDlg->create(IDD_PLUGINSADMIN_DLG, false);
+        _pluginsAdminDlg->setPluginsManager(&_pluginsManager);
+    }
+    _pluginsAdminDlg->doDialog(false);
+}
+
+// ============================================================================
+// Plugin Management
+// ============================================================================
+
+void MainWindow::initPlugins()
+{
+    if (!_pNotepad_plus) {
+        return;
+    }
+
+    // Initialize NppData for plugins
+    // Note: Scintilla handles are void* - plugins use these as identifiers
+    NppData nppData;
+    nppData._nppHandle = reinterpret_cast<HWND>(this);
+    // Use the edit view pointers as handles - plugins treat these as opaque handles
+    ScintillaEditView* mainView = _pNotepad_plus->getMainEditView();
+    ScintillaEditView* subView = _pNotepad_plus->getSubEditView();
+    nppData._scintillaMainHandle = reinterpret_cast<HWND>(mainView ? mainView->getHSelf() : nullptr);
+    nppData._scintillaSecondHandle = reinterpret_cast<HWND>(subView ? subView->getHSelf() : nullptr);
+
+    // Initialize plugin manager
+    _pluginsManager.init(nppData);
+
+    // Load plugins from the plugins directory
+    NppParameters& nppParam = NppParameters::getInstance();
+    std::wstring pluginDir = nppParam.getPluginRootDir();
+
+    // Load plugins (without plugin admin list for now)
+    _pluginsManager.loadPlugins(pluginDir.c_str(), nullptr, nullptr);
+
+    // Initialize plugin menu - this registers commands but doesn't create Qt menus
+    _pluginsManager.initMenu(nullptr, false);
+
+    // Create Qt plugins menu if plugins were loaded
+    if (_pluginsManager.hasPlugins()) {
+        populatePluginsMenu();
+    }
+}
+
+void MainWindow::populatePluginsMenu()
+{
+    // Create the Plugins menu before the Window menu
+    if (!_menuBar) {
+        return;
+    }
+
+    // Find the Window menu position to insert before it
+    int windowMenuIndex = -1;
+    for (int i = 0; i < _menuBar->actions().size(); ++i) {
+        if (_menuBar->actions()[i]->menu() == _windowMenu) {
+            windowMenuIndex = i;
+            break;
+        }
+    }
+
+    // Create Plugins menu
+    _pluginsMenu = new QMenu(tr("&Plugins"), this);
+
+    // Add "Plugins Admin..." at the top
+    _pluginsMenu->addAction(tr("Plugins Admin..."), this, &MainWindow::onSettingsPluginManager);
+    _pluginsMenu->addSeparator();
+
+    // Add plugin commands
+    size_t pluginCount = _pluginsManager.getPluginCount();
+    for (size_t i = 0; i < pluginCount; ++i) {
+        const PluginInfo* pluginInfo = _pluginsManager.getPluginInfo(i);
+        if (!pluginInfo) continue;
+
+        // Create submenu for this plugin
+        QString pluginName = QString::fromStdWString(pluginInfo->_funcName);
+        QMenu* pluginSubMenu = _pluginsMenu->addMenu(pluginName);
+
+        // Add plugin commands
+        for (int j = 0; j < pluginInfo->_nbFuncItem; ++j) {
+            const FuncItem& funcItem = pluginInfo->_funcItems[j];
+
+            if (funcItem._pFunc == nullptr) {
+                // Separator
+                pluginSubMenu->addSeparator();
+            } else {
+                QString itemName = QString::fromWCharArray(funcItem._itemName);
+                QAction* action = pluginSubMenu->addAction(itemName, this, &MainWindow::onPluginCommandTriggered);
+                // Store command ID in the action's data
+                action->setData(funcItem._cmdID);
+
+                // Set shortcut if provided
+                if (funcItem._pShKey) {
+                    QKeySequence shortcut;
+                    QString seq;
+                    if (funcItem._pShKey->_isCtrl) seq += "Ctrl+";
+                    if (funcItem._pShKey->_isAlt) seq += "Alt+";
+                    if (funcItem._pShKey->_isShift) seq += "Shift+";
+                    seq += QKeySequence(funcItem._pShKey->_key).toString();
+                    action->setShortcut(QKeySequence(seq));
+                }
+
+                // Set checkable state
+                if (funcItem._init2Check) {
+                    action->setCheckable(true);
+                    action->setChecked(true);
+                }
+            }
+        }
+    }
+
+    // Insert the Plugins menu before the Window menu
+    if (windowMenuIndex >= 0) {
+        _menuBar->insertMenu(_menuBar->actions()[windowMenuIndex], _pluginsMenu);
+    } else {
+        _menuBar->addMenu(_pluginsMenu);
+    }
+}
+
+void MainWindow::onPluginCommandTriggered()
+{
+    QAction* action = qobject_cast<QAction*>(sender());
+    if (!action) return;
+
+    int cmdID = action->data().toInt();
+    if (cmdID <= 0) return;
+
+    // Find and execute the plugin command
+    // The command ID is ID_PLUGINS_CMD + index into _pluginsCommands
+    int commandIndex = cmdID - ID_PLUGINS_CMD;
+    if (commandIndex >= 0) {
+        _pluginsManager.runPluginCommand(static_cast<size_t>(commandIndex));
+    }
 }
 
 // ============================================================================
@@ -1383,22 +2213,30 @@ void MainWindow::onSettingsShortcutMapper()
 
 void MainWindow::onMacroStartRecording()
 {
-    // TODO: Start macro recording
+    if (_pNotepad_plus) {
+        _pNotepad_plus->startMacroRecording();
+    }
 }
 
 void MainWindow::onMacroStopRecording()
 {
-    // TODO: Stop macro recording
+    if (_pNotepad_plus) {
+        _pNotepad_plus->stopMacroRecording();
+    }
 }
 
 void MainWindow::onMacroPlayback()
 {
-    // TODO: Playback recorded macro
+    if (_pNotepad_plus) {
+        _pNotepad_plus->macroPlayback();
+    }
 }
 
 void MainWindow::onMacroRunMultiple()
 {
-    // TODO: Show RunMacroDlg
+    if (_pNotepad_plus) {
+        _pNotepad_plus->showRunMacroDlg();
+    }
 }
 
 // ============================================================================
@@ -1407,12 +2245,21 @@ void MainWindow::onMacroRunMultiple()
 
 void MainWindow::onRunRun()
 {
-    // TODO: Show RunDlg
+    if (_pNotepad_plus) { _pNotepad_plus->showRunDlg(); }
 }
 
 void MainWindow::onRunLaunchInBrowser()
 {
-    // TODO: Launch current file in browser
+    if (!_pNotepad_plus) return;
+    Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+    if (!buffer) return;
+    std::wstring filePath = buffer->getFullPathName();
+    if (filePath.empty()) return;
+    QString url = QString::fromStdWString(filePath);
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        url = QUrl::fromLocalFile(url).toString();
+    }
+    QDesktopServices::openUrl(QUrl(url));
 }
 
 // ============================================================================
@@ -1421,17 +2268,33 @@ void MainWindow::onRunLaunchInBrowser()
 
 void MainWindow::onWindowNewInstance()
 {
-    // TODO: Launch new Notepad++ instance
+    // Launch a new Notepad++ instance
+    QString appPath = QApplication::applicationFilePath();
+    QProcess::startDetached(appPath, QStringList());
 }
 
 void MainWindow::onWindowSplit()
 {
-    // TODO: Split/Unsplit views
+    if (_pNotepad_plus) {
+        _pNotepad_plus->otherView();
+    }
 }
 
 void MainWindow::onWindowCloneToOtherView()
 {
-    // TODO: Clone current document to other view
+    if (_pNotepad_plus) {
+        // Clone current document to other view
+        _pNotepad_plus->otherView();
+    }
+}
+
+void MainWindow::onWindowList()
+{
+    // Show window list dialog
+    // TODO: Implement window list dialog
+    if (_pNotepad_plus) {
+        // Could show a dialog listing all open documents
+    }
 }
 
 // ============================================================================
@@ -1440,12 +2303,28 @@ void MainWindow::onWindowCloneToOtherView()
 
 void MainWindow::onHelpAbout()
 {
-    // TODO: Show AboutDlg
-    QMessageBox::about(this, tr("About Notepad++"),
-        tr("Notepad++ v8.x\n\n"
-           "A free source code editor\n"
-           "Based on the powerful editing component Scintilla\n\n"
-           "Copyright (C)2024 Notepad++ contributors"));
+    if (!_aboutDlg) {
+        _aboutDlg = new QtControls::AboutDlg(this);
+    }
+    _aboutDlg->doDialog();
+}
+
+void MainWindow::onHelpCmdLineArgs()
+{
+    // Create and show command line arguments dialog
+    if (!_cmdLineArgsDlg) {
+        _cmdLineArgsDlg = new QtControls::CmdLineArgsDlg(this);
+    }
+    _cmdLineArgsDlg->doDialog();
+}
+
+void MainWindow::onHelpDebugInfo()
+{
+    // Create and show debug info dialog
+    if (!_debugInfoDlg) {
+        _debugInfoDlg = new QtControls::DebugInfoDlg(this);
+    }
+    _debugInfoDlg->doDialog();
 }
 
 // ============================================================================
@@ -1489,24 +2368,276 @@ void MainWindow::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 
 ScintillaEditView* MainWindow::getMainEditView() const
 {
-    // TODO: Return main edit view from Notepad_plus
+    if (_pNotepad_plus) {
+        return _pNotepad_plus->getMainEditView();
+    }
     return nullptr;
 }
 
 ScintillaEditView* MainWindow::getSubEditView() const
 {
-    // TODO: Return sub edit view from Notepad_plus
+    if (_pNotepad_plus) {
+        return _pNotepad_plus->getSubEditView();
+    }
     return nullptr;
 }
 
 void MainWindow::updateTitle()
 {
-    // TODO: Update window title based on current document
+    if (!_pNotepad_plus) {
+        setWindowTitle("Notepad++");
+        return;
+    }
+
+    Buffer* buffer = _pNotepad_plus->getCurrentBuffer();
+    if (!buffer) {
+        setWindowTitle("Notepad++");
+        return;
+    }
+
+    QString title;
+
+    // File name
+    std::wstring fileName = buffer->getFileName();
+    title = QString::fromStdWString(fileName);
+
+    // Add modification indicator
+    if (buffer->isDirty()) {
+        title = "*" + title;
+    }
+
+    // Add read-only indicator
+    if (buffer->isReadOnly()) {
+        title = title + " [Read Only]";
+    }
+
+    // Add application name
+    title = title + " - Notepad++";
+
+    // Add admin indicator if running as admin (Linux doesn't typically have this concept)
+    // but we could add it if needed
+
+    setWindowTitle(title);
 }
 
 void MainWindow::updateDocumentState()
 {
-    // TODO: Update document-related UI state
+    // Update document-related UI state
+    updateMenuState();
+    updateToolBarState();
+    updateStatusBar();
+    updateTitle();
+}
+
+void MainWindow::refreshShortcuts()
+{
+    if (_shortcutManager) {
+        _shortcutManager->applyShortcuts();
+    }
+}
+
+// ============================================================================
+// Shortcut Management
+// ============================================================================
+
+void MainWindow::registerMenuActionsWithShortcutManager()
+{
+    if (!_shortcutManager) {
+        return;
+    }
+
+    // File menu
+    if (_fileMenu) {
+        for (QAction* action : _fileMenu->actions()) {
+            if (action->menu()) continue; // Skip submenus for now
+            QString text = action->text();
+            if (text.contains("New") && !text.contains("Restore")) {
+                action->setProperty("commandId", IDM_FILE_NEW);
+                _shortcutManager->registerAction(IDM_FILE_NEW, action, QString("File"));
+            } else if (text.contains("Open...")) {
+                action->setProperty("commandId", IDM_FILE_OPEN);
+                _shortcutManager->registerAction(IDM_FILE_OPEN, action, QString("File"));
+            } else if (text.contains("Save") && !text.contains("As") && !text.contains("All")) {
+                action->setProperty("commandId", IDM_FILE_SAVE);
+                _shortcutManager->registerAction(IDM_FILE_SAVE, action, QString("File"));
+            } else if (text.contains("Save As...")) {
+                action->setProperty("commandId", IDM_FILE_SAVEAS);
+                _shortcutManager->registerAction(IDM_FILE_SAVEAS, action, QString("File"));
+            } else if (text.contains("Save All")) {
+                action->setProperty("commandId", IDM_FILE_SAVEALL);
+                _shortcutManager->registerAction(IDM_FILE_SAVEALL, action, QString("File"));
+            } else if (text.contains("Close") && !text.contains("All")) {
+                action->setProperty("commandId", IDM_FILE_CLOSE);
+                _shortcutManager->registerAction(IDM_FILE_CLOSE, action, QString("File"));
+            } else if (text.contains("Close All")) {
+                action->setProperty("commandId", IDM_FILE_CLOSEALL);
+                _shortcutManager->registerAction(IDM_FILE_CLOSEALL, action, QString("File"));
+            } else if (text.contains("Exit")) {
+                action->setProperty("commandId", IDM_FILE_EXIT);
+                _shortcutManager->registerAction(IDM_FILE_EXIT, action, QString("File"));
+            }
+        }
+    }
+
+    // Edit menu
+    if (_editMenu) {
+        for (QAction* action : _editMenu->actions()) {
+            if (action->menu()) continue;
+            QString text = action->text();
+            if (text.contains("Undo")) {
+                action->setProperty("commandId", IDM_EDIT_UNDO);
+                _shortcutManager->registerAction(IDM_EDIT_UNDO, action, QString("Edit"));
+            } else if (text.contains("Redo")) {
+                action->setProperty("commandId", IDM_EDIT_REDO);
+                _shortcutManager->registerAction(IDM_EDIT_REDO, action, QString("Edit"));
+            } else if (text.contains("Cut")) {
+                action->setProperty("commandId", IDM_EDIT_CUT);
+                _shortcutManager->registerAction(IDM_EDIT_CUT, action, QString("Edit"));
+            } else if (text.contains("Copy")) {
+                action->setProperty("commandId", IDM_EDIT_COPY);
+                _shortcutManager->registerAction(IDM_EDIT_COPY, action, QString("Edit"));
+            } else if (text.contains("Paste")) {
+                action->setProperty("commandId", IDM_EDIT_PASTE);
+                _shortcutManager->registerAction(IDM_EDIT_PASTE, action, QString("Edit"));
+            } else if (text.contains("Delete")) {
+                action->setProperty("commandId", IDM_EDIT_DELETE);
+                _shortcutManager->registerAction(IDM_EDIT_DELETE, action, QString("Edit"));
+            } else if (text.contains("Select All")) {
+                action->setProperty("commandId", IDM_EDIT_SELECTALL);
+                _shortcutManager->registerAction(IDM_EDIT_SELECTALL, action, QString("Edit"));
+            }
+        }
+    }
+
+    // Search menu
+    if (_searchMenu) {
+        for (QAction* action : _searchMenu->actions()) {
+            if (action->menu()) continue;
+            QString text = action->text();
+            if (text.contains("Find...")) {
+                action->setProperty("commandId", IDM_SEARCH_FIND);
+                _shortcutManager->registerAction(IDM_SEARCH_FIND, action, QString("Search"));
+            } else if (text.contains("Find Next")) {
+                action->setProperty("commandId", IDM_SEARCH_FINDNEXT);
+                _shortcutManager->registerAction(IDM_SEARCH_FINDNEXT, action, QString("Search"));
+            } else if (text.contains("Find Previous")) {
+                action->setProperty("commandId", IDM_SEARCH_FINDPREV);
+                _shortcutManager->registerAction(IDM_SEARCH_FINDPREV, action, QString("Search"));
+            } else if (text.contains("Replace...")) {
+                action->setProperty("commandId", IDM_SEARCH_REPLACE);
+                _shortcutManager->registerAction(IDM_SEARCH_REPLACE, action, QString("Search"));
+            } else if (text.contains("Go To...")) {
+                action->setProperty("commandId", IDM_SEARCH_GOTOLINE);
+                _shortcutManager->registerAction(IDM_SEARCH_GOTOLINE, action, QString("Search"));
+            }
+        }
+    }
+
+    // View menu - register view mode actions
+    if (_viewMenu) {
+        for (QAction* action : _viewMenu->actions()) {
+            if (action->menu()) {
+                // Handle submenus
+                QMenu* subMenu = action->menu();
+                QString subMenuText = action->text();
+                if (subMenuText == tr("View Mode")) {
+                    for (QAction* viewAction : subMenu->actions()) {
+                        QString viewText = viewAction->text();
+                        if (viewText.contains("Full Screen")) {
+                            viewAction->setProperty("commandId", IDM_VIEW_FULLSCREENTOGGLE);
+                            _shortcutManager->registerAction(IDM_VIEW_FULLSCREENTOGGLE, viewAction, QString("View"));
+                        } else if (viewText.contains("Post-it")) {
+                            viewAction->setProperty("commandId", IDM_VIEW_POSTIT);
+                            _shortcutManager->registerAction(IDM_VIEW_POSTIT, viewAction, QString("View"));
+                        } else if (viewText.contains("Distraction")) {
+                            viewAction->setProperty("commandId", IDM_VIEW_DISTRACTIONFREE);
+                            _shortcutManager->registerAction(IDM_VIEW_DISTRACTIONFREE, viewAction, QString("View"));
+                        }
+                    }
+                } else if (subMenuText == tr("Show Symbol")) {
+                    for (QAction* symbolAction : subMenu->actions()) {
+                        QString symbolText = symbolAction->text();
+                        if (symbolText.contains("White Space")) {
+                            symbolAction->setProperty("commandId", IDM_VIEW_TAB_SPACE);
+                            _shortcutManager->registerAction(IDM_VIEW_TAB_SPACE, symbolAction, QString("View"));
+                        } else if (symbolText.contains("End of Line")) {
+                            symbolAction->setProperty("commandId", IDM_VIEW_EOL);
+                            _shortcutManager->registerAction(IDM_VIEW_EOL, symbolAction, QString("View"));
+                        } else if (symbolText.contains("Indent Guide")) {
+                            symbolAction->setProperty("commandId", IDM_VIEW_INDENT_GUIDE);
+                            _shortcutManager->registerAction(IDM_VIEW_INDENT_GUIDE, symbolAction, QString("View"));
+                        }
+                    }
+                } else if (subMenuText == tr("Panel")) {
+                    for (QAction* panelAction : subMenu->actions()) {
+                        QString panelText = panelAction->text();
+                        if (panelText.contains("Function")) {
+                            panelAction->setProperty("commandId", IDM_VIEW_FUNC_LIST);
+                            _shortcutManager->registerAction(IDM_VIEW_FUNC_LIST, panelAction, QString("View"));
+                        } else if (panelText.contains("Project")) {
+                            panelAction->setProperty("commandId", IDM_VIEW_PROJECT_PANEL_1);
+                            _shortcutManager->registerAction(IDM_VIEW_PROJECT_PANEL_1, panelAction, QString("View"));
+                        } else if (panelText.contains("Document Map")) {
+                            panelAction->setProperty("commandId", IDM_VIEW_DOC_MAP);
+                            _shortcutManager->registerAction(IDM_VIEW_DOC_MAP, panelAction, QString("View"));
+                        } else if (panelText.contains("Clipboard")) {
+                            panelAction->setProperty("commandId", IDM_EDIT_CLIPBOARDHISTORY_PANEL);
+                            _shortcutManager->registerAction(IDM_EDIT_CLIPBOARDHISTORY_PANEL, panelAction, QString("View"));
+                        } else if (panelText.contains("Workspace") || panelText.contains("Folder")) {
+                            panelAction->setProperty("commandId", IDM_VIEW_FILEBROWSER);
+                            _shortcutManager->registerAction(IDM_VIEW_FILEBROWSER, panelAction, QString("View"));
+                        }
+                    }
+                }
+            } else {
+                QString text = action->text();
+                if (text.contains("Always on Top")) {
+                    action->setProperty("commandId", IDM_VIEW_ALWAYSONTOP);
+                    _shortcutManager->registerAction(IDM_VIEW_ALWAYSONTOP, action, QString("View"));
+                } else if (text.contains("Word Wrap")) {
+                    action->setProperty("commandId", IDM_VIEW_WRAP);
+                    _shortcutManager->registerAction(IDM_VIEW_WRAP, action, QString("View"));
+                }
+            }
+        }
+    }
+
+    // Macro menu
+    if (_macroMenu) {
+        for (QAction* action : _macroMenu->actions()) {
+            QString text = action->text();
+            if (text.contains("Start Recording")) {
+                action->setProperty("commandId", IDM_MACRO_STARTRECORDINGMACRO);
+                _shortcutManager->registerAction(IDM_MACRO_STARTRECORDINGMACRO, action, QString("Macro"));
+            } else if (text.contains("Stop Recording")) {
+                action->setProperty("commandId", IDM_MACRO_STOPRECORDINGMACRO);
+                _shortcutManager->registerAction(IDM_MACRO_STOPRECORDINGMACRO, action, QString("Macro"));
+            } else if (text.contains("Playback")) {
+                action->setProperty("commandId", IDM_MACRO_PLAYBACKRECORDEDMACRO);
+                _shortcutManager->registerAction(IDM_MACRO_PLAYBACKRECORDEDMACRO, action, QString("Macro"));
+            } else if (text.contains("Run a Macro Multiple")) {
+                action->setProperty("commandId", IDM_MACRO_RUNMULTIMACRODLG);
+                _shortcutManager->registerAction(IDM_MACRO_RUNMULTIMACRODLG, action, QString("Macro"));
+            } else if (text.contains("Save Current Recorded Macro")) {
+                action->setProperty("commandId", IDM_MACRO_SAVECURRENTMACRO);
+                _shortcutManager->registerAction(IDM_MACRO_SAVECURRENTMACRO, action, QString("Macro"));
+            }
+        }
+    }
+
+    // Run menu
+    if (_runMenu) {
+        for (QAction* action : _runMenu->actions()) {
+            QString text = action->text();
+            if (text.contains("Run...")) {
+                action->setProperty("commandId", IDM_EXECUTE);
+                _shortcutManager->registerAction(IDM_EXECUTE, action, QString("Run"));
+            }
+        }
+    }
+
+    // Apply shortcuts from NppParameters
+    _shortcutManager->applyShortcuts();
 }
 
 } // namespace MainWindow

@@ -2,7 +2,15 @@
 
 ## Current Status (as of 2026-01-30)
 
-The Linux Qt6 port is now **functionally complete** with all core components implemented. The build completes successfully with no errors, and the application starts without crashing.
+The Linux Qt6 port is now **feature complete** with all core components implemented:
+
+- ✅ Session loading - Files restore on startup
+- ✅ UserDefineDialog - Full syntax highlighting configuration
+- ✅ Menu system - All menus integrated with command handlers
+- ✅ Shortcut handling - Global keyboard shortcuts working
+- ✅ Plugin support - Plugin loading and management implemented
+
+The build completes successfully and the application runs without crashing.
 
 ## Build Status
 
@@ -87,24 +95,33 @@ Fixed startup crashes and runtime errors:
 
 ## Remaining Work
 
-### 1. Session Loading (Temporary Workaround)
-Session loading is currently disabled to prevent startup crashes. The `loadLastSession()` call is commented out in `main_linux.cpp`. This needs proper implementation to restore previously open files on startup.
+### 1. Session Loading - COMPLETED ✓
+Session loading has been implemented and re-enabled. The `getSessionFromXmlTree()` function was implemented in `QtCore/Parameters.cpp` and `loadLastSession()` is now active in `main_linux.cpp`.
 
-**Location:** `main_linux.cpp` - search for "DISABLED: Session loading"
+### 2. UserDefineDialog - COMPLETED ✓
+The UserDefineDialog (syntax highlighting configuration) is now fully implemented with all 6 tabs: Folder, Keywords, Comment, Operators, Delimiter, and Numbers.
 
-### 2. UserDefineDialog (Partially Implemented)
-The UserDefineDialog (syntax highlighting configuration) has a basic implementation but may need additional features completed.
+### 3. Menu System Integration - COMPLETED ✓
+The menu system is now fully integrated with the Qt6 main window. All menus are connected to their command handlers with dynamic state updates.
 
-**Location:** `QtControls/UserDefineDialog/`
+### 4. Accelerator/Shortcut Handling - COMPLETED ✓
+Global shortcut/accelerator handling is now fully implemented via ShortcutManager and ShortcutMapper.
 
-### 3. Menu System Integration
-The menu system needs to be fully integrated with the Qt6 main window.
+### 5. Plugin Support - COMPLETED ✓
+Plugin loading and management system for Linux has been implemented:
 
-### 3. Accelerator/Shortcut Handling
-Global shortcut/accelerator handling needs implementation.
+- **PluginsManagerLinux.cpp** - Linux-specific plugin loader using dlopen/dlsym
+- **PluginData.cpp** - Linux implementation of PluginUpdateInfo data structures
+- **Plugin loading** - Loads .so files from ~/.local/share/notepad++/plugins/
+- **Plugin menu** - Plugins Admin dialog accessible from Settings menu
+- **NppData passing** - Plugins receive proper NppData struct with window handles
+- **Notification support** - Plugins receive NPPN_* notifications
+- **Message proc** - Plugins can handle messages via messageProc
 
-### 4. Plugin Support
-Plugin loading and management system for Linux needs implementation.
+**Key files:**
+- `PowerEditor/src/MISC/PluginsManager/PluginsManagerLinux.cpp`
+- `PowerEditor/src/QtControls/PluginsAdmin/PluginData.cpp`
+- `PowerEditor/src/QtControls/MainWindow/Notepad_plus_Window.cpp` (initPlugins)
 
 ### 5. Tray Icon
 System tray icon support (if applicable on the target Linux desktop environment).

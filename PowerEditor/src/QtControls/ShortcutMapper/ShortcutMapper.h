@@ -9,6 +9,7 @@
 #pragma once
 
 #include "../StaticDialog/StaticDialog.h"
+#include "../Shortcut/Shortcut.h"
 #include <vector>
 #include <memory>
 
@@ -28,20 +29,8 @@ namespace ShortcutMapper {
 // Grid state matching the Windows version
 enum class GridState { STATE_MENU, STATE_MACRO, STATE_USER, STATE_PLUGIN, STATE_SCINTILLA };
 
-// Key combination structure
-struct KeyCombo {
-    bool _isCtrl = false;
-    bool _isAlt = false;
-    bool _isShift = false;
-    unsigned char _key = 0;
-
-    bool operator==(const KeyCombo& other) const {
-        return (_isCtrl == other._isCtrl) &&
-               (_isAlt == other._isAlt) &&
-               (_isShift == other._isShift) &&
-               (_key == other._key);
-    }
-};
+// Use global KeyCombo from Shortcut.h
+using ::KeyCombo;
 
 // Shortcut data structure for the grid
 struct ShortcutData {
@@ -144,6 +133,12 @@ private:
     std::vector<ShortcutData> _userShortcuts;
     std::vector<ShortcutData> _pluginShortcuts;
     std::vector<ShortcutData> _scintillaShortcuts;
+
+    // Load shortcuts from NppParameters
+    void loadShortcutsFromParameters();
+
+    // Get command ID for a shortcut at the given index
+    int getCommandIdForShortcut(size_t index) const;
 };
 
 } // namespace ShortcutMapper

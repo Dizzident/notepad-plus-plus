@@ -20,6 +20,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
+#include <dlfcn.h>
 #include "Common.h"
 #endif
 
@@ -57,7 +58,13 @@ struct PluginInfo
 			::DestroyMenu(_pluginMenu);
 
 		if (_hLib)
+		{
+#ifdef _WIN32
 			::FreeLibrary(_hLib);
+#else
+			dlclose(_hLib);
+#endif
+		}
 	}
 
 	HINSTANCE _hLib = nullptr;
@@ -127,6 +134,16 @@ public:
 	bool allocateMarker(int numberRequired, int* start);
 	bool allocateIndicator(int numberRequired, int* start);
 	std::wstring getLoadedPluginNames() const;
+
+	// Linux-specific: Get plugin info for Qt menu integration
+#ifndef _WIN32
+	size_t getPluginCount() const { return _pluginInfos.size(); }
+	const PluginInfo* getPluginInfo(size_t index) const {
+		if (index < _pluginInfos.size()) return _pluginInfos[index].get();
+		return nullptr;
+	}
+	const std::vector<PluginCommand>& getPluginCommands() const { return _pluginsCommands; }
+#endif
 
 private:
 	NppData _nppData;

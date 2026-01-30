@@ -10,10 +10,8 @@
 
 #include "../StaticDialog/StaticDialog.h"
 #include "PluginViewList.h"
-#include "../../WinControls/PluginsAdmin/pluginsAdminRes.h"
 
-// Include the shared data structures from Windows header
-// These are platform-agnostic and shared between Windows and Linux
+// Include Qt headers
 #include <QString>
 #include <QTabWidget>
 #include <QLineEdit>
@@ -25,13 +23,22 @@
 
 // Forward declaration
 class PluginsManager;
+class Version;
 
-// Data structures from Windows pluginsAdmin.h - these are platform-agnostic
-struct Version;
-struct PluginUpdateInfo;
-struct NppCurrentStatus;
+// Data structures for plugin management - platform-agnostic definitions
+struct NppCurrentStatus {
+    bool _isAdminMode = false;
+    bool _isInProgramFiles = true;
+    bool _isAppDataPluginsAllowed = false;
+    std::wstring _nppInstallPath;
+    std::wstring _appdataPath;
+    bool shouldLaunchInAdmMode() const { return _isInProgramFiles; }
+};
+
 enum LIST_TYPE { AVAILABLE_LIST, UPDATES_LIST, INSTALLED_LIST, INCOMPATIBLE_LIST };
-enum COLUMN_TYPE : int;
+
+// Forward declaration - defined in PluginViewList.h
+struct PluginUpdateInfo;
 
 namespace QtControls {
 

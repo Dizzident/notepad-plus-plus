@@ -7,7 +7,6 @@
 // at your option any later version.
 
 #include "PluginViewList.h"
-#include "../../WinControls/PluginsAdmin/pluginsAdmin.h"
 #include <QLabel>
 #include <QCheckBox>
 #include <QHBoxLayout>

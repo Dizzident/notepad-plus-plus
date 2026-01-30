@@ -31,6 +31,7 @@ set(QTCONTROLS_SOURCES
     AboutDlg/CmdLineArgsDlg.cpp
     TreeView/TreeView.cpp
     ShortcutMapper/ShortcutMapper.cpp
+    ShortcutManager/ShortcutManager.cpp
     WordStyleDlg/WordStyleDlg.cpp
     UserDefineDialog/UserDefineDialog.cpp
     Preference/preferenceDlg.cpp
@@ -83,6 +84,7 @@ set(QTCONTROLS_HEADERS
     AboutDlg/CmdLineArgsDlg.h
     TreeView/TreeView.h
     ShortcutMapper/ShortcutMapper.h
+    ShortcutManager/ShortcutManager.h
     WordStyleDlg/WordStyleDlg.h
     UserDefineDialog/UserDefineDialog.h
     Preference/preferenceDlg.h
@@ -125,6 +127,7 @@ target_include_directories(QtControls PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/AboutDlg
     ${CMAKE_CURRENT_SOURCE_DIR}/TreeView
     ${CMAKE_CURRENT_SOURCE_DIR}/ShortcutMapper
+    ${CMAKE_CURRENT_SOURCE_DIR}/ShortcutManager
     ${CMAKE_CURRENT_SOURCE_DIR}/WordStyleDlg
     ${CMAKE_CURRENT_SOURCE_DIR}/UserDefineDialog
     ${CMAKE_CURRENT_SOURCE_DIR}/Preference

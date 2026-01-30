@@ -18,6 +18,11 @@
 #include "../DocumentMap/DocumentMap.h"
 #include "../ClipboardHistory/ClipboardHistoryPanel.h"
 #include "../FileBrowser/FileBrowser.h"
+#include "../ShortcutManager/ShortcutManager.h"
+#include "../PluginsAdmin/PluginsAdminDlg.h"
+#include "../AboutDlg/CmdLineArgsDlg.h"
+#include "../AboutDlg/DebugInfoDlg.h"
+#include "../../MISC/PluginsManager/PluginsManager.h"
 
 #include <QMainWindow>
 #include <QMenuBar>
@@ -38,6 +43,24 @@
 // Forward declaration
 class Notepad_plus;
 class ScintillaEditView;
+
+// Forward declarations for dialogs
+namespace QtControls {
+class PreferenceDlg;
+class WordStyleDlg;
+class GoToLineDlg;
+class AboutDlg;
+class UserDefineDialog;
+namespace ShortcutMapper { class ShortcutMapper; }
+namespace RunDlg { class RunDlg; }
+class RunMacroDlg;
+}
+
+// Forward declarations for FindReplace dialogs
+namespace NppFindReplace {
+class FindReplaceDlg;
+class FindIncrementDlg;
+}
 
 namespace QtControls {
 
@@ -118,6 +141,9 @@ public:
     void minimizeToTray();
     void restoreFromTray();
 
+    // Shortcut management
+    void refreshShortcuts();
+
 protected:
     void closeEvent(QCloseEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
@@ -145,6 +171,18 @@ private slots:
     void onEditPaste();
     void onEditDelete();
     void onEditSelectAll();
+    void onEditInsertDateTime();
+    void onEditInsertFullPath();
+    void onEditInsertFileName();
+    void onEditInsertDirPath();
+    void onEditCopyFullPath();
+    void onEditCopyFileName();
+    void onEditCopyDirPath();
+    void onEditIncreaseIndent();
+    void onEditDecreaseIndent();
+    void onEditUpperCase();
+    void onEditLowerCase();
+    void onEditTitleCase();
 
     // Search menu
     void onSearchFind();
@@ -156,6 +194,7 @@ private slots:
     // View menu
     void onViewFullScreen();
     void onViewPostIt();
+    void onViewDistractionFreeMode();
     void onViewAlwaysOnTop();
     void onViewWordWrap();
     void onViewShowWhiteSpace();
@@ -178,11 +217,13 @@ private slots:
 
     // Language menu
     void onLanguageSelected(QAction* action);
+    void onLanguageDefineUserLang();
 
     // Settings menu
     void onSettingsPreferences();
     void onSettingsStyleConfigurator();
     void onSettingsShortcutMapper();
+    void onSettingsPluginManager();
 
     // Macro menu
     void onMacroStartRecording();
@@ -198,9 +239,12 @@ private slots:
     void onWindowNewInstance();
     void onWindowSplit();
     void onWindowCloneToOtherView();
+    void onWindowList();
 
     // Help menu
     void onHelpAbout();
+    void onHelpCmdLineArgs();
+    void onHelpDebugInfo();
 
     // Tab bar
     void onTabChanged(int index);
@@ -232,6 +276,15 @@ private:
     void createWindowMenu();
     void createHelpMenu();
 
+    // Register menu actions with shortcut manager
+    void registerMenuActionsWithShortcutManager();
+
+    // Plugin management
+    void initPlugins();
+    void createPluginsMenu();
+    void populatePluginsMenu();
+    void onPluginCommandTriggered();
+
     // Update UI state
     void updateTitle();
     void updateDocumentState();
@@ -260,6 +313,7 @@ private:
     QMenu* _runMenu = nullptr;
     QMenu* _windowMenu = nullptr;
     QMenu* _helpMenu = nullptr;
+    QMenu* _pluginsMenu = nullptr;
 
     // Toolbars
     ToolBar* _mainToolBar = nullptr;
@@ -293,6 +347,32 @@ private:
 
     // Timer for periodic updates
     QTimer* _updateTimer = nullptr;
+
+    // Dialogs
+    QtControls::PreferenceDlg* _preferenceDlg = nullptr;
+    QtControls::WordStyleDlg* _wordStyleDlg = nullptr;
+    QtControls::GoToLineDlg* _goToLineDlg = nullptr;
+    QtControls::AboutDlg* _aboutDlg = nullptr;
+    QtControls::CmdLineArgsDlg* _cmdLineArgsDlg = nullptr;
+    QtControls::DebugInfoDlg* _debugInfoDlg = nullptr;
+    QtControls::UserDefineDialog* _userDefineDialog = nullptr;
+    QtControls::ShortcutMapper::ShortcutMapper* _shortcutMapper = nullptr;
+    QtControls::RunDlg::RunDlg* _runDlg = nullptr;
+    QtControls::RunMacroDlg* _runMacroDlg = nullptr;
+    NppFindReplace::FindReplaceDlg* _findReplaceDlg = nullptr;
+
+    // View menu actions (for state management)
+    QAction* _wordWrapAction = nullptr;
+    QAction* _showWhiteSpaceAction = nullptr;
+    QAction* _showEOLAction = nullptr;
+    QAction* _showIndentGuideAction = nullptr;
+
+    // Shortcut manager
+    ShortcutManager* _shortcutManager = nullptr;
+
+    // Plugin manager
+    PluginsManager _pluginsManager;
+    PluginsAdminDlg* _pluginsAdminDlg = nullptr;
 };
 
 } // namespace MainWindow

@@ -21,6 +21,7 @@
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QScrollBar>
+#include <QtWidgets/QInputDialog>
 #include <QtCore/QStringList>
 #include <QtGui/QKeyEvent>
 
@@ -28,6 +29,8 @@
 #include <cctype>
 
 #include "../../MISC/Common/Common.h"
+#include "../../Parameters.h"
+#include "../ShortcutManager/ShortcutManager.h"
 
 namespace QtControls {
 
@@ -74,12 +77,122 @@ void ShortcutMapper::doDialog(GridState initState) {
         connectSignals();
     }
 
+    // Load shortcuts from NppParameters
+    loadShortcutsFromParameters();
+
     _currentState = initState;
     _tabWidget->setCurrentIndex(static_cast<int>(initState));
 
     fillGrid();
     QtControls::StaticDialog::goToCenter();
     QtControls::StaticDialog::display(true, true);
+}
+
+void ShortcutMapper::loadShortcutsFromParameters() {
+    NppParameters& nppParams = NppParameters::getInstance();
+
+    // Clear existing shortcuts
+    _menuShortcuts.clear();
+    _macroShortcuts.clear();
+    _userShortcuts.clear();
+    _pluginShortcuts.clear();
+    _scintillaShortcuts.clear();
+
+    // Load main menu shortcuts
+    std::vector<CommandShortcut>& shortcuts = nppParams.getUserShortcuts();
+    for (size_t i = 0; i < shortcuts.size(); ++i) {
+        const CommandShortcut& sc = shortcuts[i];
+        ShortcutData data;
+        data.name = QString::fromUtf8(sc.getName());
+        data.keyCombo = sc.getKeyCombo();
+        data.shortcut = keyComboToString(data.keyCombo);
+        data.isEnabled = sc.isValid();
+        data.originalIndex = i;
+        // TODO: Set category based on command ID
+        _menuShortcuts.push_back(data);
+    }
+
+    // Load macro shortcuts
+    std::vector<MacroShortcut>& macros = nppParams.getMacroList();
+    for (size_t i = 0; i < macros.size(); ++i) {
+        const MacroShortcut& sc = macros[i];
+        ShortcutData data;
+        data.name = QString::fromUtf8(sc.getName());
+        data.keyCombo = sc.getKeyCombo();
+        data.shortcut = keyComboToString(data.keyCombo);
+        data.isEnabled = sc.isValid();
+        data.originalIndex = i;
+        _macroShortcuts.push_back(data);
+    }
+
+    // Load user command shortcuts
+    std::vector<UserCommand>& userCommands = nppParams.getUserCommandList();
+    for (size_t i = 0; i < userCommands.size(); ++i) {
+        const UserCommand& sc = userCommands[i];
+        ShortcutData data;
+        data.name = QString::fromUtf8(sc.getName());
+        data.keyCombo = sc.getKeyCombo();
+        data.shortcut = keyComboToString(data.keyCombo);
+        data.isEnabled = sc.isValid();
+        data.originalIndex = i;
+        _userShortcuts.push_back(data);
+    }
+
+    // Load plugin command shortcuts
+    std::vector<PluginCmdShortcut>& pluginCommands = nppParams.getPluginCommandList();
+    for (size_t i = 0; i < pluginCommands.size(); ++i) {
+        const PluginCmdShortcut& sc = pluginCommands[i];
+        ShortcutData data;
+        data.name = QString::fromUtf8(sc.getName());
+        data.keyCombo = sc.getKeyCombo();
+        data.shortcut = keyComboToString(data.keyCombo);
+        data.isEnabled = sc.isValid();
+        data.originalIndex = i;
+        data.pluginName = QString::fromUtf8(sc.getModuleName());
+        _pluginShortcuts.push_back(data);
+    }
+
+    // TODO: Load Scintilla shortcuts when ScintillaKeyMap is fully implemented
+}
+
+int ShortcutMapper::getCommandIdForShortcut(size_t index) const {
+    NppParameters& nppParams = NppParameters::getInstance();
+
+    switch (_currentState) {
+        case GridState::STATE_MENU: {
+            std::vector<CommandShortcut>& shortcuts = nppParams.getUserShortcuts();
+            if (index < shortcuts.size()) {
+                return shortcuts[index].getID();
+            }
+            break;
+        }
+        case GridState::STATE_MACRO: {
+            std::vector<MacroShortcut>& macros = nppParams.getMacroList();
+            if (index < macros.size()) {
+                return macros[index].getID();
+            }
+            break;
+        }
+        case GridState::STATE_USER: {
+            std::vector<UserCommand>& userCommands = nppParams.getUserCommandList();
+            if (index < userCommands.size()) {
+                return userCommands[index].getID();
+            }
+            break;
+        }
+        case GridState::STATE_PLUGIN: {
+            std::vector<PluginCmdShortcut>& pluginCommands = nppParams.getPluginCommandList();
+            if (index < pluginCommands.size()) {
+                return static_cast<int>(pluginCommands[index].getID());
+            }
+            break;
+        }
+        case GridState::STATE_SCINTILLA:
+            // TODO: Implement when ScintillaKeyMap is fully implemented
+            break;
+    }
+
+    return -1;
 }
 
 void ShortcutMapper::setupUI() {
@@ -302,16 +415,53 @@ void ShortcutMapper::onModifyClicked() {
 
     size_t originalIndex = _shortcutIndex[currentRow];
 
-    // TODO: Open shortcut edit dialog
-    // This would create and show a Shortcut dialog for the selected item
-    // For now, show a message that this needs to be implemented
+    // Get the command ID for this shortcut
+    int commandId = getCommandIdForShortcut(originalIndex);
+    if (commandId < 0) {
+        return;
+    }
 
-    QMessageBox::information(getDialog(), tr("Not Implemented"),
-        tr("The shortcut editing dialog is not yet implemented.\n"
-           "This will open a dialog to modify the key combination."));
+    // TODO: Open a proper shortcut edit dialog that captures key input
+    // For now, show a simple input dialog as a placeholder
+    bool ok;
+    QString text = QInputDialog::getText(getDialog(), tr("Modify Shortcut"),
+                                         tr("Enter new shortcut (e.g., Ctrl+N):"),
+                                         QLineEdit::Normal, QString(), &ok);
+    if (!ok || text.isEmpty()) {
+        return;
+    }
 
-    // After modification, refresh the grid
-    // fillGrid();
+    // Parse the shortcut string (simplified parsing)
+    KeyCombo newCombo;
+    QString lowerText = text.toLower();
+    newCombo._isCtrl = lowerText.contains("ctrl");
+    newCombo._isAlt = lowerText.contains("alt");
+    newCombo._isShift = lowerText.contains("shift");
+
+    // Extract the key
+    QKeySequence seq(text);
+    if (!seq.isEmpty()) {
+        newCombo = ShortcutManager::qKeySequenceToKeyCombo(seq);
+    }
+
+    // Check for conflicts
+    QString conflictLocation;
+    if (findKeyConflicts(newCombo, originalIndex, &conflictLocation)) {
+        int result = QMessageBox::warning(getDialog(), tr("Shortcut Conflict"),
+            tr("This shortcut conflicts with:\n%1\n\nDo you want to continue?").arg(conflictLocation),
+            QMessageBox::Yes | QMessageBox::No);
+        if (result != QMessageBox::Yes) {
+            return;
+        }
+    }
+
+    // Update the shortcut via ShortcutManager
+    ShortcutManager* manager = ShortcutManager::getInstance();
+    manager->updateCommandShortcut(commandId, newCombo);
+
+    // Refresh the grid
+    loadShortcutsFromParameters();
+    fillGrid();
 }
 
 void ShortcutMapper::onDeleteClicked() {
@@ -356,14 +506,19 @@ void ShortcutMapper::onClearClicked() {
 
     size_t originalIndex = _shortcutIndex[currentRow];
 
-    // TODO: Clear the shortcut for this item
-    // This requires integration with NppParameters
+    // Get the command ID for this shortcut
+    int commandId = getCommandIdForShortcut(originalIndex);
+    if (commandId < 0) {
+        return;
+    }
 
-    QMessageBox::information(getDialog(), tr("Not Implemented"),
-        tr("Clear shortcut functionality requires NppParameters integration."));
+    // Clear the shortcut via ShortcutManager
+    ShortcutManager* manager = ShortcutManager::getInstance();
+    manager->clearCommandShortcut(commandId);
 
-    // After clearing, refresh the grid
-    // fillGrid();
+    // Refresh the grid
+    loadShortcutsFromParameters();
+    fillGrid();
 }
 
 void ShortcutMapper::onClearAllClicked() {
@@ -375,11 +530,40 @@ void ShortcutMapper::onClearAllClicked() {
         return;
     }
 
-    // TODO: Clear all shortcuts in current category
-    QMessageBox::information(getDialog(), tr("Not Implemented"),
-        tr("Clear all functionality requires NppParameters integration."));
+    // Clear all shortcuts in current category
+    ShortcutManager* manager = ShortcutManager::getInstance();
+    std::vector<ShortcutData>* shortcuts = nullptr;
 
-    // fillGrid();
+    switch (_currentState) {
+        case GridState::STATE_MENU:
+            shortcuts = &_menuShortcuts;
+            break;
+        case GridState::STATE_MACRO:
+            shortcuts = &_macroShortcuts;
+            break;
+        case GridState::STATE_USER:
+            shortcuts = &_userShortcuts;
+            break;
+        case GridState::STATE_PLUGIN:
+            shortcuts = &_pluginShortcuts;
+            break;
+        case GridState::STATE_SCINTILLA:
+            // Scintilla shortcuts cannot be cleared
+            return;
+    }
+
+    if (shortcuts) {
+        for (size_t i = 0; i < shortcuts->size(); ++i) {
+            int commandId = getCommandIdForShortcut(i);
+            if (commandId >= 0) {
+                manager->clearCommandShortcut(commandId);
+            }
+        }
+    }
+
+    // Refresh the grid
+    loadShortcutsFromParameters();
+    fillGrid();
 }
 
 void ShortcutMapper::onImportClicked() {
@@ -430,6 +614,14 @@ void ShortcutMapper::onResetAllClicked() {
 }
 
 void ShortcutMapper::onOkClicked() {
+    // Save shortcuts to configuration
+    NppParameters& nppParams = NppParameters::getInstance();
+    nppParams.writeShortcuts();
+
+    // Apply shortcuts to all registered actions
+    ShortcutManager* manager = ShortcutManager::getInstance();
+    manager->applyShortcuts();
+
     hide();
 }
 
