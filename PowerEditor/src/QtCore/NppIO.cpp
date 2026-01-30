@@ -196,8 +196,9 @@ OpenFileResult NppIO::fileOpen(const QString& filePath, bool addToRecent, int en
     }
 
     // Load the file
+    std::wstring wNormalizedPath = IOUtils::qstringToWstring(normalizedPath);
     BufferID bufferId = MainFileManager.loadFile(
-        IOUtils::qstringToWstring(normalizedPath).c_str(),
+        wNormalizedPath.c_str(),
         static_cast<Document>(NULL),
         encoding
     );
@@ -288,9 +289,10 @@ SaveFileResult NppIO::fileSave(Buffer* buffer) {
     }
 
     // Save the file
+    std::wstring wFilePath = IOUtils::qstringToWstring(filePath);
     SavingStatus saveStatus = MainFileManager.saveBuffer(
         buffer->getID(),
-        IOUtils::qstringToWstring(filePath).c_str(),
+        wFilePath.c_str(),
         false
     );
 
@@ -337,10 +339,8 @@ SaveFileResult NppIO::fileSaveAs(Buffer* buffer, const QString& newPath) {
     QString targetPath = newPath;
     if (targetPath.isEmpty()) {
         // Show save dialog
-        QString defaultName = IOUtils::wstringToQstring(buffer->getFileNameQString());
-        QString defaultDir = IOUtils::wstringToQstring(
-            buffer->isUntitled() ? L"" : buffer->getFullPathName()
-        );
+        QString defaultName = buffer->getFileNameQString();
+        QString defaultDir = buffer->isUntitled() ? QString() : buffer->getFilePath();
         targetPath = showSaveDialog(defaultName, defaultDir);
 
         if (targetPath.isEmpty()) {
@@ -364,9 +364,10 @@ SaveFileResult NppIO::fileSaveAs(Buffer* buffer, const QString& newPath) {
     }
 
     // Save to new location
+    std::wstring wTargetPath = IOUtils::qstringToWstring(targetPath);
     SavingStatus saveStatus = MainFileManager.saveBuffer(
         buffer->getID(),
-        IOUtils::qstringToWstring(targetPath).c_str(),
+        wTargetPath.c_str(),
         false
     );
 
@@ -374,8 +375,8 @@ SaveFileResult NppIO::fileSaveAs(Buffer* buffer, const QString& newPath) {
         result.status = FileStatus::Success;
         result.newFilePath = targetPath;
 
-        // Update buffer filename
-        buffer->setFileName(IOUtils::qstringToWstring(targetPath).c_str());
+        // Update buffer filename - use QString overload to avoid wchar_t* issues
+        buffer->setFileName(targetPath);
 
         // Add to recent files
         addToRecentFiles(targetPath);
@@ -405,9 +406,10 @@ SaveFileResult NppIO::fileSaveCopyAs(Buffer* buffer, const QString& newPath) {
     }
 
     // Save a copy (doesn't change buffer state)
+    std::wstring wTargetPath = IOUtils::qstringToWstring(targetPath);
     SavingStatus saveStatus = MainFileManager.saveBuffer(
         buffer->getID(),
-        IOUtils::qstringToWstring(targetPath).c_str(),
+        wTargetPath.c_str(),
         true // isCopy
     );
 
@@ -1244,7 +1246,7 @@ bool NppIO::saveAllFiles(bool promptIfUnsaved) {
 
             emit progressUpdated(
                 static_cast<int>((i * 100) / bufferCount),
-                tr("Saving %1...").arg(IOUtils::wstringToQstring(buffer->getFileNameQString()))
+                tr("Saving %1...").arg(buffer->getFileNameQString())
             );
         }
     }
@@ -1305,7 +1307,8 @@ bool NppIO::fileRename(Buffer* buffer, const QString& newName) {
     QString newPath = IOUtils::getDirectory(oldPath) + "/" + newName;
 
     if (QFile::rename(oldPath, newPath)) {
-        buffer->setFileName(IOUtils::qstringToWstring(newPath).c_str());
+        // Use QString overload to avoid wchar_t* issues
+        buffer->setFileName(newPath);
         return true;
     }
 

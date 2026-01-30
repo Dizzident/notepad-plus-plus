@@ -2854,10 +2854,14 @@ void ScintillaEditView::init(QWidget* parent)
     // Set minimum size to ensure widget is visible
     sciWidget->setMinimumSize(200, 100);
 
+    std::cout << "[ScintillaEditView::init] Setting default colors..." << std::endl;
     // Set default colors (white background, black text)
     execute(SCI_STYLESETBACK, STYLE_DEFAULT, 0xFFFFFF);
+    std::cout << "[ScintillaEditView::init] SCI_STYLESETBACK done" << std::endl;
     execute(SCI_STYLESETFORE, STYLE_DEFAULT, 0x000000);
+    std::cout << "[ScintillaEditView::init] SCI_STYLESETFORE done" << std::endl;
     execute(SCI_STYLECLEARALL);
+    std::cout << "[ScintillaEditView::init] SCI_STYLECLEARALL done" << std::endl;
 
     // Set margin widths
     execute(SCI_SETMARGINWIDTHN, 0, 40);  // Line numbers

@@ -459,9 +459,9 @@ bool Buffer::saveToFile(const QString& filePath)
     _lastModifiedTime = fileInfo.lastModified();
     _lastSavedTime = QDateTime::currentDateTime();
 
-    // Update file path if changed
+    // Update file path if changed (use internal version since we already hold the lock)
     if (_filePath != filePath) {
-        setFilePath(filePath);
+        setFilePathInternal(filePath);
     }
 
     // Update status
@@ -478,8 +478,8 @@ bool Buffer::saveToFile(const QString& filePath)
         _backupFilePath.clear();
     }
 
-    // Remove auto-save file
-    QString autoSavePath = getAutoSaveFilePath();
+    // Remove auto-save file (use internal version since we hold the lock)
+    QString autoSavePath = getAutoSaveFilePathInternal();
     if (QFile::exists(autoSavePath)) {
         QFile::remove(autoSavePath);
     }
@@ -509,8 +509,12 @@ QString Buffer::getFilePath() const
 const wchar_t* Buffer::getFileName() const
 {
     QMutexLocker locker(&_mutex);
-    // Return the filename as wchar_t* for Windows API compatibility
-    return reinterpret_cast<const wchar_t*>(_fileName.utf16());
+    // On Linux, wchar_t is 32-bit but utf16() returns 16-bit data
+    // We need to convert to std::wstring first and store it in a thread-safe manner
+    // Note: This is a compatibility method - prefer getFileNameQString() on Linux
+    static thread_local std::wstring s_wstrBuffer;
+    s_wstrBuffer = _fileName.toStdWString();
+    return s_wstrBuffer.c_str();
 }
 
 QString Buffer::getFileNameQString() const
@@ -522,7 +526,12 @@ QString Buffer::getFileNameQString() const
 void Buffer::setFilePath(const QString& path)
 {
     QMutexLocker locker(&_mutex);
+    setFilePathInternal(path);
+}
 
+void Buffer::setFilePathInternal(const QString& path)
+{
+    // Internal version that assumes mutex is already locked
     QString oldPath = _filePath;
     _filePath = path;
 
@@ -553,6 +562,11 @@ void Buffer::setFileName(const wchar_t* fileName)
     if (fileName) {
         setFilePath(QString::fromWCharArray(fileName));
     }
+}
+
+void Buffer::setFileName(const QString& fileName)
+{
+    setFilePath(fileName);
 }
 
 bool Buffer::isUntitled() const
@@ -1031,7 +1045,12 @@ void Buffer::setAutoSavePoint()
 QString Buffer::getAutoSaveFilePath() const
 {
     QMutexLocker locker(&_mutex);
+    return getAutoSaveFilePathInternal();
+}
 
+QString Buffer::getAutoSaveFilePathInternal() const
+{
+    // Internal version - assumes mutex is already locked
     if (_filePath.isEmpty()) {
         return QString();
     }
@@ -1995,10 +2014,12 @@ void Buffer::setEncodingNumber(int encoding)
 const wchar_t* Buffer::getFullPathName() const
 {
     QMutexLocker locker(&_mutex);
-    // Return the file path as wchar_t*
-    // Note: This relies on Qt's implicit sharing - the data remains valid
-    // as long as the QString is not modified
-    return reinterpret_cast<const wchar_t*>(_filePath.utf16());
+    // On Linux, wchar_t is 32-bit but utf16() returns 16-bit data
+    // We need to convert to std::wstring first and store it in a thread-safe manner
+    // Note: This is a compatibility method - prefer getFilePath() on Linux
+    static thread_local std::wstring s_wstrBuffer;
+    s_wstrBuffer = _filePath.toStdWString();
+    return s_wstrBuffer.c_str();
 }
 
 bool Buffer::isUnsync() const

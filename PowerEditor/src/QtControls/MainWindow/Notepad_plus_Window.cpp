@@ -198,6 +198,12 @@ bool MainWindow::init(Notepad_plus* pNotepad_plus)
 
 void MainWindow::setupUI()
 {
+    // Validate Notepad_plus pointer
+    if (!_pNotepad_plus) {
+        std::cerr << "[MainWindow::setupUI] ERROR: _pNotepad_plus is null!" << std::endl;
+        return;
+    }
+
     // Create central widget with splitter for editors
     auto* centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
@@ -212,8 +218,13 @@ void MainWindow::setupUI()
 
     std::cout << "[MainWindow::setupUI] Initializing main edit view..." << std::endl;
 
-    // Initialize main edit view
-    _pNotepad_plus->getMainEditView()->init(_editorSplitter);
+    // Initialize main edit view - check for null
+    ScintillaEditView* mainEditView = _pNotepad_plus->getMainEditView();
+    if (!mainEditView) {
+        std::cerr << "[MainWindow::setupUI] ERROR: Main edit view is null!" << std::endl;
+        return;
+    }
+    mainEditView->init(_editorSplitter);
     std::cout << "[MainWindow::setupUI] Main edit view widget: " << _pNotepad_plus->getMainEditView()->getWidget() << std::endl;
 
     // Create container for main view (tab bar + editor)
@@ -224,24 +235,48 @@ void MainWindow::setupUI()
 
     // Initialize main doc tab and add to container
     std::cout << "[MainWindow::setupUI] Initializing main doc tab..." << std::endl;
-    _pNotepad_plus->getMainDocTab()->init(mainContainer, _pNotepad_plus->getMainEditView());
-    mainVLayout->addWidget(_pNotepad_plus->getMainDocTab()->getWidget());
+    auto* mainDocTab = _pNotepad_plus->getMainDocTab();
+    if (!mainDocTab) {
+        std::cerr << "[MainWindow::setupUI] ERROR: Main doc tab is null!" << std::endl;
+        return;
+    }
+    mainDocTab->init(mainContainer, mainEditView);
+    mainVLayout->addWidget(mainDocTab->getWidget());
 
     // Add main editor to container
-    QWidget* mainEditWidget = _pNotepad_plus->getMainEditView()->getWidget();
+    QWidget* mainEditWidget = mainEditView->getWidget();
+    if (!mainEditWidget) {
+        std::cerr << "[MainWindow::setupUI] ERROR: Main edit widget is null!" << std::endl;
+        return;
+    }
     std::cout << "[MainWindow::setupUI] Adding main edit widget to layout: " << mainEditWidget << std::endl;
     mainVLayout->addWidget(mainEditWidget, 1);
 
     // Initialize sub edit view
     std::cout << "[MainWindow::setupUI] Initializing sub edit view..." << std::endl;
-    _pNotepad_plus->getSubEditView()->init(_editorSplitter);
+    ScintillaEditView* subEditView = _pNotepad_plus->getSubEditView();
+    if (!subEditView) {
+        std::cerr << "[MainWindow::setupUI] ERROR: Sub edit view is null!" << std::endl;
+        return;
+    }
+    subEditView->init(_editorSplitter);
     auto* subContainer = new QWidget(_editorSplitter);
     auto* subVLayout = new QVBoxLayout(subContainer);
     subVLayout->setContentsMargins(0, 0, 0, 0);
     subVLayout->setSpacing(0);
-    _pNotepad_plus->getSubDocTab()->init(subContainer, _pNotepad_plus->getSubEditView());
-    subVLayout->addWidget(_pNotepad_plus->getSubDocTab()->getWidget());
-    subVLayout->addWidget(_pNotepad_plus->getSubEditView()->getWidget(), 1);
+    auto* subDocTab = _pNotepad_plus->getSubDocTab();
+    if (!subDocTab) {
+        std::cerr << "[MainWindow::setupUI] ERROR: Sub doc tab is null!" << std::endl;
+        return;
+    }
+    subDocTab->init(subContainer, subEditView);
+    subVLayout->addWidget(subDocTab->getWidget());
+    QWidget* subEditWidget = subEditView->getWidget();
+    if (!subEditWidget) {
+        std::cerr << "[MainWindow::setupUI] ERROR: Sub edit widget is null!" << std::endl;
+        return;
+    }
+    subVLayout->addWidget(subEditWidget, 1);
 
     // Add containers to splitter and hide sub view
     _editorSplitter->addWidget(mainContainer);
@@ -1594,11 +1629,8 @@ void MainWindow::onFileSave()
 
 void MainWindow::onFileSaveAs()
 {
-    QString fileName = QFileDialog::getSaveFileName(this,
-        tr("Save As"), QString(),
-        tr("All Files (*);;Text Files (*.txt)"));
-
-    if (!fileName.isEmpty() && _pNotepad_plus) {
+    // Delegate to Notepad_plus which handles the save dialog and operation
+    if (_pNotepad_plus) {
         _pNotepad_plus->fileSaveAs(BUFFER_INVALID, false);
     }
 }

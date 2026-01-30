@@ -54,6 +54,7 @@
 #include <memory>
 #include <mutex>
 #include <chrono>
+#include <iostream>
 
 // ============================================================================
 // Global Variables
@@ -130,11 +131,20 @@ Notepad_plus::~Notepad_plus()
 
 void Notepad_plus::fileNew()
 {
+    std::cout << "[fileNew] Starting..." << std::endl;
     BufferID newBufID = MainFileManager.newEmptyDocument();
+    std::cout << "[fileNew] newEmptyDocument returned: " << newBufID << std::endl;
     if (newBufID != BUFFER_INVALID)
     {
+        std::cout << "[fileNew] Loading buffer into view..." << std::endl;
         loadBufferIntoView(newBufID, currentView(), true);
+        std::cout << "[fileNew] Switching to file..." << std::endl;
         switchToFile(newBufID);
+        std::cout << "[fileNew] Completed successfully." << std::endl;
+    }
+    else
+    {
+        std::cerr << "[fileNew] Failed to create new buffer!" << std::endl;
     }
 }
 
@@ -637,9 +647,8 @@ bool Notepad_plus::fileSaveAs(BufferID id, bool isSaveCopy)
     if (!buf)
         return false;
 
-    QString defaultName = QString::fromStdWString(buf->getFileName());
-    QString defaultDir = QString::fromStdWString(
-        buf->isUntitled() ? L"" : buf->getFullPathName());
+    QString defaultName = buf->getFileNameQString();
+    QString defaultDir = buf->isUntitled() ? QString() : buf->getFilePath();
 
     QString fileName = QFileDialog::getSaveFileName(
         nullptr,
@@ -654,8 +663,8 @@ bool Notepad_plus::fileSaveAs(BufferID id, bool isSaveCopy)
 
     if (success && !isSaveCopy)
     {
-        // Update buffer filename
-        buf->setFileName(fileName.toStdWString().c_str());
+        // Update buffer filename - use QString overload to avoid wchar_t* issues
+        buf->setFileName(fileName);
     }
 
     return success;
@@ -2715,13 +2724,17 @@ bool Notepad_plus::addCurrentMacro()
 
 void Notepad_plus::loadLastSession()
 {
+    std::cout << "[loadLastSession] Starting..." << std::endl;
     NppParameters& nppParams = NppParameters::getInstance();
     const NppGUI& nppGui = nppParams.getNppGUI();
     Session lastSession = nppParams.getSession();
     bool isSnapshotMode = nppGui.isSnapshotMode();
+    std::cout << "[loadLastSession] Session has " << lastSession.nbMainFiles() << " main files and "
+             << lastSession.nbSubFiles() << " sub files. isSnapshotMode: " << isSnapshotMode << std::endl;
     _isFolding = true;
-    loadSession(lastSession, isSnapshotMode);
+    bool result = loadSession(lastSession, isSnapshotMode);
     _isFolding = false;
+    std::cout << "[loadLastSession] Completed. Result: " << result << std::endl;
 }
 
 // ============================================================================
@@ -2766,6 +2779,9 @@ bool Notepad_plus::loadSession(Session& session, bool isSnapshotMode, const wcha
 {
     Q_UNUSED(userCreatedSessionName);
 
+    std::cout << "[loadSession] Starting... isSnapshotMode: " << isSnapshotMode
+             << " main files: " << session.nbMainFiles() << " sub files: " << session.nbSubFiles() << std::endl;
+
     NppParameters& nppParam = NppParameters::getInstance();
     const NppGUI& nppGUI = nppParam.getNppGUI();
 
@@ -2780,10 +2796,25 @@ bool Notepad_plus::loadSession(Session& session, bool isSnapshotMode, const wcha
     // If no session files, just set up RTL if needed
     if (!session.nbMainFiles() && !session.nbSubFiles())
     {
+        std::cout << "[loadSession] Empty session - checking if we need to create initial buffer" << std::endl;
         Buffer* buf = getCurrentBuffer();
+        if (!buf)
+        {
+            // No buffer exists yet - this is normal for a fresh start with no session
+            std::cout << "[loadSession] No current buffer - creating initial empty document" << std::endl;
+            // Create a new empty document to have a valid buffer
+            fileNew();
+            buf = getCurrentBuffer();
+            if (!buf)
+            {
+                std::cerr << "[loadSession] Failed to create initial buffer!" << std::endl;
+                return false;
+            }
+        }
         if (nppParam.getNativeLangSpeaker()->isRTL() && nppParam.getNativeLangSpeaker()->isEditZoneRTL())
             buf->setRTL(true);
         _mainEditView.changeTextDirection(buf->isRTL());
+        std::cout << "[loadSession] Empty session handled successfully" << std::endl;
         return true;
     }
 

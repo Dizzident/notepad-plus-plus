@@ -47,6 +47,21 @@ The text area now initializes correctly and accepts keyboard input.
 - Fixed UniMode constants (`uniUTF8` vs `uniUTF8BOM`)
 - Fixed EolType enum usage (`Buffer::eolWindows`, etc.)
 
+### Issue 5: File Save Unicode Corruption & Deadlock ✅ FIXED
+**Status**: ✅ RESOLVED - File save now works correctly
+
+**Problems Fixed**:
+1. **Unicode garbage in save dialog** - `getFileName()` and `getFullPathName()` used `reinterpret_cast<const wchar_t*>(utf16())` which caused 16-bit/32-bit wchar_t mismatch on Linux
+2. **Duplicate save dialogs** - `MainWindow::onFileSaveAs()` and `Notepad_plus::fileSaveAs()` both opened dialogs
+3. **Deadlock on save** - `saveToFile()` held mutex while calling `setFilePath()` and `getAutoSaveFilePath()`, causing recursive mutex locks
+
+**Fix Applied**:
+- Changed `getFileName()` and `getFullPathName()` to use `static thread_local std::wstring` with `toStdWString()`
+- Added `setFileName(const QString&)` overload to avoid wchar_t* conversions
+- Removed duplicate dialog from `MainWindow::onFileSaveAs()` - now delegates to `Notepad_plus::fileSaveAs()`
+- Created internal methods `setFilePathInternal()` and `getAutoSaveFilePathInternal()` that assume mutex is already locked
+- Updated `saveToFile()` to use internal methods and avoid deadlocks
+
 ## Build Status
 
 - **CMake Configuration**: ✓ Complete
@@ -205,6 +220,7 @@ make -j$(nproc)
 ## Last Updated
 
 2026-01-30 - Text editor is now functional! Core editing features working.
+2026-01-30 - File save Unicode corruption and deadlock issues fixed.
 
 ---
 

@@ -145,6 +145,7 @@ public:
     QString getFileNameQString() const;  // Returns QString for Qt code
     void setFilePath(const QString& path);
     void setFileName(const wchar_t* fileName);
+    void setFileName(const QString& fileName);  // QString overload to avoid wchar_t* issues
     bool isUntitled() const;
     bool isNew() const;
 
@@ -415,6 +416,10 @@ private:
     bool writeToFile(const QString& filePath, const QByteArray& content);
     QByteArray readFromFile(const QString& filePath);
     QString detectEncodingFromBOM(const QByteArray& content);
+
+    // Internal methods that assume mutex is already locked (to avoid deadlocks)
+    void setFilePathInternal(const QString& path);
+    QString getAutoSaveFilePathInternal() const;
 };
 
 /**

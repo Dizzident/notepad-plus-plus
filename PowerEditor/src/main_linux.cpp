@@ -42,6 +42,7 @@
 #include <string>
 #include <functional>
 #include <cwchar>
+#include <iostream>
 
 #include "Platform/FileSystem.h"
 #include "Platform/Settings.h"
@@ -507,11 +508,13 @@ public:
 
     bool init(CmdLineParams* cmdLineParams)
     {
+        std::cout << "[NotepadPlusPlusApp::init] STARTING..." << std::endl;
         _cmdLineParams = cmdLineParams;
 
         // Initialize NppParameters settings from command line
         NppParameters& nppParams = NppParameters::getInstance();
         NppGUI& nppGUI = nppParams.getNppGUI();
+        std::cout << "[NotepadPlusPlusApp::init] NppParameters initialized" << std::endl;
 
         // Apply command line settings to NppParameters
         // TODO: _pluginsManager is private - need to use public method or friend class
@@ -523,11 +526,13 @@ public:
         nppGUI._isFullReadOnlySavingForbidden = cmdLineParams->_isFullReadOnlySavingForbidden;
 
         // Initialize the Qt MainWindow with Notepad_plus core
+        std::cout << "[NotepadPlusPlusApp::init] About to initialize MainWindow..." << std::endl;
         if (!QtControls::MainWindow::MainWindow::init(&_notepad_plus_plus_core))
         {
-            qCritical() << "Failed to initialize MainWindow";
+            std::cerr << "Failed to initialize MainWindow" << std::endl;
             return false;
         }
+        std::cout << "[NotepadPlusPlusApp::init] MainWindow initialized successfully!" << std::endl;
 
         // Set window properties
         setWindowTitle("Notepad++");
@@ -547,11 +552,13 @@ public:
         // _notepad_plus_plus_core._pMainWindow = nullptr;
 
         // Initialize the core components
+        std::cout << "[NotepadPlusPlusApp::init] About to call initNotepadPlusCore..." << std::endl;
         if (!initNotepadPlusCore())
         {
-            qCritical() << "Failed to initialize Notepad++ core";
+            std::cerr << "Failed to initialize Notepad++ core" << std::endl;
             return false;
         }
+        std::cout << "[NotepadPlusPlusApp::init] initNotepadPlusCore completed successfully." << std::endl;
 
         // Show the window
         show();
@@ -609,6 +616,8 @@ public:
 private:
     bool initNotepadPlusCore()
     {
+        std::cout << "[initNotepadPlusCore] Starting..." << std::endl;
+
         // TODO: This method needs access to private members of Notepad_plus
         // which requires either:
         // 1. Making NotepadPlusPlusApp a friend class of Notepad_plus
@@ -622,7 +631,14 @@ private:
         // Load last session if enabled
         if (nppGUI._rememberLastSession && !nppGUI._isCmdlineNosessionActivated)
         {
+            std::cout << "[initNotepadPlusCore] About to call loadLastSession..." << std::endl;
             _notepad_plus_plus_core.loadLastSession();
+            std::cout << "[initNotepadPlusCore] loadLastSession completed." << std::endl;
+        }
+        else
+        {
+            std::cout << "[initNotepadPlusCore] Skipping loadLastSession - rememberLastSession:" << nppGUI._rememberLastSession
+                     << " isCmdlineNosessionActivated:" << nppGUI._isCmdlineNosessionActivated << std::endl;
         }
 
         // Scan for localization files
@@ -724,10 +740,27 @@ private:
         }
 
         // Create new document on startup if configured
-        if (nppGUI._newDocDefaultSettings._addNewDocumentOnStartup && nppGUI._rememberLastSession)
+        // Also create one if no session was loaded (to ensure we have a valid buffer)
+        std::cout << "[initNotepadPlusCore] Checking if we need to create initial document..." << std::endl;
+        std::cout << "  _addNewDocumentOnStartup:" << nppGUI._newDocDefaultSettings._addNewDocumentOnStartup
+                 << " _rememberLastSession:" << nppGUI._rememberLastSession << std::endl;
+
+        bool needNewDoc = nppGUI._newDocDefaultSettings._addNewDocumentOnStartup;
+        if (!nppGUI._rememberLastSession || nppGUI._isCmdlineNosessionActivated)
         {
-            _notepad_plus_plus_core.fileNew();
+            // No session loaded, we need at least one document to avoid null buffer crashes
+            std::cout << "[initNotepadPlusCore] No session loaded, will create initial document" << std::endl;
+            needNewDoc = true;
         }
+
+        if (needNewDoc)
+        {
+            std::cout << "[initNotepadPlusCore] About to call fileNew..." << std::endl;
+            _notepad_plus_plus_core.fileNew();
+            std::cout << "[initNotepadPlusCore] fileNew completed." << std::endl;
+        }
+
+        std::cout << "[initNotepadPlusCore] Finished successfully." << std::endl;
 
         // Check for snapshot mode (backup)
         // TODO: checkModifiedDocument is private - need public method
