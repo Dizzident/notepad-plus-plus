@@ -2799,11 +2799,27 @@ void ScintillaEditView::init(HINSTANCE hInst, HWND hPere)
     }
 
     // Initialize the Window base class
-    // On Qt, _hSelf will be set by the QtControls layer when the widget is created
+    // On Qt, _widget will be set by the QtControls layer when the widget is created
     // For now, we just ensure the Scintilla function pointers are ready
 
     // Note: The actual ScintillaEditBase widget creation happens in QtControls::MainWindow
     // which creates the ScintillaEditViewQt widget and sets up the _pScintillaFunc/_pScintillaPtr
+
+    // Get the startup document and make a buffer for it so it can be accessed like a file
+    attachDefaultDoc();
+}
+
+void ScintillaEditView::init(QWidget* parent)
+{
+    // Call the QtControls::Window base class init
+    QtControls::Window::init(parent);
+
+    // Then do our own initialization
+    if (!_SciInit)
+    {
+        // Scintilla Qt doesn't require explicit registration like Windows
+        _SciInit = true;
+    }
 
     // Get the startup document and make a buffer for it so it can be accessed like a file
     attachDefaultDoc();

@@ -69,7 +69,13 @@
       "Bash(xargs ls:*)",
       "Bash(xargs:*)",
       "Bash(/usr/bin/c++:*)",
-      "Bash(c++filt:*)"
+      "Bash(c++filt:*)",
+      "Bash(for dir in AboutDlg ClipboardHistory ContextMenu DocTabView DocumentMap FileBrowser FindReplace FunctionList GoToLine ListView Preference ProjectPanel RunDlg RunMacroDlg Shortcut ShortcutMapper Splitter SplitterContainer StaticDialog StatusBar TabBar ToolBar TreeView UserDefineDialog WordStyleDlg)",
+      "Bash(do)",
+      "Bash(if:*)",
+      "Bash(then)",
+      "Bash(fi)",
+      "Bash(done)"
     ]
   }
 }

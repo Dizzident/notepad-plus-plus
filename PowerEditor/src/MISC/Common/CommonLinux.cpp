@@ -25,7 +25,6 @@
 // ============================================================================
 
 #include "Common.h"
-#include "WinControls/shortcut/shortcut.h"
 
 #ifndef _WIN32
 
@@ -793,16 +792,4 @@ namespace NppDarkMode
 }
 
 // ============================================================================
-// Accelerator Stub Implementation for Linux
-// ============================================================================
-// These functions provide Linux-compatible implementations of Accelerator
-// functionality that is Windows-specific in shortcut.cpp.
-// The updateFullMenu function is needed by LastRecentFileList.cpp.
-
-void Accelerator::updateFullMenu()
-{
-    // Qt/Linux: Menu updates are handled by the Qt menu system
-    // This is a stub for compatibility
-}
-
 #endif // !_WIN32

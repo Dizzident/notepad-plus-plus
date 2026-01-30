@@ -19,9 +19,13 @@
 #include "resource.h"
 #include "Docking.h"
 #include <vector>
-#include "StaticDialog/StaticDialog.h"
 #include "Common.h"
 
+// On Windows, DockingCont is a full dialog-based container
+// On Linux, DockingCont is a minimal stub for compatibility
+#ifdef _WIN32
+#include "StaticDialog/StaticDialog.h"
+#endif
 
 // window styles
 #ifdef _WIN32
@@ -54,6 +58,7 @@ constexpr int g_dockingContCloseBtnSize = 12;
 constexpr int g_dockingContTabIconSize = 16;
 constexpr int g_dockingContTabIconPadding = 3;
 
+#ifdef _WIN32
 class DockingCont : public StaticDialog
 {
 public:
@@ -225,3 +230,22 @@ private:
 	// data of added windows
 	std::vector<tTbData *> _vTbData;
 };
+#else // Linux
+// Minimal stub class for Linux compatibility
+class DockingCont
+{
+public:
+	DockingCont() = default;
+	virtual ~DockingCont() = default;
+
+	// Minimal interface for compatibility
+	void* getTabWnd() { return nullptr; }
+	void* getCaptionWnd() { return nullptr; }
+
+	size_t getElementCnt() const { return 0; }
+	bool isFloating() const { return false; }
+
+	// Stub implementations
+	void destroy() {}
+};
+#endif // _WIN32

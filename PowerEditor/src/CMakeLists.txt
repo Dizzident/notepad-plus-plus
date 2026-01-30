@@ -691,6 +691,7 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/TabBar/TabBar.cpp
 		./QtControls/DocTabView/DocTabView.cpp
 		./QtControls/Splitter/Splitter.cpp
+		./QtControls/SplitterContainer/SplitterContainer.cpp
 		./QtControls/GoToLine/GoToLineDlg.cpp
 		./QtControls/RunDlg/RunDlg.cpp
 		./QtControls/RunMacroDlg/RunMacroDlg.cpp
@@ -799,15 +800,35 @@ ELSEIF(UNIX AND NOT APPLE)
 	# Note: Qt6 include directories are handled via target_include_directories
 	# after the target is created, using the Qt6:: targets which automatically
 	# provide their include directories
+	# IMPORTANT: QtControls must come BEFORE WinControls so Qt versions of headers
+	# are found first (ToolBar, StatusBar, StaticDialog, etc.)
+	# Remove WinControls paths that have Qt replacements
+	list(REMOVE_ITEM projIncludDir ./WinControls/ToolBar/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/StaticDialog/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/AboutDlg/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/ContextMenu/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/shortcut/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/ClipboardHistory/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/DocumentMap/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/FileBrowser/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/FunctionList/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/Preference/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/ProjectPanel/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/SplitterContainer/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/StatusBar/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/TabBar/)
+	list(REMOVE_ITEM projIncludDir ./WinControls/TreeView/)
 	list(INSERT projIncludDir 0
 		.
 		./Platform
 		./QtCore
+		./QtControls
+		./QtControls/ToolBar
+		./QtControls/StatusBar
 		./MISC
 		./MISC/Common
 		./WinControls
 		./ScintillaComponent
-		./QtControls
 		${CMAKE_SOURCE_DIR}/../../scintilla/include
 	)
 
@@ -929,6 +950,7 @@ IF(UNIX AND NOT APPLE)
 		./QtControls/TabBar
 		./QtControls/DocTabView
 		./QtControls/Splitter
+		./QtControls/SplitterContainer
 		./QtControls/GoToLine
 		./QtControls/RunDlg
 		./QtControls/AboutDlg
@@ -972,7 +994,6 @@ IF(UNIX AND NOT APPLE)
 		./WinControls/StatusBar
 		./WinControls/TabBar
 		./WinControls/TaskList
-		./WinControls/ToolBar
 		./WinControls/ToolTip
 		./WinControls/TrayIcon
 		./WinControls/TreeView

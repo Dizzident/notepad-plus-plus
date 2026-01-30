@@ -89,7 +89,7 @@ public:
     TabBar* getTabBar() const { return _tabBar; }
     ToolBar* getToolBar() const { return _mainToolBar; }
     StatusBar* getStatusBar() const { return _statusBar; }
-    DockingManager::Manager* getDockingManager() const { return _dockingManager; }
+    DockingManager* getDockingManager() const { return _dockingManager; }
 
     // Panel getters
     FunctionListPanel* getFunctionListPanel() const { return _functionListPanel; }
@@ -276,7 +276,7 @@ private:
     FileBrowser* _fileBrowser = nullptr;
 
     // Dock manager
-    DockingManager::Manager* _dockingManager = nullptr;
+    DockingManager* _dockingManager = nullptr;
 
     // Tray icon
     QSystemTrayIcon* _trayIcon = nullptr;

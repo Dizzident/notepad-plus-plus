@@ -29,7 +29,12 @@
 #else
 #include "DocTabView.h"
 #endif
+#ifdef NPP_LINUX
+#include "QtControls/SplitterContainer/SplitterContainer.h"
+using SplitterContainer = QtControls::SplitterContainer;
+#else
 #include "SplitterContainer.h"
+#endif
 #ifdef NPP_LINUX
 // On Linux, use Qt versions of dialogs
 using GoToLineDlg = QtControls::GoToLineDlg;
@@ -52,7 +57,12 @@ using Buffer = QtCore::Buffer;
 #ifndef NPP_LINUX
 #include "RunDlg.h"
 #endif
+#ifdef NPP_LINUX
+#include "QtControls/StatusBar/StatusBar.h"
+using StatusBar = QtControls::StatusBar;
+#else
 #include "StatusBar.h"
+#endif
 #include "lastRecentFileList.h"
 #include "FindCharsInRange.h"
 #include "columnEditor.h"
@@ -66,7 +76,12 @@ using Buffer = QtCore::Buffer;
 #ifndef NPP_LINUX
 #include "RunMacroDlg.h"
 #endif
+#ifdef NPP_LINUX
+#include "QtControls/DockingManager/DockingManager.h"
+using DockingManager = QtControls::DockingManager;
+#else
 #include "DockingManager.h"
+#endif
 #include "Processus.h"
 #include "AutoCompletion.h"
 #include "SmartHighlighter.h"

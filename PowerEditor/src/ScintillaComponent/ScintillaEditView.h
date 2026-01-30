@@ -66,14 +66,14 @@ using DWORD = uint32_t;
 #include "colors.h"
 #ifdef _WIN32
 #include "UserDefineDialog.h"
-#endif
-#include "NppConstants.h"
-
-#ifndef _WIN32
-// On Linux, include headers for LangType and other definitions
+#include "Window.h"
+#else
+// On Linux, include the Qt Window class and headers for LangType
+#include "../QtControls/Window.h"
 #include "../MISC/PluginsManager/Notepad_plus_msgs.h"
 #include "../Parameters.h"
 #endif
+#include "NppConstants.h"
 
 class NppParameters;
 
@@ -275,7 +275,11 @@ struct LanguageNameInfo {
 #define URL_INDIC 8
 class ISorter;
 
+#ifdef _WIN32
 class ScintillaEditView : public Window
+#else
+class ScintillaEditView : public QtControls::Window
+#endif
 {
 friend class Finder;
 public:
@@ -304,12 +308,29 @@ public:
 #endif
 
 	void destroy() override {
+#ifdef _WIN32
 		::DestroyWindow(_hSelf);
 		_hSelf = nullptr;
+#else
+		// On Linux/Qt, _widget is the Qt equivalent of _hSelf
+		if (_widget) {
+			_widget->deleteLater();
+			_widget = nullptr;
+		}
+#endif
 		_pScintillaFunc = nullptr;
 	}
 
+#ifdef _WIN32
 	void init(HINSTANCE hInst, HWND hPere) override;
+#else
+	// On Linux, the base class init takes QWidget*, but we need to maintain
+	// API compatibility with Windows code that passes HINSTANCE/HWND.
+	// The parameters are cast away in the implementation.
+	void init(HINSTANCE hInst, HWND hPere);
+	// Also provide the Qt-native init overload
+	void init(QWidget* parent) override;
+#endif
 
 	LRESULT execute(UINT Msg, WPARAM wParam=0, LPARAM lParam=0) const {
 		try {
@@ -653,7 +674,16 @@ public:
 		if ((NppParameters::getInstance()).isTransparentAvailable())
 			convertSelectedTextTo(caseToConvert);
 		else
+		{
+#ifdef _WIN32
 			::MessageBox(_hSelf, L"This function needs a newer OS version.", L"Change Case Error", MB_OK | MB_ICONHAND);
+#else
+			// On Linux, use QMessageBox via the Platform abstraction
+			// For now, just skip the message as this is a very rare code path
+			// (modern Linux systems will always have "transparency available")
+			(void)caseToConvert; // Suppress unused parameter warning
+#endif
+		}
 	}
 
 	void getCurrentFoldStates(std::vector<size_t> & lineStateVector);

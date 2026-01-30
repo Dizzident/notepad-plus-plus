@@ -17,7 +17,10 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui Test)
 
 # Include directories
+# Note: CMAKE_SOURCE_DIR is PowerEditor/src/Tests, so we need to go up to reach src/
+# IMPORTANT: QtControls paths must come BEFORE any inherited WinControls paths
 set(TEST_INCLUDE_DIRS
+    ${CMAKE_SOURCE_DIR}/..
     ${CMAKE_SOURCE_DIR}/../Platform
     ${CMAKE_SOURCE_DIR}/../QtControls
     ${CMAKE_SOURCE_DIR}/../QtControls/StaticDialog

@@ -9,44 +9,67 @@
 #pragma once
 
 #include "../Window.h"
+#include "Docking.h"
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QMap>
 #include <QString>
 #include <QByteArray>
 #include <memory>
+#include <vector>
 
 namespace QtControls {
 
-namespace DockingManager {
+// Forward declarations for compatibility
+class DockingCont;
 
-enum class DockArea {
-    Left,
-    Right,
-    Top,
-    Bottom,
-    Floating
-};
-
-struct PanelInfo {
-    QString name;
-    QString title;
-    QWidget* widget = nullptr;
-    QDockWidget* dockWidget = nullptr;
-    DockArea area = DockArea::Right;
-    bool visible = true;
-    int id = 0;
-};
-
-class Manager : public Window
+// DockingManager class - Qt implementation compatible with Windows version
+class DockingManager : public Window
 {
+    Q_OBJECT
+
 public:
-    Manager();
-    ~Manager() override;
+    enum class DockArea {
+        Left,
+        Right,
+        Top,
+        Bottom,
+        Floating
+    };
 
-    void init(QMainWindow* mainWindow);
+    struct PanelInfo {
+        QString name;
+        QString title;
+        QWidget* widget = nullptr;
+        QDockWidget* dockWidget = nullptr;
+        DockArea area = DockArea::Right;
+        bool visible = true;
+        int id = 0;
+    };
 
+    DockingManager();
+    ~DockingManager() override;
+
+    // Windows-compatible interface
+    void init(void* hInst, void* hWnd, Window** ppWin);
+    void reSizeTo(QRect& rc) override;
     void destroy() override;
+
+    void setClientWnd(Window** ppWin) {
+        _ppWindow = ppWin;
+        _ppMainWindow = ppWin;
+    }
+
+    void showFloatingContainers(bool show);
+
+    void updateContainerInfo(void* hClient);
+    void createDockableDlg(tTbData data, int iCont = CONT_LEFT, bool isVisible = false);
+    void setActiveTab(int iCont, int iItem);
+    void showDockableDlg(void* hDlg, int view);
+    void showDockableDlg(const wchar_t* pszName, int view);
+
+    // Qt-specific interface
+    void init(QMainWindow* mainWindow);
 
     void addPanel(const QString& name, QWidget* widget, DockArea area,
                   const QString& title = QString());
@@ -85,17 +108,30 @@ public:
 
     int getPanelCount() const;
 
+    // Windows-compatible methods
+    int getDockedContSize(int iCont);
+    void setDockedContSize(int iCont, int iSize);
+    std::vector<DockingCont*>& getContainerInfo();
+    void resize();
+
 private:
     QMainWindow* _mainWindow = nullptr;
     QMap<QString, std::shared_ptr<PanelInfo>> _panels;
     int _nextId = 1;
+
+    Window** _ppWindow = nullptr;
+    Window** _ppMainWindow = nullptr;
+    QRect _rcWork;
+    QRect _rect;
+    bool _isInitialized = false;
+
+    // Dummy container vector for compatibility
+    std::vector<DockingCont*> _vContainer;
 
     Qt::DockWidgetArea dockAreaToQt(DockArea area) const;
     DockArea qtToDockArea(Qt::DockWidgetArea area) const;
     void setupDockWidget(QDockWidget* dockWidget, DockArea area);
     PanelInfo* getPanelInfo(const QString& name) const;
 };
-
-} // namespace DockingManager
 
 } // namespace QtControls

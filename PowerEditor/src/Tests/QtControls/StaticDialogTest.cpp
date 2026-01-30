@@ -7,7 +7,7 @@
 // at your option any later version.
 
 #include "StaticDialogTest.h"
-#include "StaticDialog.h"
+#include "QtControls/StaticDialog/StaticDialog.h"
 #include "../Common/TestUtils.h"
 
 using namespace QtControls;

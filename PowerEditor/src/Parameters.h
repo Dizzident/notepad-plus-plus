@@ -79,15 +79,24 @@ const UINT CP_UTF8 = 65001;
 
 #include <tinyxml.h>
 
+#ifdef _WIN32
 #include "ContextMenu.h"
 #include "DockingCont.h"
+#include "ToolBar.h"
+#include "shortcut.h"
+#else
+// On Linux, include Qt versions of these headers
+#include "ContextMenu/ContextMenu.h"
+#include "ToolBar/ToolBar.h"
+#include "Shortcut/Shortcut.h"
+// Define HIGH_CAPTION for Linux (from DockingCont.h on Windows)
+#define HIGH_CAPTION 18
+#endif
 #include "Notepad_plus_msgs.h"
 #include "NppConstants.h"
 #include "NppDarkMode.h"
 #include "NppXml.h"
-#include "ToolBar.h"
 #include "colors.h"
-#include "shortcut.h"
 
 #ifdef _WIN64
 

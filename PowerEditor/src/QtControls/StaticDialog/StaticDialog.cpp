@@ -20,7 +20,17 @@ StaticDialog::StaticDialog(QWidget* parent) : QDialog(parent)
 
 StaticDialog::~StaticDialog()
 {
-    destroy();
+    // Don't call destroy() here - it would delete this which is already being destroyed
+    // Just clean up any resources that need explicit cleanup
+    _widget = nullptr;
+}
+
+void StaticDialog::init(QWidget* parent)
+{
+    _parent = parent;
+    if (parent) {
+        setParent(parent);
+    }
 }
 
 void StaticDialog::create(const QString& title, bool isRTL)
@@ -32,6 +42,8 @@ void StaticDialog::create(const QString& title, bool isRTL)
         dialog->setWindowTitle(title);
         setupDialog(isRTL);
     }
+
+    _isCreated = true;
 }
 
 void StaticDialog::setupDialog(bool isRTL)
@@ -49,10 +61,13 @@ void StaticDialog::setupDialog(bool isRTL)
 
 void StaticDialog::destroy()
 {
-    if (_widget) {
-        delete _widget;
-        _widget = nullptr;
+    // Close the dialog and mark as not created
+    // Don't delete _widget here since it could be 'this'
+    if (_isCreated) {
+        close();
+        _isCreated = false;
     }
+    _widget = nullptr;
 }
 
 void StaticDialog::getMappedChildRect(QWidget* child, QRect& rcChild) const
@@ -68,6 +83,16 @@ void StaticDialog::getMappedChildRect(int idChild, QRect& rcChild) const
     if (!_widget) return;
 
     QWidget* child = _widget->findChild<QWidget*>(QString::number(idChild));
+    if (child) {
+        getMappedChildRect(child, rcChild);
+    }
+}
+
+void StaticDialog::getMappedChildRect(const QString& objectName, QRect& rcChild) const
+{
+    if (!_widget) return;
+
+    QWidget* child = _widget->findChild<QWidget*>(objectName);
     if (child) {
         getMappedChildRect(child, rcChild);
     }
@@ -205,6 +230,13 @@ bool StaticDialog::dlgProc(QWidget* hwnd, QEvent* event)
 {
     // Base implementation - subclasses should override
     (void)hwnd;
+    (void)event;
+    return false;
+}
+
+bool StaticDialog::run_dlgProc(QEvent* event)
+{
+    // Base implementation - no longer pure virtual so class can be instantiated
     (void)event;
     return false;
 }

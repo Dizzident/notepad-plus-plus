@@ -10,16 +10,15 @@
 #include <QDebug>
 
 namespace QtControls {
-namespace DockingManager {
 
-Manager::Manager() = default;
+DockingManager::DockingManager() = default;
 
-Manager::~Manager()
+DockingManager::~DockingManager()
 {
     destroy();
 }
 
-void Manager::init(QMainWindow* mainWindow)
+void DockingManager::init(QMainWindow* mainWindow)
 {
     _mainWindow = mainWindow;
     if (_mainWindow) {
@@ -28,9 +27,19 @@ void Manager::init(QMainWindow* mainWindow)
                                      QMainWindow::AllowNestedDocks |
                                      QMainWindow::AllowTabbedDocks);
     }
+    _isInitialized = true;
 }
 
-void Manager::destroy()
+void DockingManager::init(void* hInst, void* hWnd, Window** ppWin)
+{
+    (void)hInst;
+    (void)hWnd;
+    _ppWindow = ppWin;
+    _ppMainWindow = ppWin;
+    _isInitialized = true;
+}
+
+void DockingManager::destroy()
 {
     for (auto it = _panels.begin(); it != _panels.end(); ++it) {
         PanelInfo* info = it.value().get();
@@ -45,7 +54,14 @@ void Manager::destroy()
     _mainWindow = nullptr;
 }
 
-void Manager::addPanel(const QString& name, QWidget* widget, DockArea area,
+void DockingManager::reSizeTo(QRect& rc)
+{
+    _rect = rc;
+    _rcWork = rc;
+    // In Qt, dock widgets are managed by QMainWindow, so we don't need to resize them manually
+}
+
+void DockingManager::addPanel(const QString& name, QWidget* widget, DockArea area,
                        const QString& title)
 {
     if (!_mainWindow || !widget || name.isEmpty()) {
@@ -83,7 +99,7 @@ void Manager::addPanel(const QString& name, QWidget* widget, DockArea area,
     _panels[name] = std::move(info);
 }
 
-void Manager::removePanel(const QString& name)
+void DockingManager::removePanel(const QString& name)
 {
     if (!_panels.contains(name)) {
         return;
@@ -100,7 +116,7 @@ void Manager::removePanel(const QString& name)
     _panels.remove(name);
 }
 
-void Manager::showPanel(const QString& name)
+void DockingManager::showPanel(const QString& name)
 {
     PanelInfo* info = getPanelInfo(name);
     if (!info || !info->dockWidget) {
@@ -116,7 +132,7 @@ void Manager::showPanel(const QString& name)
     }
 }
 
-void Manager::hidePanel(const QString& name)
+void DockingManager::hidePanel(const QString& name)
 {
     PanelInfo* info = getPanelInfo(name);
     if (!info || !info->dockWidget) {
@@ -127,7 +143,7 @@ void Manager::hidePanel(const QString& name)
     info->visible = false;
 }
 
-void Manager::togglePanel(const QString& name)
+void DockingManager::togglePanel(const QString& name)
 {
     if (isPanelVisible(name)) {
         hidePanel(name);
@@ -136,7 +152,7 @@ void Manager::togglePanel(const QString& name)
     }
 }
 
-bool Manager::isPanelVisible(const QString& name) const
+bool DockingManager::isPanelVisible(const QString& name) const
 {
     PanelInfo* info = getPanelInfo(name);
     if (!info || !info->dockWidget) {
@@ -145,12 +161,12 @@ bool Manager::isPanelVisible(const QString& name) const
     return info->dockWidget->isVisible();
 }
 
-bool Manager::hasPanel(const QString& name) const
+bool DockingManager::hasPanel(const QString& name) const
 {
     return _panels.contains(name);
 }
 
-void Manager::setPanelArea(const QString& name, DockArea area)
+void DockingManager::setPanelArea(const QString& name, DockArea area)
 {
     PanelInfo* info = getPanelInfo(name);
     if (!info || !info->dockWidget || !_mainWindow) {
@@ -170,7 +186,7 @@ void Manager::setPanelArea(const QString& name, DockArea area)
     info->area = area;
 }
 
-DockArea Manager::getPanelArea(const QString& name) const
+DockingManager::DockArea DockingManager::getPanelArea(const QString& name) const
 {
     PanelInfo* info = getPanelInfo(name);
     if (!info) {
@@ -184,7 +200,7 @@ DockArea Manager::getPanelArea(const QString& name) const
     return info->area;
 }
 
-void Manager::setPanelTitle(const QString& name, const QString& title)
+void DockingManager::setPanelTitle(const QString& name, const QString& title)
 {
     PanelInfo* info = getPanelInfo(name);
     if (!info || !info->dockWidget) {
@@ -195,7 +211,7 @@ void Manager::setPanelTitle(const QString& name, const QString& title)
     info->dockWidget->setWindowTitle(title);
 }
 
-QString Manager::getPanelTitle(const QString& name) const
+QString DockingManager::getPanelTitle(const QString& name) const
 {
     PanelInfo* info = getPanelInfo(name);
     if (!info) {
@@ -204,7 +220,7 @@ QString Manager::getPanelTitle(const QString& name) const
     return info->title;
 }
 
-QWidget* Manager::getPanelWidget(const QString& name) const
+QWidget* DockingManager::getPanelWidget(const QString& name) const
 {
     PanelInfo* info = getPanelInfo(name);
     if (!info) {
@@ -213,7 +229,7 @@ QWidget* Manager::getPanelWidget(const QString& name) const
     return info->widget;
 }
 
-QDockWidget* Manager::getDockWidget(const QString& name) const
+QDockWidget* DockingManager::getDockWidget(const QString& name) const
 {
     PanelInfo* info = getPanelInfo(name);
     if (!info) {
@@ -222,7 +238,7 @@ QDockWidget* Manager::getDockWidget(const QString& name) const
     return info->dockWidget;
 }
 
-void Manager::setTabbedDocking(const QString& name1, const QString& name2)
+void DockingManager::setTabbedDocking(const QString& name1, const QString& name2)
 {
     if (!_mainWindow) {
         return;
@@ -238,7 +254,7 @@ void Manager::setTabbedDocking(const QString& name1, const QString& name2)
     _mainWindow->tabifyDockWidget(dock1, dock2);
 }
 
-QByteArray Manager::saveLayout() const
+QByteArray DockingManager::saveLayout() const
 {
     if (!_mainWindow) {
         return QByteArray();
@@ -247,7 +263,7 @@ QByteArray Manager::saveLayout() const
     return _mainWindow->saveState();
 }
 
-void Manager::restoreLayout(const QByteArray& layout)
+void DockingManager::restoreLayout(const QByteArray& layout)
 {
     if (!_mainWindow || layout.isEmpty()) {
         return;
@@ -263,26 +279,26 @@ void Manager::restoreLayout(const QByteArray& layout)
     }
 }
 
-void Manager::showAllPanels()
+void DockingManager::showAllPanels()
 {
     for (auto it = _panels.begin(); it != _panels.end(); ++it) {
         showPanel(it.key());
     }
 }
 
-void Manager::hideAllPanels()
+void DockingManager::hideAllPanels()
 {
     for (auto it = _panels.begin(); it != _panels.end(); ++it) {
         hidePanel(it.key());
     }
 }
 
-QStringList Manager::getPanelNames() const
+QStringList DockingManager::getPanelNames() const
 {
     return _panels.keys();
 }
 
-QStringList Manager::getVisiblePanels() const
+QStringList DockingManager::getVisiblePanels() const
 {
     QStringList visible;
     for (auto it = _panels.begin(); it != _panels.end(); ++it) {
@@ -293,7 +309,7 @@ QStringList Manager::getVisiblePanels() const
     return visible;
 }
 
-void Manager::setPanelFeatures(const QString& name, bool closable, bool movable, bool floatable)
+void DockingManager::setPanelFeatures(const QString& name, bool closable, bool movable, bool floatable)
 {
     QDockWidget* dock = getDockWidget(name);
     if (!dock) {
@@ -315,7 +331,7 @@ void Manager::setPanelFeatures(const QString& name, bool closable, bool movable,
     dock->setFeatures(features);
 }
 
-void Manager::raisePanel(const QString& name)
+void DockingManager::raisePanel(const QString& name)
 {
     QDockWidget* dock = getDockWidget(name);
     if (!dock) {
@@ -329,12 +345,104 @@ void Manager::raisePanel(const QString& name)
     }
 }
 
-int Manager::getPanelCount() const
+int DockingManager::getPanelCount() const
 {
     return _panels.size();
 }
 
-Qt::DockWidgetArea Manager::dockAreaToQt(DockArea area) const
+// Windows-compatible methods
+int DockingManager::getDockedContSize(int iCont)
+{
+    // Map container index to dock area and return size
+    // This is a simplified implementation
+    if (!_mainWindow) {
+        return 0;
+    }
+
+    // Return a default size - in a full implementation, this would
+    // track the actual sizes of dock areas
+    switch (iCont) {
+        case CONT_LEFT:
+        case CONT_RIGHT:
+            return 200; // default width
+        case CONT_TOP:
+        case CONT_BOTTOM:
+            return 150; // default height
+        default:
+            return 0;
+    }
+}
+
+void DockingManager::setDockedContSize(int iCont, int iSize)
+{
+    // In Qt, dock widget sizes are managed by QMainWindow
+    // We would need to implement custom resizing logic here
+    (void)iCont;
+    (void)iSize;
+}
+
+std::vector<DockingCont*>& DockingManager::getContainerInfo()
+{
+    // Return dummy container vector for compatibility
+    return _vContainer;
+}
+
+void DockingManager::resize()
+{
+    // In Qt, resizing is handled automatically by the layout system
+    // This method is provided for API compatibility
+}
+
+void DockingManager::showFloatingContainers(bool show)
+{
+    for (auto it = _panels.begin(); it != _panels.end(); ++it) {
+        PanelInfo* info = it.value().get();
+        if (info && info->dockWidget && info->dockWidget->isFloating()) {
+            if (show) {
+                info->dockWidget->show();
+            } else {
+                info->dockWidget->hide();
+            }
+        }
+    }
+}
+
+void DockingManager::updateContainerInfo(void* hClient)
+{
+    (void)hClient;
+    // Compatibility stub
+}
+
+void DockingManager::createDockableDlg(tTbData data, int iCont, bool isVisible)
+{
+    (void)data;
+    (void)iCont;
+    (void)isVisible;
+    // Compatibility stub - would need full implementation
+}
+
+void DockingManager::setActiveTab(int iCont, int iItem)
+{
+    (void)iCont;
+    (void)iItem;
+    // Compatibility stub
+}
+
+void DockingManager::showDockableDlg(void* hDlg, int view)
+{
+    (void)hDlg;
+    (void)view;
+    // Compatibility stub
+}
+
+void DockingManager::showDockableDlg(const wchar_t* pszName, int view)
+{
+    (void)pszName;
+    (void)view;
+    // Compatibility stub
+}
+
+Qt::DockWidgetArea DockingManager::dockAreaToQt(DockArea area) const
 {
     switch (area) {
         case DockArea::Left:
@@ -351,7 +459,7 @@ Qt::DockWidgetArea Manager::dockAreaToQt(DockArea area) const
     }
 }
 
-DockArea Manager::qtToDockArea(Qt::DockWidgetArea area) const
+DockingManager::DockArea DockingManager::qtToDockArea(Qt::DockWidgetArea area) const
 {
     switch (area) {
         case Qt::LeftDockWidgetArea:
@@ -367,7 +475,7 @@ DockArea Manager::qtToDockArea(Qt::DockWidgetArea area) const
     }
 }
 
-void Manager::setupDockWidget(QDockWidget* dockWidget, DockArea area)
+void DockingManager::setupDockWidget(QDockWidget* dockWidget, DockArea area)
 {
     if (!dockWidget) {
         return;
@@ -385,7 +493,7 @@ void Manager::setupDockWidget(QDockWidget* dockWidget, DockArea area)
     }
 }
 
-PanelInfo* Manager::getPanelInfo(const QString& name) const
+DockingManager::PanelInfo* DockingManager::getPanelInfo(const QString& name) const
 {
     if (!_panels.contains(name)) {
         return nullptr;
@@ -393,5 +501,4 @@ PanelInfo* Manager::getPanelInfo(const QString& name) const
     return _panels[name].get();
 }
 
-} // namespace DockingManager
 } // namespace QtControls

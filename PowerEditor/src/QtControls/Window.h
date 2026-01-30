@@ -102,6 +102,12 @@ public:
         return _widget;
     }
 
+    // getHSelf() - compatibility with Windows code that expects HWND
+    // On Linux, returns the widget pointer as a void* (same as HWND typedef)
+    void* getHSelf() const {
+        return reinterpret_cast<void*>(_widget);
+    }
+
     QWidget* getParent() const {
         return _parent;
     }

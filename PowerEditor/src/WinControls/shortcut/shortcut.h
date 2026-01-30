@@ -19,9 +19,14 @@
 
 #include "shortcutRc.h"
 #include "Scintilla.h"
-#include "StaticDialog/StaticDialog.h"
 #include "Common.h"
 #include "menuCmdID.h"
+
+// On Windows, Shortcut inherits from StaticDialog
+// On Linux, Shortcut is a standalone data class (no UI)
+#ifdef _WIN32
+#include "StaticDialog/StaticDialog.h"
+#endif
 
 constexpr int menuItemStrLenMax = 64 + 64;	// Add 64 "units" more for being compatible to the current localization file. See:
 											// https://github.com/notepad-plus-plus/notepad-plus-plus/issues/13556#issuecomment-1518197329
@@ -65,7 +70,12 @@ struct KeyCombo {
 	UCHAR _key = 0;
 };
 
+#ifdef _WIN32
 class Shortcut : public StaticDialog {
+#else
+// On Linux, Shortcut is a standalone data class without UI
+class Shortcut {
+#endif
 public:
 	Shortcut(): _canModifyName(false) {
 		setName("");
@@ -109,10 +119,10 @@ public:
 		return *this;
 	}
 	friend inline bool operator==(const Shortcut & a, const Shortcut & b) {
-		return ((strcmp(a.getMenuName(), b.getMenuName()) == 0) && 
-			(a._keyCombo._isCtrl == b._keyCombo._isCtrl) && 
-			(a._keyCombo._isAlt == b._keyCombo._isAlt) && 
-			(a._keyCombo._isShift == b._keyCombo._isShift) && 
+		return ((strcmp(a.getMenuName(), b.getMenuName()) == 0) &&
+			(a._keyCombo._isCtrl == b._keyCombo._isCtrl) &&
+			(a._keyCombo._isAlt == b._keyCombo._isAlt) &&
+			(a._keyCombo._isShift == b._keyCombo._isShift) &&
 			(a._keyCombo._key == b._keyCombo._key)
 			);
 	}
@@ -121,11 +131,13 @@ public:
 		return !(a == b);
 	}
 
+#ifdef _WIN32
 	virtual int doDialog() {
 		return static_cast<int>(StaticDialog::myCreateDialogBoxIndirectParam(IDD_SHORTCUT_DLG, false));
 	}
+#endif
 
-	virtual bool isValid() const { //valid should only be used in cases where the shortcut isEnabled().
+	virtual bool isValid() const {
 		if (_keyCombo._key == 0)
 			return true;	//disabled _keyCombo always valid, just disabled
 
@@ -174,13 +186,16 @@ public:
 
 protected :
 	KeyCombo _keyCombo;
-	intptr_t CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam) override;
 	bool _canModifyName = false;
 	char _name[menuItemStrLenMax] {};		//normal name is plain text (for display purposes)
 	char _menuName[menuItemStrLenMax] {};	//menu name has ampersands for quick keys
+
+#ifdef _WIN32
+	intptr_t CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam) override;
 	void updateConflictState(const bool endSession = false) const;
+#endif
 };
-		 
+
 class CommandShortcut : public Shortcut {
 public:
 	CommandShortcut(const Shortcut& sc, long id, bool isDuplicated = false) : Shortcut(sc), _id(id) {
@@ -189,7 +204,9 @@ public:
 	}
 
 	CommandShortcut& operator = (const Shortcut& sct);
+#ifdef _WIN32
 	void setCategoryFromMenu(HMENU hMenu);
+#endif
 	unsigned long getID() const { return _id; }
 	void setID(unsigned long id) { _id = id;}
 	int getNth() const { return _nth; }
@@ -200,9 +217,7 @@ private :
 	unsigned long _id = 0;
 	std::wstring _category;
 	std::wstring _shortcutName;
-	int _nth = 0; // Allow several shortcuts for the same command (_id).
-	              // If there is the 2nd identical command in winKeyDefs array, the value of _nth will be 1.
-	              // This variable member allows the application to distinguish the different shortcuts assigned to the same command.
+	int _nth = 0;
 };
 
 
@@ -237,11 +252,12 @@ public:
 	std::string toString() const override;
 	std::string toString(size_t index) const;
 
+#ifdef _WIN32
 	int doDialog() override {
 		return static_cast<int>(StaticDialog::myCreateDialogBoxIndirectParam(IDD_SHORTCUTSCINT_DLG, false));
 	}
+#endif
 
-	//only compares the internal KeyCombos, nothing else
 	friend inline bool operator==(const ScintillaKeyMap & a, const ScintillaKeyMap & b) {
 		bool equal = a._size == b._size;
 		if (!equal)
@@ -249,10 +265,10 @@ public:
 		size_t i = 0;
 		while (equal && (i < a._size))
 		{
-			equal = 
-				(a._keyCombos[i]._isCtrl	== b._keyCombos[i]._isCtrl) && 
-				(a._keyCombos[i]._isAlt		== b._keyCombos[i]._isAlt) && 
-				(a._keyCombos[i]._isShift	== b._keyCombos[i]._isShift) && 
+			equal =
+				(a._keyCombos[i]._isCtrl	== b._keyCombos[i]._isCtrl) &&
+				(a._keyCombos[i]._isAlt		== b._keyCombos[i]._isAlt) &&
+				(a._keyCombos[i]._isShift	== b._keyCombos[i]._isShift) &&
 				(a._keyCombos[i]._key		== b._keyCombos[i]._key);
 			++i;
 		}
@@ -268,12 +284,14 @@ private:
 	int _menuCmdID;
 	std::vector<KeyCombo> _keyCombos;
 	size_t _size;
+#ifdef _WIN32
 	void applyToCurrentIndex();
 	void validateDialog();
 	void showCurrentSettings();
 	void updateListItem(int index);
 protected :
 	intptr_t CALLBACK run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam) override;
+#endif
 };
 
 
@@ -288,7 +306,7 @@ struct recordedMacroStep {
 	uptr_t _lParameter = 0;
 	std::string _sParameter;
 	MacroTypeIndex _macroType = mtMenuCommand;
-	
+
 	recordedMacroStep(int iMessage, uptr_t wParam, uptr_t lParam);
 	explicit recordedMacroStep(int iCommandID): _wParameter(iCommandID) {}
 
@@ -324,7 +342,6 @@ private:
 };
 
 class PluginCmdShortcut : public CommandShortcut {
-//friend class NppParameters;
 public:
 	PluginCmdShortcut(const Shortcut& sc, int id, const char*moduleName, unsigned short internalID) :
 		CommandShortcut(sc, id), _id(id), _moduleName(moduleName), _internalID(internalID) {}
@@ -345,7 +362,8 @@ private :
 	int _internalID;
 };
 
-class Accelerator { //Handles accelerator keys for Notepad++ menu, including custom commands
+#ifdef _WIN32
+class Accelerator {
 friend class ShortcutMapper;
 public:
 	Accelerator() = default;
@@ -386,7 +404,7 @@ private:
 	void updateMenuItemByCommand(const CommandShortcut& csc);
 };
 
-class ScintillaAccelerator {	//Handles accelerator keys for scintilla
+class ScintillaAccelerator {
 public:
 	ScintillaAccelerator() = default;
 	void init(std::vector<HWND> * vScintillas, HMENU hMenu, HWND menuParent);
@@ -399,3 +417,4 @@ private:
 
 	void updateMenuItemByID(const ScintillaKeyMap& skm, int id);
 };
+#endif // _WIN32

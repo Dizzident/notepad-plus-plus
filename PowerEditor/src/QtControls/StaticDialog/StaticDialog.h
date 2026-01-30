@@ -23,14 +23,21 @@ public:
     explicit StaticDialog(QWidget* parent = nullptr);
     ~StaticDialog() override;
 
+    // Initialize the dialog with a parent widget (compatibility with Window class)
+    virtual void init(QWidget* parent);
+
     virtual void create(const QString& title = QString(), bool isRTL = false);
 
     virtual bool isCreated() const {
-        return true;  // QDialog is always created when constructed
+        return _isCreated;
     }
+
+    // Get the underlying widget (compatibility with Window class)
+    QWidget* getWidget() const { return _widget; }
 
     void getMappedChildRect(QWidget* child, QRect& rcChild) const;
     void getMappedChildRect(int idChild, QRect& rcChild) const;
+    void getMappedChildRect(const QString& objectName, QRect& rcChild) const;
     void redrawDlgItem(const QString& objectName, bool forceUpdate = false) const;
 
     // Redraw the entire dialog (compatibility with Windows code)
@@ -60,8 +67,10 @@ public:
     void destroy();
 
 protected:
+    QWidget* _parent = nullptr;
     QWidget* _widget = nullptr;
     QRect _rc{};
+    bool _isCreated = false;
 
     QDialog* getDialog() const { return const_cast<StaticDialog*>(this); }
 
@@ -69,7 +78,7 @@ protected:
     virtual void connectSignals() {}
 
     static bool dlgProc(QWidget* hwnd, QEvent* event);
-    virtual bool run_dlgProc(QEvent* event) = 0;
+    virtual bool run_dlgProc(QEvent* event);
 
     void setupDialog(bool isRTL);
 };
