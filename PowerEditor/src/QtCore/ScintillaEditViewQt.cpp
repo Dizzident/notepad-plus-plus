@@ -32,6 +32,7 @@
 #include "ScintillaEditView.h"
 #include "Parameters.h"
 #include "Common.h"
+#include "ScintillaEditBase.h"
 
 #include <algorithm>
 #include <vector>
@@ -2811,17 +2812,24 @@ void ScintillaEditView::init(HINSTANCE hInst, HWND hPere)
 
 void ScintillaEditView::init(QWidget* parent)
 {
+    // Create the actual Scintilla Qt widget
+    ScintillaEditBase* sciWidget = new ScintillaEditBase(parent);
+    _widget = sciWidget;
+
     // Call the QtControls::Window base class init
     QtControls::Window::init(parent);
+
+    // Get function pointers for fast Scintilla access
+    _pScintillaFunc = reinterpret_cast<SCINTILLA_FUNC>(sciWidget->send(SCI_GETDIRECTFUNCTION, 0, 0));
+    _pScintillaPtr = reinterpret_cast<SCINTILLA_PTR>(sciWidget->send(SCI_GETDIRECTPOINTER, 0, 0));
 
     // Then do our own initialization
     if (!_SciInit)
     {
-        // Scintilla Qt doesn't require explicit registration like Windows
         _SciInit = true;
     }
 
-    // Get the startup document and make a buffer for it so it can be accessed like a file
+    // Get the startup document and make a buffer for it
     attachDefaultDoc();
 }
 

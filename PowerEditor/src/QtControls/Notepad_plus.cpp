@@ -91,6 +91,14 @@ Notepad_plus::Notepad_plus()
 	// For now, assume non-admin mode (can be enhanced later)
 	nppParam.setAdminMode(false);
 	_isAdministrator = false;
+
+	// Initialize view pointers - critical for file operations
+	_pEditView = &_mainEditView;
+	_pDocTab = &_mainDocTab;
+	_pNonEditView = &_subEditView;
+	_pNonDocTab = &_subDocTab;
+	_mainWindowStatus = WindowMainActive;
+	_activeView = MAIN_VIEW;
 }
 
 Notepad_plus::~Notepad_plus()

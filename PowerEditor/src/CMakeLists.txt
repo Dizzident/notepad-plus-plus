@@ -1035,6 +1035,10 @@ IF(UNIX AND NOT APPLE)
 		./TinyXml
 		./pugixml
 		./DarkMode
+		# Scintilla Qt6 for ScintillaEditBase
+		"${CMAKE_SOURCE_DIR}/../../scintilla/qt/ScintillaEditBase"
+		"${CMAKE_SOURCE_DIR}/../../scintilla/include"
+		"${CMAKE_SOURCE_DIR}/../../scintilla/src"
 	)
 ENDIF()
 

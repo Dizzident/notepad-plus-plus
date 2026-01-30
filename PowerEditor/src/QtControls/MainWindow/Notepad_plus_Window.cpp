@@ -189,6 +189,37 @@ void MainWindow::setupUI()
     _editorSplitter = new QSplitter(Qt::Horizontal, this);
     mainLayout->addWidget(_editorSplitter);
 
+    // Initialize main edit view
+    _pNotepad_plus->getMainEditView()->init(_editorSplitter);
+
+    // Create container for main view (tab bar + editor)
+    auto* mainContainer = new QWidget(_editorSplitter);
+    auto* mainVLayout = new QVBoxLayout(mainContainer);
+    mainVLayout->setContentsMargins(0, 0, 0, 0);
+    mainVLayout->setSpacing(0);
+
+    // Initialize main doc tab and add to container
+    _pNotepad_plus->getMainDocTab()->init(mainContainer, _pNotepad_plus->getMainEditView());
+    mainVLayout->addWidget(_pNotepad_plus->getMainDocTab()->getWidget());
+
+    // Add main editor to container
+    mainVLayout->addWidget(_pNotepad_plus->getMainEditView()->getWidget(), 1);
+
+    // Initialize sub edit view
+    _pNotepad_plus->getSubEditView()->init(_editorSplitter);
+    auto* subContainer = new QWidget(_editorSplitter);
+    auto* subVLayout = new QVBoxLayout(subContainer);
+    subVLayout->setContentsMargins(0, 0, 0, 0);
+    subVLayout->setSpacing(0);
+    _pNotepad_plus->getSubDocTab()->init(subContainer, _pNotepad_plus->getSubEditView());
+    subVLayout->addWidget(_pNotepad_plus->getSubDocTab()->getWidget());
+    subVLayout->addWidget(_pNotepad_plus->getSubEditView()->getWidget(), 1);
+
+    // Add containers to splitter and hide sub view
+    _editorSplitter->addWidget(mainContainer);
+    _editorSplitter->addWidget(subContainer);
+    subContainer->hide();  // Only show main view by default
+
     // Initialize menu bar
     initMenuBar();
 
