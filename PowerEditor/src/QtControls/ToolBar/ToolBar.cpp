@@ -68,6 +68,7 @@ bool ToolBar::init(QWidget* parent, toolBarStatusType type,
 
     // Create the toolbar widget
     _widget = new QToolBar(parent);
+    _widget->setObjectName("MainToolBar");
     QToolBar* toolbar = getToolBar();
     if (!toolbar) return false;
 

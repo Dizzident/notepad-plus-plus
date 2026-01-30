@@ -8,6 +8,7 @@
 
 #include "StatusBar.h"
 #include <QMainWindow>
+#include <QWidget>
 
 namespace QtControls {
 
@@ -68,8 +69,14 @@ void StatusBar::setPartWidth(int index, int width)
     _partWidths[index] = width;
 
     if (index < static_cast<int>(_partLabels.size())) {
-        _partLabels[index]->setMinimumWidth(width);
-        _partLabels[index]->setMaximumWidth(width);
+        // Handle -1 (stretch) by not setting fixed width constraints
+        if (width < 0) {
+            _partLabels[index]->setMinimumWidth(0);
+            _partLabels[index]->setMaximumWidth(QWIDGETSIZE_MAX);
+        } else {
+            _partLabels[index]->setMinimumWidth(width);
+            _partLabels[index]->setMaximumWidth(width);
+        }
     }
 }
 
@@ -132,7 +139,12 @@ void StatusBar::adjustParts()
     // Adjust sizes based on content
     for (size_t i = 0; i < _partLabels.size(); ++i) {
         if (i < _partWidths.size()) {
-            _partLabels[i]->setMinimumWidth(_partWidths[i]);
+            int width = _partWidths[i];
+            if (width < 0) {
+                _partLabels[i]->setMinimumWidth(0);
+            } else {
+                _partLabels[i]->setMinimumWidth(width);
+            }
         }
     }
 }

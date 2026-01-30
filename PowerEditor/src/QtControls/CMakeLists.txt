@@ -36,6 +36,7 @@ set(QTCONTROLS_SOURCES
     Preference/preferenceDlg.cpp
     ListView/ListView.cpp
     ClipboardHistory/ClipboardHistoryPanel.cpp
+    AnsiCharPanel/AnsiCharPanel.cpp
     DocumentMap/DocumentMap.cpp
     FileBrowser/FileBrowser.cpp
     FunctionList/FunctionListPanel.cpp
@@ -87,6 +88,7 @@ set(QTCONTROLS_HEADERS
     Preference/preferenceDlg.h
     ListView/ListView.h
     ClipboardHistory/ClipboardHistoryPanel.h
+    AnsiCharPanel/AnsiCharPanel.h
     DocumentMap/DocumentMap.h
     FileBrowser/FileBrowser.h
     FunctionList/FunctionListPanel.h
@@ -128,6 +130,7 @@ target_include_directories(QtControls PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Preference
     ${CMAKE_CURRENT_SOURCE_DIR}/ListView
     ${CMAKE_CURRENT_SOURCE_DIR}/ClipboardHistory
+    ${CMAKE_CURRENT_SOURCE_DIR}/AnsiCharPanel
     ${CMAKE_CURRENT_SOURCE_DIR}/DocumentMap
     ${CMAKE_CURRENT_SOURCE_DIR}/FileBrowser
     ${CMAKE_CURRENT_SOURCE_DIR}/FunctionList

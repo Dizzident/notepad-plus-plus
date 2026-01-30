@@ -717,6 +717,7 @@ ELSEIF(UNIX AND NOT APPLE)
 		./QtControls/SmartHighlighter/SmartHighlighter.cpp
 		./QtControls/HashDlgs/HashFromFilesDlg.cpp
 		./QtControls/HashDlgs/HashFromTextDlg.cpp
+		./QtControls/VerticalFileSwitcher/VerticalFileSwitcher.cpp
 		./QtControls/Notepad_plus.cpp
 	)
 
@@ -990,6 +991,7 @@ IF(UNIX AND NOT APPLE)
 		./QtControls/Preference
 		./QtControls/FindCharsInRange
 		./QtControls/ColumnEditor
+		./QtControls/VerticalFileSwitcher
 		./WinControls
 		./WinControls/AboutDlg
 		./WinControls/AnsiCharPanel

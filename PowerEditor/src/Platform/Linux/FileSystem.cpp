@@ -302,6 +302,7 @@ public:
     }
 
     bool createDirectoryRecursive(const std::wstring& path) override {
+        if (path.empty()) return false;
         try {
             std::filesystem::create_directories(toPath(path));
             return true;

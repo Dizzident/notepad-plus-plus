@@ -54,15 +54,17 @@ public:
     bool init() override {
         // Ensure config directories exist
         std::wstring configDir = getSettingsDir();
-        IFileSystem::getInstance().createDirectoryRecursive(configDir);
+        if (!configDir.empty()) {
+            IFileSystem::getInstance().createDirectoryRecursive(configDir);
 
-        // Initialize QSettings
-        QSettings::setDefaultFormat(QSettings::IniFormat);
-        QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
-                          wstringToQString(configDir));
+            // Initialize QSettings
+            QSettings::setDefaultFormat(QSettings::IniFormat);
+            QSettings::setPath(QSettings::IniFormat, QSettings::UserScope,
+                              wstringToQString(configDir));
 
-        // Load or create config.xml
-        loadConfig();
+            // Load or create config.xml
+            loadConfig();
+        }
 
         return true;
     }
@@ -75,6 +77,16 @@ public:
     std::wstring getSettingsDir() const override {
         // XDG config directory
         QString configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+        if (configPath.isEmpty()) {
+            // Fallback to home directory/.config
+            const char* home = getenv("HOME");
+            if (home) {
+                configPath = QString::fromUtf8(home) + "/.config";
+            } else {
+                // Last resort fallback
+                configPath = "/tmp";
+            }
+        }
         configPath += "/notepad-plus-plus";
         return qstringToWstring(configPath);
     }
@@ -82,6 +94,16 @@ public:
     std::wstring getUserPluginsDir() const override {
         // XDG data directory for plugins
         QString dataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+        if (dataPath.isEmpty()) {
+            // Fallback to home directory/.local/share
+            const char* home = getenv("HOME");
+            if (home) {
+                dataPath = QString::fromUtf8(home) + "/.local/share/notepad-plus-plus";
+            } else {
+                // Last resort fallback
+                dataPath = "/tmp/notepad-plus-plus";
+            }
+        }
         dataPath += "/plugins";
         return qstringToWstring(dataPath);
     }
@@ -461,6 +483,16 @@ namespace SettingsUtils {
 
 std::wstring getConfigFilePath(const std::wstring& filename) {
     QString configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    if (configPath.isEmpty()) {
+        // Fallback to home directory/.config
+        const char* home = getenv("HOME");
+        if (home) {
+            configPath = QString::fromUtf8(home) + "/.config";
+        } else {
+            // Last resort fallback
+            configPath = "/tmp";
+        }
+    }
     configPath += "/notepad-plus-plus/";
     configPath += QString::fromWCharArray(filename.c_str());
     return qstringToWstring(configPath);

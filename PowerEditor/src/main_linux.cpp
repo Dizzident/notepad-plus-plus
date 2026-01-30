@@ -620,10 +620,11 @@ private:
         NppGUI& nppGUI = nppParams.getNppGUI();
 
         // Load last session if enabled
-        if (nppGUI._rememberLastSession && !nppGUI._isCmdlineNosessionActivated)
-        {
-            _notepad_plus_plus_core.loadLastSession();
-        }
+        // DISABLED: Session loading causes crash - needs proper implementation
+        // if (nppGUI._rememberLastSession && !nppGUI._isCmdlineNosessionActivated)
+        // {
+        //     _notepad_plus_plus_core.loadLastSession();
+        // }
 
         // Scan for localization files
         // TODO: Use public methods or move to friend class
@@ -855,7 +856,7 @@ int main(int argc, char* argv[])
         QApplication::tr("Open folders as workspace"));
     parser.addOption(openFoldersAsWorkspaceOption);
 
-    QCommandLineOption recursiveOption(QStringList() << "r" << "recursive",
+    QCommandLineOption recursiveOption(QStringList() << "R" << "recursive",
         QApplication::tr("Recursive folder search"));
     parser.addOption(recursiveOption);
 

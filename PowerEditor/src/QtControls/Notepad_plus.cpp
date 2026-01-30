@@ -35,6 +35,13 @@
 #include "Platform/Clipboard.h"
 #include "menuCmdID.h"
 
+// Panel headers needed for destructor
+#include "ClipboardHistory/ClipboardHistoryPanel.h"
+#include "ProjectPanel/ProjectPanel.h"
+#include "DocumentMap/DocumentMap.h"
+#include "FunctionList/FunctionListPanel.h"
+#include "FileBrowser/FileBrowser.h"
+
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QInputDialog>

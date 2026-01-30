@@ -225,6 +225,16 @@ std::wstring qstringToWstring(const QString& qstr)
 std::wstring getXdgConfigDir()
 {
     QString configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    if (configPath.isEmpty()) {
+        // Fallback to home directory/.config
+        const char* home = getenv("HOME");
+        if (home) {
+            configPath = QString::fromUtf8(home) + "/.config";
+        } else {
+            // Last resort fallback
+            configPath = "/tmp";
+        }
+    }
     configPath += "/notepad-plus-plus";
     return qstringToWstring(configPath);
 }
@@ -574,8 +584,10 @@ std::wstring NppParameters::getSettingsFolder()
     std::wstring settingsFolderPath = getXdgConfigDir();
 
     // Ensure directory exists
-    QDir dir;
-    dir.mkpath(wstringToQString(settingsFolderPath));
+    if (!settingsFolderPath.empty()) {
+        QDir dir;
+        dir.mkpath(wstringToQString(settingsFolderPath));
+    }
 
     return settingsFolderPath;
 }
@@ -615,25 +627,38 @@ bool NppParameters::load()
         _userPath = getXdgConfigDir();
 
         // Ensure directory exists
-        QDir dir;
-        dir.mkpath(wstringToQString(_userPath));
+        if (!_userPath.empty()) {
+            QDir dir;
+            dir.mkpath(wstringToQString(_userPath));
+        }
 
         _appdataNppDir = _userPluginConfDir = _userPath;
 
         pathAppend(_userPluginConfDir, L"plugins");
-        dir.mkpath(wstringToQString(_userPluginConfDir));
+        if (!_userPluginConfDir.empty()) {
+            QDir dir;
+            dir.mkpath(wstringToQString(_userPluginConfDir));
+        }
 
         pathAppend(_userPluginConfDir, L"Config");
-        dir.mkpath(wstringToQString(_userPluginConfDir));
+        if (!_userPluginConfDir.empty()) {
+            QDir dir;
+            dir.mkpath(wstringToQString(_userPluginConfDir));
+        }
     }
 
     _pluginConfDir = _pluginRootDir;
     pathAppend(_pluginConfDir, L"Config");
 
     // Create directories if they don't exist
-    QDir dir;
-    dir.mkpath(wstringToQString(nppPluginRootParent));
-    dir.mkpath(wstringToQString(_pluginRootDir));
+    if (!nppPluginRootParent.empty()) {
+        QDir dir;
+        dir.mkpath(wstringToQString(nppPluginRootParent));
+    }
+    if (!_pluginRootDir.empty()) {
+        QDir dir;
+        dir.mkpath(wstringToQString(_pluginRootDir));
+    }
 
     _sessionPath = _userPath;
 

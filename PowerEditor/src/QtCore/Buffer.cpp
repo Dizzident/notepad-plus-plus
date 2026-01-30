@@ -36,6 +36,15 @@ namespace QtCore {
 static QString getBackupDirectory()
 {
     QString backupDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (backupDir.isEmpty()) {
+        // Fallback to home directory/.local/share
+        const char* home = getenv("HOME");
+        if (home) {
+            backupDir = QString::fromUtf8(home) + "/.local/share/notepad-plus-plus";
+        } else {
+            backupDir = "/tmp/notepad-plus-plus";
+        }
+    }
     backupDir += "/backup";
     QDir dir(backupDir);
     if (!dir.exists()) {
@@ -47,6 +56,15 @@ static QString getBackupDirectory()
 static QString getAutoSaveDirectory()
 {
     QString autoSaveDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (autoSaveDir.isEmpty()) {
+        // Fallback to home directory/.local/share
+        const char* home = getenv("HOME");
+        if (home) {
+            autoSaveDir = QString::fromUtf8(home) + "/.local/share/notepad-plus-plus";
+        } else {
+            autoSaveDir = "/tmp/notepad-plus-plus";
+        }
+    }
     autoSaveDir += "/autosave";
     QDir dir(autoSaveDir);
     if (!dir.exists()) {
