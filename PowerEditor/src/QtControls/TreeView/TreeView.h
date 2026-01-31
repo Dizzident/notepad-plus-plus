@@ -101,7 +101,7 @@ public:
 
     // Search
     int findItem(const QString& text, int startItem = -1) const;
-    int findItemByData(const QVariant& data, int role = Qt::UserRole) const;
+    int findItemByData(const QVariant& data, int role = Qt::UserRole + 1) const;
 
     // State persistence
     bool restoreFoldingStateFrom(const TreeStateNode& treeState2Compare, int treeviewNodeId);

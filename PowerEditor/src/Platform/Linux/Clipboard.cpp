@@ -62,6 +62,8 @@ class ClipboardLinux : public QObject, public IClipboard {
 public:
     ClipboardLinux() : _monitoring(false), _lastSequenceNumber(0) {
         _clipboard = QApplication::clipboard();
+        _nextFormatId = 1;
+        _isOpen = false;
     }
 
     ~ClipboardLinux() override {
@@ -247,8 +249,18 @@ public:
 
     uint32_t registerFormat(const std::string& formatName) override {
         // On Linux/X11, MIME types are used directly
-        _customFormats[formatName] = QString::fromStdString(formatName);
-        return static_cast<uint32_t>(_customFormats.size());
+        // Check if format already registered - return existing ID if found
+        auto it = _customFormatIds.find(formatName);
+        if (it != _customFormatIds.end()) {
+            // Format already exists, return its existing ID
+            return it->second;
+        }
+
+        // New format - assign new ID and store
+        uint32_t newId = _nextFormatId++;
+        _customFormatIds[formatName] = newId;
+        _customFormats[newId] = QString::fromStdString(formatName);
+        return newId;
     }
 
     std::vector<uint8_t> getCustomData(const std::string& formatName) override {
@@ -296,16 +308,17 @@ public:
     }
 
     bool open() override {
-        // Qt clipboard is always accessible
+        // Qt clipboard is always accessible, but track open state for API compatibility
+        _isOpen = true;
         return true;
     }
 
     void close() override {
-        // No-op with Qt clipboard
+        _isOpen = false;
     }
 
     bool isOpen() override {
-        return true;
+        return _isOpen;
     }
 
     bool flush() override {
@@ -324,7 +337,10 @@ private:
     QClipboard* _clipboard;
     bool _monitoring;
     uint32_t _lastSequenceNumber;
-    std::map<std::string, QString> _customFormats;
+    std::map<std::string, uint32_t> _customFormatIds;  // format name -> ID
+    std::map<uint32_t, QString> _customFormats;        // ID -> format string
+    uint32_t _nextFormatId = 1;
+    bool _isOpen = false;
     ClipboardChangeCallback _changeCallback;
 };
 
