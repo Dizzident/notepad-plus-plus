@@ -30,6 +30,7 @@
 #include "../../WinControls/PluginsAdmin/pluginsAdminRes.h"
 
 #include <QApplication>
+#include <QStyle>
 #include <QMainWindow>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -1503,22 +1504,100 @@ bool MainWindow::isAlwaysOnTop() const
 // Tray Icon
 // ============================================================================
 
-void MainWindow::minimizeToTray()
+bool MainWindow::isTrayIconSupported() const
 {
-    if (!_trayIcon) {
-        _trayIcon = new QSystemTrayIcon(this);
-        _trayIcon->setIcon(QIcon::fromTheme("notepad++", QIcon(":/icons/notepad++.png")));
-        _trayIcon->setToolTip("Notepad++");
-        connect(_trayIcon, &QSystemTrayIcon::activated,
-                this, &MainWindow::onTrayIconActivated);
+    return QSystemTrayIcon::isSystemTrayAvailable();
+}
+
+bool MainWindow::shouldMinimizeToTray() const
+{
+    if (!isTrayIconSupported()) {
+        return false;
     }
 
+    NppParameters& nppParam = NppParameters::getInstance();
+    const NppGUI& nppGUI = nppParam.getNppGUI();
+    int trayAction = nppGUI._isMinimizedToTray;
+
+    return (trayAction == sta_minimize || trayAction == sta_minimize_close);
+}
+
+bool MainWindow::shouldCloseToTray() const
+{
+    if (!isTrayIconSupported()) {
+        return false;
+    }
+
+    NppParameters& nppParam = NppParameters::getInstance();
+    const NppGUI& nppGUI = nppParam.getNppGUI();
+    int trayAction = nppGUI._isMinimizedToTray;
+
+    return (trayAction == sta_close || trayAction == sta_minimize_close);
+}
+
+void MainWindow::createTrayIconMenu()
+{
+    if (!_trayIconMenu) {
+        _trayIconMenu = new QMenu(this);
+
+        _trayIconShowAction = new QAction(tr("Show Notepad++"), this);
+        connect(_trayIconShowAction, &QAction::triggered,
+                this, &MainWindow::onTrayIconShowTriggered);
+        _trayIconMenu->addAction(_trayIconShowAction);
+
+        _trayIconMenu->addSeparator();
+
+        _trayIconExitAction = new QAction(tr("Exit"), this);
+        connect(_trayIconExitAction, &QAction::triggered,
+                this, &MainWindow::onTrayIconExitTriggered);
+        _trayIconMenu->addAction(_trayIconExitAction);
+
+        if (_trayIcon) {
+            _trayIcon->setContextMenu(_trayIconMenu);
+        }
+    }
+}
+
+void MainWindow::minimizeToTray()
+{
+    if (!isTrayIconSupported()) {
+        // Tray not supported, just minimize normally
+        showMinimized();
+        return;
+    }
+
+    if (!_trayIcon) {
+        _trayIcon = new QSystemTrayIcon(this);
+
+        // Try to load icon from theme or use application icon
+        QIcon trayIcon = QIcon::fromTheme("notepad++");
+        if (trayIcon.isNull()) {
+            // Use the application window icon
+            trayIcon = windowIcon();
+        }
+        if (trayIcon.isNull()) {
+            // Fallback to a standard icon
+            trayIcon = QApplication::style()->standardIcon(QStyle::SP_ComputerIcon);
+        }
+
+        _trayIcon->setIcon(trayIcon);
+        _trayIcon->setToolTip("Notepad++");
+
+        connect(_trayIcon, &QSystemTrayIcon::activated,
+                this, &MainWindow::onTrayIconActivated);
+
+        createTrayIconMenu();
+    }
+
+    _isMinimizedToTray = true;
     _trayIcon->show();
     hide();
 }
 
 void MainWindow::restoreFromTray()
 {
+    _isMinimizedToTray = false;
+
     show();
     raise();
     activateWindow();
@@ -1528,12 +1607,31 @@ void MainWindow::restoreFromTray()
     }
 }
 
+void MainWindow::onTrayIconShowTriggered()
+{
+    restoreFromTray();
+}
+
+void MainWindow::onTrayIconExitTriggered()
+{
+    // Properly close the application
+    _isMinimizedToTray = false;
+    QApplication::quit();
+}
+
 // ============================================================================
 // Event Handlers
 // ============================================================================
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
+    // Check if we should minimize to tray instead of closing
+    if (shouldCloseToTray() && !_isMinimizedToTray) {
+        minimizeToTray();
+        event->ignore();
+        return;
+    }
+
     saveSettings();
 
     // Check for unsaved documents
@@ -1570,7 +1668,13 @@ void MainWindow::changeEvent(QEvent* event)
 
     if (event->type() == QEvent::WindowStateChange) {
         if (windowState() & Qt::WindowMinimized) {
-            // Window was minimized
+            // Window was minimized - check if we should minimize to tray
+            if (shouldMinimizeToTray() && !_isMinimizedToTray) {
+                // Use a single-shot timer to allow the minimize animation to complete
+                QTimer::singleShot(0, this, [this]() {
+                    minimizeToTray();
+                });
+            }
         }
     }
 }
@@ -2485,8 +2589,23 @@ void MainWindow::onPanelVisibilityChanged(bool visible)
 
 void MainWindow::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
-    if (reason == QSystemTrayIcon::DoubleClick) {
-        restoreFromTray();
+    switch (reason) {
+        case QSystemTrayIcon::DoubleClick:
+            // Double-click restores the window
+            restoreFromTray();
+            break;
+
+        case QSystemTrayIcon::Trigger:
+            // Single click also restores for better UX
+            restoreFromTray();
+            break;
+
+        case QSystemTrayIcon::Context:
+            // Right-click shows context menu (handled automatically by setContextMenu)
+            break;
+
+        default:
+            break;
     }
 }
 
