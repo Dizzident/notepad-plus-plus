@@ -37,6 +37,11 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
+      - name: Setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.build_platform == 'x64' && 'amd64' || matrix.build_platform == 'ARM64' && 'amd64_arm64' || 'x86' }}
+
       - name: Modify resource.h N++ version
         working-directory: PowerEditor\src\
         run: |
@@ -101,7 +106,7 @@ jobs:
       fail-fast: false
       matrix:
         build_configuration: [Release, Debug]
-        build_platform: [x86_64, i686]
+        build_platform: [x86_64]
 
     steps:
       - name: Checkout repository

@@ -57,7 +57,7 @@ jobs:
             libqt6widgets6 \
             libqt6gui6 \
             libqt6network6 \
-            qscintilla2-qt6-dev \
+            libqscintilla2-qt6-dev \
             pkg-config \
             clang \
             clang-tidy \
@@ -235,7 +235,7 @@ jobs:
             libqt6widgets6 \
             libqt6gui6 \
             libqt6network6 \
-            qscintilla2-qt6-dev \
+            libqscintilla2-qt6-dev \
             pkg-config \
             xvfb \
             gcovr \
@@ -283,7 +283,7 @@ jobs:
             ninja-build \
             qt6-base-dev \
             qt6-base-dev-tools \
-            qscintilla2-qt6-dev \
+            libqscintilla2-qt6-dev \
             pkg-config \
             gcovr \
             lcov

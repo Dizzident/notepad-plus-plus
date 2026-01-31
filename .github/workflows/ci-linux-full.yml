@@ -67,7 +67,7 @@ jobs:
             cmake \
             ninja-build \
             qt6-base-dev \
-            qscintilla2-qt6-dev \
+            libqscintilla2-qt6-dev \
             pkg-config \
             clang-format
 
@@ -142,7 +142,7 @@ jobs:
             ninja-build \
             qt6-base-dev \
             qt6-base-dev-tools \
-            qscintilla2-qt6-dev \
+            libqscintilla2-qt6-dev \
             pkg-config \
             clang
 
@@ -191,7 +191,7 @@ jobs:
             cmake \
             ninja-build \
             qt6-base-dev \
-            qscintilla2-qt6-dev \
+            libqscintilla2-qt6-dev \
             pkg-config \
             clang-tidy \
             cppcheck
