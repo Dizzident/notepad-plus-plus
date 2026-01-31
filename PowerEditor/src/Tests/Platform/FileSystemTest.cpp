@@ -14,7 +14,7 @@
 #include <QTextStream>
 #include <QThread>
 
-using namespace Platform;
+using namespace PlatformLayer;
 
 namespace Tests {
 

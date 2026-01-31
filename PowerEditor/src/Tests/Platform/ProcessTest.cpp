@@ -13,7 +13,7 @@
 #include <QFile>
 #include <QDir>
 
-using namespace Platform;
+using namespace PlatformLayer;
 
 namespace Tests {
 

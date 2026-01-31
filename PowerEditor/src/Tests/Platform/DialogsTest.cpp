@@ -11,7 +11,7 @@
 #include "../Common/TestUtils.h"
 #include <QWidget>
 
-using namespace Platform;
+using namespace PlatformLayer;
 
 namespace Tests {
 
@@ -19,23 +19,23 @@ namespace Tests {
 // MockDialogsProvider Implementation
 // ============================================================================
 void MockDialogsProvider::setNextResult(DialogResult result) {
-    _results.append(result);
+    _results.push_back(result);
 }
 
 void MockDialogsProvider::setNextFileName(const QString& fileName) {
-    _fileNames.append(fileName);
+    _fileNames.push_back(fileName);
 }
 
 void MockDialogsProvider::setNextFileNames(const QStringList& fileNames) {
-    _fileNamesList.append(fileNames);
+    _fileNamesList.push_back(fileNames);
 }
 
 void MockDialogsProvider::setNextBoolResult(bool result) {
-    _boolResults.append(result);
+    _boolResults.push_back(result);
 }
 
 void MockDialogsProvider::setNextIntResult(int result) {
-    _intResults.append(result);
+    _intResults.push_back(result);
 }
 
 DialogResult MockDialogsProvider::getNextResult() {

@@ -464,4 +464,50 @@ std::vector<FileFilter> combine(const std::vector<FileFilter>& a,
 
 } // namespace DialogFilters
 
+// ============================================================================
+// Progress Dialog Stub Implementation
+// ============================================================================
+class ProgressDialogLinux : public IProgressDialog {
+public:
+    void show(const std::wstring& title, const std::wstring& message) override {
+        // Stub implementation
+    }
+
+    void hide() override {
+        // Stub implementation
+    }
+
+    void setProgress(int percent) override {
+        // Stub implementation
+    }
+
+    void setMessage(const std::wstring& message) override {
+        // Stub implementation
+    }
+
+    void setStatus(const std::wstring& status) override {
+        // Stub implementation
+    }
+
+    bool isCancelled() const override {
+        return false;
+    }
+
+    void setCancelable(bool cancelable) override {
+        // Stub implementation
+    }
+
+    void step(int increment = 1) override {
+        // Stub implementation
+    }
+
+    void setRange(int min, int max) override {
+        // Stub implementation
+    }
+};
+
+std::unique_ptr<IProgressDialog> IProgressDialog::create() {
+    return std::make_unique<ProgressDialogLinux>();
+}
+
 } // namespace PlatformLayer

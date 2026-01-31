@@ -7,10 +7,11 @@
 // at your option any later version.
 
 #include "FindReplaceDlgTest.h"
-#include "FindReplaceDlg.h"
+#include "FindReplace/FindReplaceDlg.h"
 #include "../Common/TestUtils.h"
 
-using namespace Platform;
+using namespace NppFindReplace;
+using namespace PlatformLayer;
 
 namespace Tests {
 

@@ -7,7 +7,7 @@
 // at your option any later version.
 
 #include "GoToLineDlgTest.h"
-#include "GoToLineDlg.h"
+#include "GoToLine/GoToLineDlg.h"
 #include "../Common/TestUtils.h"
 
 using namespace QtControls;

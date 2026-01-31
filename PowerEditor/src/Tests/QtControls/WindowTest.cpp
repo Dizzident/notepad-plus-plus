@@ -10,8 +10,27 @@
 #include "Window.h"
 #include "../Common/TestUtils.h"
 #include <QRect>
+#include <QWidget>
 
 using namespace QtControls;
+
+// Testable concrete implementation of the abstract Window class
+class TestableWindow : public Window {
+public:
+    TestableWindow(QObject* parent = nullptr) : Window(parent) {}
+
+    void destroy() override {
+        if (_widget) {
+            _widget->deleteLater();
+            _widget = nullptr;
+        }
+    }
+
+    void init(QWidget* parent) override {
+        _parent = parent;
+        _widget = new QWidget(parent);
+    }
+};
 
 namespace Tests {
 
@@ -30,7 +49,7 @@ void WindowTest::cleanupTestCase() {
 void WindowTest::init() {
     _parentWidget = std::make_unique<QWidget>();
     _parentWidget->resize(800, 600);
-    _window = std::make_unique<Window>();
+    _window = std::make_unique<TestableWindow>();
 }
 
 void WindowTest::cleanup() {

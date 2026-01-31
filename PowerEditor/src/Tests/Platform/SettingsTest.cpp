@@ -13,7 +13,7 @@
 #include <QFile>
 #include <QTextStream>
 
-using namespace Platform;
+using namespace PlatformLayer;
 
 namespace Tests {
 
