@@ -94,6 +94,9 @@ namespace FileUtils {
 // ============================================================================
 namespace WidgetTestUtils {
 
+    // Check if running in headless/offscreen environment
+    bool isHeadlessEnvironment();
+
     // Wait for widget to be visible
     bool waitForWidgetVisible(QWidget* widget, int timeoutMs = 5000);
 

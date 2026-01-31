@@ -16,6 +16,7 @@
 #include <QThread>
 #include <QDirIterator>
 #include <QDebug>
+#include <QGuiApplication>
 
 namespace Tests {
 
@@ -184,6 +185,40 @@ bool removeDirectoryRecursively(const QString& path) {
 // WidgetTestUtils Implementation
 // ============================================================================
 namespace WidgetTestUtils {
+
+bool isHeadlessEnvironment() {
+    // Check for offscreen platform
+    const QString platformName = QGuiApplication::platformName();
+    if (platformName == "offscreen" || platformName == "minimal") {
+        return true;
+    }
+
+    // Check for common headless environment indicators
+    if (qEnvironmentVariableIsSet("DISPLAY")) {
+        const QString display = qEnvironmentVariable("DISPLAY");
+        if (display.isEmpty()) {
+            return true;
+        }
+    }
+
+    // Check for CI environment variables that indicate headless
+    if (qEnvironmentVariableIsSet("CI") ||
+        qEnvironmentVariableIsSet("GITHUB_ACTIONS") ||
+        qEnvironmentVariableIsSet("GITLAB_CI") ||
+        qEnvironmentVariableIsSet("JENKINS_URL")) {
+        return true;
+    }
+
+    // Check for explicit headless flag
+    if (qEnvironmentVariableIsSet("QT_QPA_PLATFORM")) {
+        const QString platform = qEnvironmentVariable("QT_QPA_PLATFORM");
+        if (platform == "offscreen" || platform == "minimal" || platform == "headless") {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 bool waitForWidgetVisible(QWidget* widget, int timeoutMs) {
     if (!widget) return false;

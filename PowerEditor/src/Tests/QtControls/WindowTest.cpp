@@ -77,6 +77,10 @@ void WindowTest::testDestroy() {
 // Visibility Tests
 // ============================================================================
 void WindowTest::testDisplay() {
+    if (Tests::WidgetTestUtils::isHeadlessEnvironment()) {
+        QSKIP("Skipping visibility test in headless environment");
+    }
+
     _window->init(_parentWidget.get());
     QVERIFY(!_window->isVisible());
 
@@ -88,6 +92,10 @@ void WindowTest::testDisplay() {
 }
 
 void WindowTest::testIsVisible() {
+    if (Tests::WidgetTestUtils::isHeadlessEnvironment()) {
+        QSKIP("Skipping visibility test in headless environment");
+    }
+
     _window->init(_parentWidget.get());
     QVERIFY(!_window->isVisible());
 
@@ -99,6 +107,10 @@ void WindowTest::testIsVisible() {
 // Geometry Tests
 // ============================================================================
 void WindowTest::testReSizeTo() {
+    if (Tests::WidgetTestUtils::isHeadlessEnvironment()) {
+        QSKIP("Skipping geometry test in headless environment");
+    }
+
     _window->init(_parentWidget.get());
     _window->display(true);
 
@@ -111,6 +123,10 @@ void WindowTest::testReSizeTo() {
 }
 
 void WindowTest::testReSizeToWH() {
+    if (Tests::WidgetTestUtils::isHeadlessEnvironment()) {
+        QSKIP("Skipping geometry test in headless environment");
+    }
+
     _window->init(_parentWidget.get());
     _window->display(true);
 

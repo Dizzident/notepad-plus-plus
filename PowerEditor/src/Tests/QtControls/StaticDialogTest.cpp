@@ -69,6 +69,10 @@ void StaticDialogTest::testDestroy() {
 // Display Tests
 // ============================================================================
 void StaticDialogTest::testDisplay() {
+    if (Tests::WidgetTestUtils::isHeadlessEnvironment()) {
+        QSKIP("Skipping visibility test in headless environment");
+    }
+
     _dialog = std::make_unique<StaticDialog>();
     _dialog->init(_parentWidget.get());
     _dialog->create("Test Dialog");
