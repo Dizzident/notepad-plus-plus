@@ -53,7 +53,7 @@ jobs:
         Write-Output $matrix_all >> $env:GITHUB_OUTPUT
 
         $isPush = "${{github.event_name }}" -eq "push" ? $true : $false
-        $isMaster = $isPush -and $${{ github.ref_name == github.event.repository.master_branch }}
+        $isMaster = $isPush -and ($env:GITHUB_REF_NAME -eq $env:GITHUB_EVENT_REPOSITORY_MASTER_BRANCH)
 
         $commit_message = $isPush ? (git show -s --format=%B) : (git log -1 --no-merges --pretty=%B)
         $commit_title = ($commit_message -split "[\r\n]+")[0]
@@ -233,7 +233,8 @@ jobs:
       if: matrix.build_platform == 'Win32' && matrix.build_configuration == 'Debug'
       working-directory: .\
       run: |
-           if ($Env:PYTHON_ALLOW_CACHE -eq "true" -and $${{ !contains(needs.before_build.outputs.title, '[force nopythoncache]') }} -and (Test-Path -Path ${{ env.PYTHON_DIR_CACHE }})) {
+           $nopythoncache = "${{ contains(needs.before_build.outputs.title, '[force nopythoncache]') }}"
+           if ($Env:PYTHON_ALLOW_CACHE -eq "true" -and $nopythoncache -eq "False" -and (Test-Path -Path ${{ env.PYTHON_DIR_CACHE }})) {
              $Env:PYTHONPATH = "${{ env.PYTHON_DIR_CACHE }}"
            }
            else {
@@ -276,7 +277,7 @@ jobs:
 
     # steps:
     # - name: Checkout repo
-      # uses: actions/checkout@v6
+      # uses: actions/checkout@v4
 
     # - name: Add msbuild to PATH
       # uses: microsoft/setup-msbuild@v2

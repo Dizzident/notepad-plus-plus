@@ -952,4 +952,76 @@ namespace NppDarkMode
 }
 
 // ============================================================================
+// File Attribute Functions
+// ============================================================================
+
+bool removeReadOnlyFlagFromFileAttributes(const wchar_t* fileFullPath)
+{
+    if (!fileFullPath || !fileFullPath[0])
+        return false;
+
+    // Convert wchar_t path to char path for chmod
+    std::string narrowPath = WcharMbcsConvertor::getInstance().wchar2char(fileFullPath, CP_UTF8);
+
+    struct stat fileStat;
+    if (stat(narrowPath.c_str(), &fileStat) != 0)
+        return false;
+
+    // Check if file is read-only (no write permission for owner)
+    if (!(fileStat.st_mode & S_IWUSR))
+    {
+        // Add write permission for owner
+        mode_t newMode = fileStat.st_mode | S_IWUSR;
+        if (chmod(narrowPath.c_str(), newMode) != 0)
+            return false;
+    }
+
+    return true;
+}
+
+// return false when failed, otherwise true and then the isChangedToReadOnly output will be set
+// accordingly to the changed file R/O-state
+bool toggleReadOnlyFlagFromFileAttributes(const wchar_t* fileFullPath, bool& isChangedToReadOnly)
+{
+    if (!fileFullPath || !fileFullPath[0])
+    {
+        isChangedToReadOnly = false;
+        return false;
+    }
+
+    // Convert wchar_t path to char path for stat/chmod
+    std::string narrowPath = WcharMbcsConvertor::getInstance().wchar2char(fileFullPath, CP_UTF8);
+
+    struct stat fileStat;
+    if (stat(narrowPath.c_str(), &fileStat) != 0)
+    {
+        isChangedToReadOnly = false;
+        return false;
+    }
+
+    // Toggle write permission for owner
+    mode_t newMode;
+    if (fileStat.st_mode & S_IWUSR)
+    {
+        // Currently writable, make read-only
+        newMode = fileStat.st_mode & ~S_IWUSR;
+        isChangedToReadOnly = true;
+    }
+    else
+    {
+        // Currently read-only, make writable
+        newMode = fileStat.st_mode | S_IWUSR;
+        isChangedToReadOnly = false;
+    }
+
+    if (chmod(narrowPath.c_str(), newMode) != 0)
+    {
+        isChangedToReadOnly = false;
+        return false;
+    }
+
+    return true;
+}
+
+// ============================================================================
 #endif // !_WIN32

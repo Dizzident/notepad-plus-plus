@@ -103,7 +103,7 @@ jobs:
             libqt6widgets6 \
             libqt6gui6 \
             libqt6network6 \
-            qscintilla2-qt6-dev \
+            libqscintilla2-qt6-dev \
             pkg-config \
             libfuse2 \
             wget
@@ -296,7 +296,7 @@ jobs:
             cmake \
             ninja-build \
             qt6-base-dev \
-            qscintilla2-qt6-dev \
+            libqscintilla2-qt6-dev \
             pkg-config \
             debhelper \
             devscripts \

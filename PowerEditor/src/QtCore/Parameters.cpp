@@ -80,6 +80,9 @@ static constexpr int NB_MAX_FINDHISTORY_REPLACE = 30;
 static constexpr int NB_MAX_FINDHISTORY_PATH = 30;
 static constexpr int NB_MAX_FINDHISTORY_FILTER = 20;
 
+// Session backup extension
+static constexpr const wchar_t SESSION_BACKUP_EXT[] = L".inCaseOfCorruption.bak";
+
 using namespace std;
 
 namespace // anonymous namespace
@@ -853,6 +856,67 @@ bool NppParameters::load()
     _contextMenuPath = _nppPath;
     pathAppend(_contextMenuPath, L"contextMenu.xml");
 
+    //----------------------------//
+    // session.xml : for per-user //
+    //----------------------------//
+    pathAppend(_sessionPath, L"session.xml");
+
+    // Don't load session.xml if not required in order to speed up!!
+    const NppGUI& nppGUI = getNppGUI();
+    if (nppGUI._rememberLastSession)
+    {
+        NppXml::Document pXmlSessionDoc = new NppXml::NewDocument();
+        bool loadOkay = NppXml::loadFile(pXmlSessionDoc, _sessionPath.c_str());
+        if (loadOkay)
+        {
+            loadOkay = getSessionFromXmlTree(pXmlSessionDoc, _session);
+        }
+
+        if (!loadOkay)
+        {
+            std::wstring sessionInCaseOfCorruption_bak = _sessionPath;
+            sessionInCaseOfCorruption_bak += SESSION_BACKUP_EXT;
+            if (doesFileExist(sessionInCaseOfCorruption_bak.c_str()))
+            {
+                bool bFileSwapOk = false;
+                if (doesFileExist(_sessionPath.c_str()))
+                {
+                    // an invalid session.xml file exists - try to replace it with backup
+                    bFileSwapOk = QFile::remove(wstringToQString(_sessionPath));
+                    if (bFileSwapOk)
+                    {
+                        bFileSwapOk = QFile::copy(wstringToQString(sessionInCaseOfCorruption_bak), wstringToQString(_sessionPath));
+                    }
+                }
+                else
+                {
+                    // no session.xml file - copy backup to session.xml
+                    bFileSwapOk = QFile::copy(wstringToQString(sessionInCaseOfCorruption_bak), wstringToQString(_sessionPath));
+                }
+
+                if (bFileSwapOk)
+                {
+                    NppXml::Document pXmlSessionBackupDoc = new NppXml::NewDocument();
+                    loadOkay = NppXml::loadFile(pXmlSessionBackupDoc, _sessionPath.c_str());
+                    if (loadOkay)
+                        loadOkay = getSessionFromXmlTree(pXmlSessionBackupDoc, _session);
+
+                    delete pXmlSessionBackupDoc;
+                }
+
+                if (!loadOkay)
+                    isAllLoaded = false;
+            }
+            else
+            {
+                // no backup file - this is OK for first run
+                // Don't mark as failed, just continue with empty session
+            }
+        }
+
+        delete pXmlSessionDoc;
+    }
+
     return isAllLoaded;
 }
 
@@ -1351,8 +1415,139 @@ void NppParameters::writeShortcuts()
 
 void NppParameters::writeSession(const Session& session, const wchar_t* fileName)
 {
-    (void)session;
-    (void)fileName;
+    const wchar_t* sessionPathName = fileName ? fileName : _sessionPath.c_str();
+
+    // Make sure session file is not read-only
+    removeReadOnlyFlagFromFileAttributes(sessionPathName);
+
+    // Backup session file before overwriting it
+    bool doesBackupCopyExist = false;
+    if (doesFileExist(sessionPathName))
+    {
+        std::wstring backupPathName = sessionPathName;
+        backupPathName += SESSION_BACKUP_EXT;
+
+        // Make sure backup file is not read-only, if it exists
+        removeReadOnlyFlagFromFileAttributes(backupPathName.c_str());
+
+        // Copy current session file to backup
+        doesBackupCopyExist = QFile::copy(wstringToQString(sessionPathName), wstringToQString(backupPathName));
+    }
+
+    // Prepare for writing
+    NppXml::Document pXmlSessionDoc = new NppXml::NewDocument();
+    NppXml::createNewDeclaration(pXmlSessionDoc);
+    NppXml::Element root = NppXml::createChildElement(pXmlSessionDoc, "NotepadPlus");
+
+    if (root)
+    {
+        NppXml::Element sessionNode = NppXml::createChildElement(root, "Session");
+        NppXml::setUInt64Attribute(sessionNode, "activeView", session._activeView);
+
+        struct ViewElem {
+            NppXml::Element viewNode;
+            const std::vector<sessionFileInfo>* viewFiles;
+            size_t activeIndex;
+        };
+
+        static constexpr int nbElem = 2;
+        ViewElem viewElems[nbElem]{
+            ViewElem{.viewNode = NppXml::createChildElement(sessionNode, "mainView"), .viewFiles = &session._mainViewFiles, .activeIndex = session._activeMainIndex},
+            ViewElem{.viewNode = NppXml::createChildElement(sessionNode, "subView"), .viewFiles = &session._subViewFiles, .activeIndex = session._activeSubIndex}
+        };
+
+        for (size_t k = 0; k < nbElem; ++k)
+        {
+            NppXml::setUInt64Attribute(viewElems[k].viewNode, "activeIndex", viewElems[k].activeIndex);
+            const std::vector<sessionFileInfo>& viewSessionFiles = *(viewElems[k].viewFiles);
+
+            for (const auto& vsFile : viewSessionFiles)
+            {
+                NppXml::Element fileNameNode = NppXml::createChildElement(viewElems[k].viewNode, "File");
+
+                NppXml::setInt64Attribute(fileNameNode, "firstVisibleLine", vsFile._firstVisibleLine);
+                NppXml::setInt64Attribute(fileNameNode, "xOffset", vsFile._xOffset);
+                NppXml::setInt64Attribute(fileNameNode, "scrollWidth", vsFile._scrollWidth);
+                NppXml::setInt64Attribute(fileNameNode, "startPos", vsFile._startPos);
+                NppXml::setInt64Attribute(fileNameNode, "endPos", vsFile._endPos);
+                NppXml::setInt64Attribute(fileNameNode, "selMode", vsFile._selMode);
+                NppXml::setInt64Attribute(fileNameNode, "offset", vsFile._offset);
+                NppXml::setInt64Attribute(fileNameNode, "wrapCount", vsFile._wrapCount);
+                NppXml::setAttribute(fileNameNode, "lang", wstring2string(vsFile._langName, CP_UTF8).c_str());
+                NppXml::setAttribute(fileNameNode, "encoding", vsFile._encoding);
+                setBoolAttribute(fileNameNode, "userReadOnly", (vsFile._isUserReadOnly && !vsFile._isMonitoring));
+                NppXml::setAttribute(fileNameNode, "filename", wstring2string(vsFile._fileName, CP_UTF8).c_str());
+                NppXml::setAttribute(fileNameNode, "backupFilePath", wstring2string(vsFile._backupFilePath, CP_UTF8).c_str());
+                NppXml::setAttribute(fileNameNode, "originalFileLastModifTimestamp", vsFile._originalFileLastModifTimestamp.dwLowDateTime);
+                NppXml::setAttribute(fileNameNode, "originalFileLastModifTimestampHigh", vsFile._originalFileLastModifTimestamp.dwHighDateTime);
+                NppXml::setAttribute(fileNameNode, "tabColourId", vsFile._individualTabColour);
+                setBoolAttribute(fileNameNode, "RTL", vsFile._isRTL);
+                setBoolAttribute(fileNameNode, "tabPinned", vsFile._isPinned);
+
+                // Save this info only when it's an untitled entry
+                if (vsFile._isUntitledTabRenamed)
+                    NppXml::setAttribute(fileNameNode, "untitleTabRenamed", "yes");
+
+                // docMap
+                NppXml::setInt64Attribute(fileNameNode, "mapFirstVisibleDisplayLine", vsFile._mapPos._firstVisibleDisplayLine);
+                NppXml::setInt64Attribute(fileNameNode, "mapFirstVisibleDocLine", vsFile._mapPos._firstVisibleDocLine);
+                NppXml::setInt64Attribute(fileNameNode, "mapLastVisibleDocLine", vsFile._mapPos._lastVisibleDocLine);
+                NppXml::setInt64Attribute(fileNameNode, "mapNbLine", vsFile._mapPos._nbLine);
+                NppXml::setInt64Attribute(fileNameNode, "mapHigherPos", vsFile._mapPos._higherPos);
+                NppXml::setInt64Attribute(fileNameNode, "mapWidth", vsFile._mapPos._width);
+                NppXml::setInt64Attribute(fileNameNode, "mapHeight", vsFile._mapPos._height);
+                NppXml::setInt64Attribute(fileNameNode, "mapKByteInDoc", vsFile._mapPos._KByteInDoc);
+                NppXml::setInt64Attribute(fileNameNode, "mapWrapIndentMode", vsFile._mapPos._wrapIndentMode);
+                setBoolAttribute(fileNameNode, "mapIsWrap", vsFile._mapPos._isWrap);
+
+                for (const auto& markLine : vsFile._marks)
+                {
+                    NppXml::Element markNode = NppXml::createChildElement(fileNameNode, "Mark");
+                    NppXml::setUInt64Attribute(markNode, "line", markLine);
+                }
+
+                for (const auto& foldLine : vsFile._foldStates)
+                {
+                    NppXml::Element foldNode = NppXml::createChildElement(fileNameNode, "Fold");
+                    NppXml::setUInt64Attribute(foldNode, "line", foldLine);
+                }
+            }
+        }
+
+        if (session._includeFileBrowser)
+        {
+            // Node structure and naming corresponds to config.xml
+            NppXml::Element fileBrowserRootNode = NppXml::createChildElement(sessionNode, "FileBrowser");
+            NppXml::setAttribute(fileBrowserRootNode, "latestSelectedItem", wstring2string(session._fileBrowserSelectedItem, CP_UTF8).c_str());
+            for (const auto& fbRoot : session._fileBrowserRoots)
+            {
+                NppXml::Element fileNameNode = NppXml::createChildElement(fileBrowserRootNode, "root");
+                NppXml::setAttribute(fileNameNode, "foldername", wstring2string(fbRoot, CP_UTF8).c_str());
+            }
+        }
+    }
+
+    //
+    // Write the session file
+    //
+    bool sessionSaveOK = NppXml::saveFile(pXmlSessionDoc, sessionPathName);
+
+    //
+    // Double checking: prevent written session file corrupted while writing
+    //
+    if (sessionSaveOK)
+    {
+        NppXml::Document pXmlSessionCheck = new NppXml::NewDocument();
+        sessionSaveOK = NppXml::loadFile(pXmlSessionCheck, sessionPathName);
+        if (sessionSaveOK)
+        {
+            Session sessionCheck;
+            sessionSaveOK = getSessionFromXmlTree(pXmlSessionCheck, sessionCheck);
+        }
+        delete pXmlSessionCheck;
+    }
+
+    delete pXmlSessionDoc;
 }
 
 bool NppParameters::writeFindHistory()
