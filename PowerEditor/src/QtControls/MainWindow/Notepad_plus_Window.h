@@ -140,6 +140,10 @@ public:
     // Tray icon
     void minimizeToTray();
     void restoreFromTray();
+    void createTrayIconMenu();
+    bool isTrayIconSupported() const;
+    bool shouldMinimizeToTray() const;
+    bool shouldCloseToTray() const;
 
     // Shortcut management
     void refreshShortcuts();
@@ -255,6 +259,8 @@ private slots:
 
     // Tray icon
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
+    void onTrayIconShowTriggered();
+    void onTrayIconExitTriggered();
 
 private:
     void setupUI();
@@ -334,6 +340,10 @@ private:
 
     // Tray icon
     QSystemTrayIcon* _trayIcon = nullptr;
+    QMenu* _trayIconMenu = nullptr;
+    QAction* _trayIconShowAction = nullptr;
+    QAction* _trayIconExitAction = nullptr;
+    bool _isMinimizedToTray = false;
 
     // Window state
     bool _isFullScreen = false;
