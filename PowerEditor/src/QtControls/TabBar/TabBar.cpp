@@ -29,7 +29,7 @@ bool TabBar::init(QWidget* parent, bool isVertical, bool isMultiLine)
         tabWidget->setTabPosition(QTabWidget::West);
     }
 
-    tabWidget->setTabsClosable(false);
+    tabWidget->setTabsClosable(true);
     tabWidget->setMovable(true);
 
     return true;

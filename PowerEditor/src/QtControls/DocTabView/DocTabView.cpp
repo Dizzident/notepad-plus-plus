@@ -133,6 +133,9 @@ void DocTabView::addBuffer(BufferID buffer)
     // Update tab appearance
     bufferUpdated(buffer, DocTabBufferChangeMask);
 
+    // Make sure tab widget is visible - critical for initial tab display
+    tabWidget->show();
+
     // Update parent layout
     if (_parent) {
         _parent->updateGeometry();
@@ -170,6 +173,12 @@ bool DocTabView::activateBuffer(BufferID buffer)
     int indexToActivate = getIndexByBuffer(buffer);
     if (indexToActivate == -1)
         return false;
+
+    // Make sure tab widget is visible before activating
+    QTabWidget* tabWidget = getTabWidget();
+    if (tabWidget) {
+        tabWidget->show();
+    }
 
     activateAt(indexToActivate);
     return true;
