@@ -77,6 +77,7 @@ void RunDlg::setupUI() {
     _commandCombo->setMaxCount(20);
     _commandEdit = _commandCombo->lineEdit();
     _commandEdit->setPlaceholderText(tr("Enter command or select from history..."));
+    _commandEdit->setText(_currentCommand);
     commandLayout->addWidget(_commandCombo, 1);
 
     _browseButton = new QPushButton(tr("..."), dialog);
@@ -147,10 +148,11 @@ QString RunDlg::getCommand() const {
     if (_commandEdit) {
         return _commandEdit->text().trimmed();
     }
-    return QString();
+    return _currentCommand;
 }
 
 void RunDlg::setCommand(const QString& command) {
+    _currentCommand = command;
     if (_commandEdit) {
         _commandEdit->setText(command);
     }
