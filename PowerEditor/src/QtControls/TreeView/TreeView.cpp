@@ -73,6 +73,9 @@ int TreeView::addItem(const QString& text, int parentId)
 
     newItem->setText(0, text);
 
+    // Ensure item is not checkable by default (Qt 6 may set this flag by default)
+    newItem->setFlags(newItem->flags() & ~Qt::ItemIsUserCheckable);
+
     int itemId = _nextItemId++;
     _itemMap[itemId] = newItem;
     newItem->setData(0, Qt::UserRole, itemId);
@@ -234,10 +237,11 @@ void TreeView::setCheckable(int itemId, bool checkable)
     QTreeWidgetItem* item = getItemById(itemId);
     if (!item) return;
 
-    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
     if (checkable) {
+        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
         item->setCheckState(0, Qt::Unchecked);
     } else {
+        item->setFlags(item->flags() & ~Qt::ItemIsUserCheckable);
         item->setData(0, Qt::CheckStateRole, QVariant());
     }
 }
