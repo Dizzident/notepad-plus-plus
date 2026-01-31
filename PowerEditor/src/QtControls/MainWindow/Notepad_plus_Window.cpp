@@ -12,6 +12,7 @@
 #include "../../resource.h"
 #include "../../Notepad_plus.h"
 #include "../../Parameters.h"
+#include "../../MISC/PluginsManager/Notepad_plus_msgs.h"
 
 // Dialog includes
 #include "../FindReplace/FindReplaceDlg.h"
@@ -28,6 +29,7 @@
 #include "../ScintillaComponent/ScintillaEditView.h"
 #include "../ShortcutManager/ShortcutManager.h"
 #include "../../WinControls/PluginsAdmin/pluginsAdminRes.h"
+#include "../DocTabView/DocTabView.h"
 
 #include <QApplication>
 #include <QStyle>
@@ -236,13 +238,13 @@ void MainWindow::setupUI()
 
     // Initialize main doc tab and add to container
     std::cout << "[MainWindow::setupUI] Initializing main doc tab..." << std::endl;
-    auto* mainDocTab = _pNotepad_plus->getMainDocTab();
-    if (!mainDocTab) {
+    _mainDocTab = _pNotepad_plus->getMainDocTab();
+    if (!_mainDocTab) {
         std::cerr << "[MainWindow::setupUI] ERROR: Main doc tab is null!" << std::endl;
         return;
     }
-    mainDocTab->init(mainContainer, mainEditView);
-    mainVLayout->addWidget(mainDocTab->getWidget());
+    _mainDocTab->init(mainContainer, mainEditView);
+    mainVLayout->addWidget(_mainDocTab->getWidget());
 
     // Add main editor to container
     QWidget* mainEditWidget = mainEditView->getWidget();
@@ -265,13 +267,13 @@ void MainWindow::setupUI()
     auto* subVLayout = new QVBoxLayout(subContainer);
     subVLayout->setContentsMargins(0, 0, 0, 0);
     subVLayout->setSpacing(0);
-    auto* subDocTab = _pNotepad_plus->getSubDocTab();
-    if (!subDocTab) {
+    _subDocTab = _pNotepad_plus->getSubDocTab();
+    if (!_subDocTab) {
         std::cerr << "[MainWindow::setupUI] ERROR: Sub doc tab is null!" << std::endl;
         return;
     }
-    subDocTab->init(subContainer, subEditView);
-    subVLayout->addWidget(subDocTab->getWidget());
+    _subDocTab->init(subContainer, subEditView);
+    subVLayout->addWidget(_subDocTab->getWidget());
     QWidget* subEditWidget = subEditView->getWidget();
     if (!subEditWidget) {
         std::cerr << "[MainWindow::setupUI] ERROR: Sub edit widget is null!" << std::endl;
@@ -346,7 +348,15 @@ void MainWindow::setupUI()
 
 void MainWindow::connectSignals()
 {
-    // Tab widget signals will be connected when tab widget is created
+    // Connect tab close signals from DocTabView to MainWindow slots
+    if (_mainDocTab) {
+        connect(_mainDocTab, &DocTabView::tabCloseRequested,
+                this, &MainWindow::onMainTabCloseRequested);
+    }
+    if (_subDocTab) {
+        connect(_subDocTab, &DocTabView::tabCloseRequested,
+                this, &MainWindow::onSubTabCloseRequested);
+    }
 }
 
 void MainWindow::createDockWindows()
@@ -2571,6 +2581,38 @@ void MainWindow::onTabChanged(int index)
 void MainWindow::onTabCloseRequested(int index)
 {
     closeTab(index);
+}
+
+void MainWindow::onMainTabCloseRequested(int index)
+{
+    if (!_pNotepad_plus || !_mainDocTab) {
+        return;
+    }
+
+    // Get the buffer ID for the tab being closed
+    QtControls::BufferID bufferId = _mainDocTab->getBufferByIndex(static_cast<size_t>(index));
+    if (bufferId != QtControls::BUFFER_INVALID) {
+        // Activate the buffer first (required for proper closing)
+        _mainDocTab->activateBuffer(bufferId);
+        // Call fileClose with the specific buffer ID and view
+        _pNotepad_plus->fileClose(bufferId, MAIN_VIEW);
+    }
+}
+
+void MainWindow::onSubTabCloseRequested(int index)
+{
+    if (!_pNotepad_plus || !_subDocTab) {
+        return;
+    }
+
+    // Get the buffer ID for the tab being closed
+    QtControls::BufferID bufferId = _subDocTab->getBufferByIndex(static_cast<size_t>(index));
+    if (bufferId != QtControls::BUFFER_INVALID) {
+        // Activate the buffer first (required for proper closing)
+        _subDocTab->activateBuffer(bufferId);
+        // Call fileClose with the specific buffer ID and view
+        _pNotepad_plus->fileClose(bufferId, SUB_VIEW);
+    }
 }
 
 // ============================================================================

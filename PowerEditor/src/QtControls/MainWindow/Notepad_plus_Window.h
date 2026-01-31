@@ -43,6 +43,9 @@
 // Forward declaration
 class Notepad_plus;
 class ScintillaEditView;
+namespace QtControls {
+class DocTabView;
+}
 
 // Forward declarations for dialogs
 namespace QtControls {
@@ -253,6 +256,8 @@ private slots:
     // Tab bar
     void onTabChanged(int index);
     void onTabCloseRequested(int index);
+    void onMainTabCloseRequested(int index);
+    void onSubTabCloseRequested(int index);
 
     // Panel visibility
     void onPanelVisibilityChanged(bool visible);
@@ -305,6 +310,10 @@ private:
     // Tab bar
     TabBar* _tabBar = nullptr;
     QTabWidget* _tabWidget = nullptr;
+
+    // DocTabViews (for signal connections)
+    DocTabView* _mainDocTab = nullptr;
+    DocTabView* _subDocTab = nullptr;
 
     // Menus
     QMenuBar* _menuBar = nullptr;
