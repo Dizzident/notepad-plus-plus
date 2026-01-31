@@ -157,6 +157,10 @@ bool doesFileExist(const wchar_t* filePath, DWORD milliSec2wait = 0, bool* isTim
 bool doesDirectoryExist(const wchar_t* dirPath, DWORD milliSec2wait = 0, bool* isTimeoutReached = nullptr);
 bool doesPathExist(const wchar_t* path, DWORD milliSec2wait = 0, bool* isTimeoutReached = nullptr);
 
+// File attribute functions (cross-platform)
+bool removeReadOnlyFlagFromFileAttributes(const wchar_t* fileFullPath);
+bool toggleReadOnlyFlagFromFileAttributes(const wchar_t* fileFullPath, bool& isChangedToReadOnly);
+
 bool isWindowVisibleOnAnyMonitor(const RECT& rectWndIn);
 bool isCoreWindows();
 
