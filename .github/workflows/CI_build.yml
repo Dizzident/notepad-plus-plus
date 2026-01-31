@@ -1,6 +1,23 @@
 name: CI_build
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [master, main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+  pull_request:
+    branches: [master, main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 env:
   PYTHON_ALLOW_CACHE: true
   PYTHON_DIR_CACHE: D:\.cache\python
@@ -9,6 +26,7 @@ jobs:
   before_build:
 
     runs-on: windows-latest
+    timeout-minutes: 30
     outputs:
       result: ${{ steps.filter.outputs.result }}
       matrix: ${{ steps.filter.outputs.matrix }}
@@ -17,7 +35,7 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
       with:
         fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
 
@@ -149,10 +167,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.before_build.outputs.matrix) }}
+    timeout-minutes: 60
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
@@ -170,35 +189,35 @@ jobs:
 
     - name: Archive artifacts for x64 / Release
       if: matrix.build_platform == 'x64' && matrix.build_configuration == 'Release'
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v4
       with:
           name: Notepad++.MSVC.${{ matrix.build_platform}}.${{ matrix.build_configuration}}
           path: PowerEditor\bin64\Notepad++.exe
 
     - name: Archive artifacts for Win32 / Release
       if: matrix.build_platform == 'Win32' && matrix.build_configuration == 'Release'
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v4
       with:
           name: Notepad++.MSVC.${{ matrix.build_platform}}.${{ matrix.build_configuration}}
           path: PowerEditor\bin\Notepad++.exe
 
     - name: Archive artifacts for ARM64 / Release
       if: matrix.build_platform == 'ARM64' && matrix.build_configuration == 'Release'
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v4
       with:
           name: Notepad++.MSVC.${{ matrix.build_platform}}.${{ matrix.build_configuration}}
           path: PowerEditor\binarm64\Notepad++.exe
 
     - name: Archive artifacts for ARM64|x64 / Debug
       if: (matrix.build_platform == 'ARM64' || matrix.build_platform == 'x64') && matrix.build_configuration == 'Debug'
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v4
       with:
           name: Notepad++.MSVC.${{ matrix.build_platform}}.${{ matrix.build_configuration}}
           path: PowerEditor\visual.net\${{ matrix.build_platform}}\${{ matrix.build_configuration}}\Notepad++.exe
 
     - name: Archive artifacts for Win32 / Debug
       if: matrix.build_platform == 'Win32' && matrix.build_configuration == 'Debug'
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v4
       with:
           name: Notepad++.MSVC.${{ matrix.build_platform}}.${{ matrix.build_configuration}}
           path: PowerEditor\visual.net\${{ matrix.build_configuration}}\Notepad++.exe
@@ -285,10 +304,11 @@ jobs:
           - build_configuration: Release
             build_platform: x64
             arch: amd64
+    timeout-minutes: 60
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
@@ -337,11 +357,12 @@ jobs:
       fail-fast: false
       matrix:
         build_configuration: [Release, Debug]
-        build_platform: [x86_64, i686]
+        build_platform: [x86_64]
+    timeout-minutes: 60
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
 
     - name: Modify resource.h N++ version to avoid confusion
       working-directory: PowerEditor\src\
@@ -353,19 +374,17 @@ jobs:
 
     - name: Make n++ exe
       working-directory: .\
+      shell: pwsh
       run: |
         Write-host "${{ matrix.build_platform }}"
         Write-host "${{ matrix.build_configuration }}"
         $Env:Path = 'C:\msys64\usr\bin' + [IO.Path]::PathSeparator + $Env:Path
-        if ( $${{ matrix.build_platform == 'i686'}} ) {$Env:MSYSTEM = 'MINGW32'}
-        if ( $${{ matrix.build_platform == 'i686'}} ) {$Env:Path = 'C:\msys64\mingw32\bin' + [IO.Path]::PathSeparator + $Env:Path}
-        if ( $${{ matrix.build_platform == 'x86_64'}} ) {$Env:MSYSTEM = 'MINGW64'}
-        if ( $${{ matrix.build_platform == 'x86_64'}} ) {$Env:Path = 'C:\msys64\mingw64\bin' + [IO.Path]::PathSeparator + $Env:Path}
-        if ( $${{ matrix.build_configuration == 'Debug'}} ) {$Env:DEBUG = '1'}
+        $Env:MSYSTEM = 'MINGW64'
+        $Env:Path = 'C:\msys64\mingw64\bin' + [IO.Path]::PathSeparator + $Env:Path
+        if ( "${{ matrix.build_configuration }}" -eq "Debug" ) { $Env:DEBUG = '1' }
         bash -lc "pacman --noconfirm -Syuu"
         bash -lc "pacman --noconfirm -Syuu"
-        if ( $${{ matrix.build_platform == 'i686'}} ) {bash -lc "pacman --noconfirm -S mingw-w64-i686-gcc mingw-w64-i686-make"}
-        if ( $${{ matrix.build_platform == 'x86_64'}} ) {bash -lc "pacman --noconfirm -S mingw-w64-x86_64-gcc mingw-w64-x86_64-make"}
+        bash -lc "pacman --noconfirm -S mingw-w64-x86_64-gcc mingw-w64-x86_64-make"
         Write-Output "Tools version:"
         Write-Output (((gcc --version) | select-object -first 1) + " " + (gcc -dumpmachine))
         Write-Output (mingw32-make --version) | select-object -first 1
@@ -374,14 +393,14 @@ jobs:
 
     - name: Archive artifacts for ${{ matrix.build_platform}} / Release
       if: matrix.build_configuration == 'Release'
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v4
       with:
           name: Notepad++.GCC.${{ matrix.build_platform}}.${{ matrix.build_configuration}}
           path: bin.${{ matrix.build_platform}}\notepad++.exe
 
     - name: Archive artifacts for ${{ matrix.build_platform}} / Debug
       if: matrix.build_configuration == 'Debug'
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v4
       with:
           name: Notepad++.GCC.${{ matrix.build_platform}}.${{ matrix.build_configuration}}
           path: bin.${{ matrix.build_platform}}-debug\notepad++.exe
