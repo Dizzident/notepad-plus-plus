@@ -21,6 +21,10 @@ on:
 env:
   BUILD_TYPE: Release
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ============================================================================
   # Pre-check

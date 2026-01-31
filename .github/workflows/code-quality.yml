@@ -16,6 +16,10 @@ on:
 env:
   QT_VERSION: 6.6
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ============================================================================
   # clang-format Check
